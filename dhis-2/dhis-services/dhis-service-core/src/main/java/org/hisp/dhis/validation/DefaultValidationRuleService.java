@@ -41,11 +41,13 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hisp.dhis.common.GenericIdentifiableObjectStore;
@@ -53,7 +55,9 @@ import org.hisp.dhis.constant.ConstantService;
 import org.hisp.dhis.dataelement.DataElement;
 import org.hisp.dhis.dataelement.DataElementCategoryOptionCombo;
 import org.hisp.dhis.dataelement.DataElementCategoryService;
+import org.hisp.dhis.dataelement.DataElementOperand;
 import org.hisp.dhis.dataset.DataSet;
+import org.hisp.dhis.datavalue.DataValue;
 import org.hisp.dhis.datavalue.DataValueService;
 import org.hisp.dhis.expression.ExpressionService;
 import org.hisp.dhis.i18n.I18nFormat;
@@ -280,6 +284,32 @@ public class DefaultValidationRuleService
         
         systemSettingManager.saveSystemSetting( SystemSettingManager.KEY_LAST_MONITORING_RUN, thisRun );
     }
+    
+    public List<DataElementOperand> validateRequiredComments( DataSet dataSet, Period period, OrganisationUnit organisationUnit, DataElementCategoryOptionCombo attributeOptionCombo )
+    {
+        List<DataElementOperand> violations = new ArrayList<>();
+        
+        if ( dataSet.isNoValueRequiresComment() )
+        {
+            for ( DataElement de : dataSet.getDataElements() )
+            {
+                for ( DataElementCategoryOptionCombo co : de.getCategoryCombo().getOptionCombos() )
+                {
+                    DataValue dv = dataValueService.getDataValue( de, period, organisationUnit, co, attributeOptionCombo );
+                    
+                    boolean missingValue = dv == null || StringUtils.trimToNull( dv.getValue() ) == null;
+                    boolean missingComment = dv == null || StringUtils.trimToNull( dv.getComment() ) == null;
+                    
+                    if ( missingValue && missingComment )
+                    {
+                        violations.add( new DataElementOperand( de, co ) );
+                    }
+                }
+            }
+        }
+        
+        return violations;
+    }
 
     // -------------------------------------------------------------------------
     // Supportive methods - scheduled run
@@ -442,7 +472,7 @@ public class DefaultValidationRuleService
                     {
                         for ( User user : userGroup.getMembers() )
                         {
-                            if ( !ruleGroup.isAlertByOrgUnits() || canUserAccessSource( user, result.getSource() ) )
+                            if ( !ruleGroup.isAlertByOrgUnits() || canUserAccessSource( user, result.getOrgUnit() ) )
                             {
                                 SortedSet<ValidationResult> resultSet = userResults.get ( user );
 
@@ -511,7 +541,7 @@ public class DefaultValidationRuleService
         {
             ValidationRule rule = result.getValidationRule();
             
-            builder.append( result.getSource().getName() ).append( " " ).append( result.getPeriod().getName() ).
+            builder.append( result.getOrgUnit().getName() ).append( " " ).append( result.getPeriod().getName() ).
             append( result.getAttributeOptionCombo().isDefault() ? "" : " " + result.getAttributeOptionCombo().getName() ).append( LN ).
             append( rule.getName() ).append( " (" ).append( rule.getImportance() ).append( ") " ).append( LN ).
             append( rule.getLeftSide().getDescription() ).append( ": " ).append( result.getLeftsideValue() ).append( LN ).
