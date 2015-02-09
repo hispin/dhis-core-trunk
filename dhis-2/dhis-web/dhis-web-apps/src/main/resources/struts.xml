@@ -68,5 +68,13 @@
 			<result name="success" type="redirect">index.html</result>
 		</action>
     </package>
-    
+	
+	<!-- dhis-web-asha-portal -->
+	<package name="dhis-web-asha-portal" extends="dhis-web-commons" namespace="/dhis-web-asha-portal">
+		<action name="index" class="org.hisp.dhis.commons.action.NoAction">
+			<result name="success" type="redirect">index.html</result>
+		</action>
+    </package>
+
+	
 </struts>

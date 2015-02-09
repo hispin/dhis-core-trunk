@@ -1,0 +1,45 @@
+<div class="panel panel-info" ng-controller="ProfileController">
+    <div class="panel-heading handle bold">
+
+        {{profileWidget.title| translate}}
+        <span class="nav-pills" ng-if="!enrollmentEditing">
+            | <a href ng-click="enableEdit()" title="{{'edit_profile'| translate}}"><span ng-class="{true: 'widget - link - active', false: 'widget - link'} [!editingDisabled]">{{'edit'| translate}}</span></a>
+        </span>
+
+        <span class="pull-right widget-link">            
+            <a ng-if="customForm" class="small-horizonal-spacing" href ng-click="switchRegistrationForm()" title="{{selectedProgram.displayCustomForm ? 'default_form' : 'custom_form'| translate}}">
+                <span><i class="fa fa-file-text"></i></span>
+            </a>
+            <a class="small-horizonal-spacing" href ng-click="expandCollapse(profileWidget)">
+                <span ng-show="profileWidget.expand"><i class="fa fa-chevron-up" title="{{'collapse'| translate}}"></i></span>
+                <span ng-show="!profileWidget.expand"><i class="fa fa-chevron-down" title="{{'expand'| translate}}"></i></span>
+            </a>
+            <a class="small-horizonal-spacing" href ng-click="removeWidget(profileWidget)" title="{{'remove'| translate}}"><i class="fa fa-times-circle"></i></a>            
+        </span>        
+    </div>
+    <div ng-show="profileWidget.expand" class="panel-body dashboard-widget-container">
+        <form name="outerForm" novalidate>
+            <div ng-if="!enrollmentEditing">
+                <div class="vertical-spacing" ng-if="selectedProgram && selectedProgram.displayCustomForm">
+                    <div ng-include="'../dhis-web-commons/customform/custom-form.html'"></div>
+                </div>
+                <div class="vertical-spacing" ng-if="!selectedProgram.displayCustomForm">            
+                    <div ng-include="'views/default-registration-form.html'"></div>
+                </div>
+
+                <div ng-if="!editingDisabled" class="vertical-spacing">
+                    <button type="button" 
+                            class="btn btn-primary small-horizonal-spacing"
+                            ng-click="save()">
+                        {{'save'| translate}}
+                    </button>        
+                    <button type="button" 
+                            class="btn btn-default small-horizonal-spacing" 
+                            ng-click="cancel()">
+                        {{'cancel'| translate}}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
