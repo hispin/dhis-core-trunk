@@ -1,8 +1,8 @@
 trackerCapture.controller('EnrollmentController',
         function($rootScope,
                 $scope,  
-                $timeout,
                 $location,
+                $timeout,
                 DateUtils,
                 EventUtils,
                 storage,
@@ -17,14 +17,16 @@ trackerCapture.controller('EnrollmentController',
                 DialogService) {
     
     $scope.today = DateUtils.getToday();
-    $scope.selectedOrgUnit = storage.get('SELECTED_OU');
-    
-    $scope.attributes = [];
-    $scope.attributesById = [];
+    $scope.selectedOrgUnit = storage.get('SELECTED_OU');    
+      
     AttributesFactory.getAll().then(function(atts){
+        $scope.attributes = [];  
+        $scope.attributesById = [];
         angular.forEach(atts, function(att){
             $scope.attributesById[att.id] = att;
         });
+        
+        CurrentSelection.setAttributesById($scope.attributesById);
     });
     
     //listen for the selected items
@@ -37,25 +39,20 @@ trackerCapture.controller('EnrollmentController',
         $scope.hasEnrollmentHistory = false;
         $scope.selectedEnrollment = null;
         $scope.currentEnrollment = null;
-        var selectedEnrollment = null;
         $scope.newEnrollment = {};
         
         selections = CurrentSelection.get();        
-        processSelectedTei();       
+        processSelectedTei();
         
         $scope.selectedEntity = selections.te;
         $scope.selectedProgram = selections.pr;
         $scope.optionSets = selections.optionSets;
         $scope.programs = selections.prs;
-        selectedEnrollment = selections.selectedEnrollment;
-        $scope.enrollments = selections.enrollments ? selections.enrollments : [];
-        
-        if(selectedEnrollment){//enrollment exists
-            selectedEnrollment.dateOfIncident = DateUtils.formatFromApiToUser(selectedEnrollment.dateOfIncident);
-            selectedEnrollment.dateOfEnrollment = DateUtils.formatFromApiToUser(selectedEnrollment.dateOfEnrollment);
-        }
-        
+        var selectedEnrollment = selections.selectedEnrollment;
+        $scope.enrollments = selections.enrollments ? selections.enrollments : [];        
         $scope.programExists = args.programExists;
+        $scope.programNames = selections.prNames;
+        $scope.programStageNames = selections.prStNames;
         
         if($scope.selectedProgram){
             
@@ -66,10 +63,6 @@ trackerCapture.controller('EnrollmentController',
             
             angular.forEach($scope.enrollments, function(enrollment){
                 if(enrollment.program === $scope.selectedProgram.id ){
-                    
-                    enrollment.dateOfIncident = DateUtils.formatFromApiToUser(enrollment.dateOfIncident);
-                    enrollment.dateOfEnrollment = DateUtils.formatFromApiToUser(enrollment.dateOfEnrollment);
-                
                     if(enrollment.status === 'ACTIVE'){
                         selectedEnrollment = enrollment;
                         $scope.currentEnrollment = enrollment;
@@ -87,11 +80,12 @@ trackerCapture.controller('EnrollmentController',
             }
             else{
                 $scope.selectedEnrollment = null;
+                $scope.broadCastSelections('dashboardWidgets');
             }
         }
-        
-        $scope.broadCastSelections('dashboardWidgets');
-        
+        else{
+            $scope.broadCastSelections('dashboardWidgets');
+        }        
     });
     
     $scope.loadEnrollmentDetails = function(enrollment) {
@@ -111,9 +105,13 @@ trackerCapture.controller('EnrollmentController',
                         $scope.selectedProgram.displayCustomForm = $scope.selectedProgram.hasCustomForm ? true:false;
                         $scope.trackedEntityForm = teForm;
                         $scope.customForm = CustomFormService.getForTrackedEntity($scope.trackedEntityForm, 'ENROLLMENT');
-                    }                    
+                    }
+                    $scope.broadCastSelections('dashboardWidgets');
                 });
             });                
+        }
+        else{
+            $scope.broadCastSelections('dashboardWidgets');
         }
     };
         
@@ -141,8 +139,8 @@ trackerCapture.controller('EnrollmentController',
                     $scope.registrationForm = teForm;
                 }                
                 $scope.selectedProgram.displayCustomForm = $scope.selectedProgram.hasCustomForm ? true:false;
-            });
-            $scope.broadCastSelections('dashboardWidgets');
+                $scope.broadCastSelections('dashboardWidgets');
+            });            
         }
     };
        
@@ -178,8 +176,8 @@ trackerCapture.controller('EnrollmentController',
         var enrollment = {trackedEntityInstance: tei.trackedEntityInstance,
                             program: $scope.selectedProgram.id,
                             status: 'ACTIVE',
-                            dateOfEnrollment: DateUtils.formatFromUserToApi($scope.selectedEnrollment.dateOfEnrollment),
-                            dateOfIncident: $scope.newEnrollment.dateOfIncident ? DateUtils.formatFromUserToApi($scope.selectedEnrollment.dateOfIncident) : DateUtils.formatFromUserToApi($scope.selectedEnrollment.dateOfEnrollment)
+                            dateOfEnrollment: $scope.selectedEnrollment.dateOfEnrollment,
+                            dateOfIncident: $scope.selectedEnrollment.dateOfIncident ? $scope.selectedEnrollment.dateOfIncident : $scope.selectedEnrollment.dateOfEnrollment
                         };
                         
         TEIService.update(tei, $scope.optionSets).then(function(updateResponse){            
@@ -201,11 +199,7 @@ trackerCapture.controller('EnrollmentController',
                     $scope.selectedEnrollment = enrollment;
                     $scope.enrollments.push($scope.selectedEnrollment);
                     
-                    $scope.autoGenerateEvents();
-                    
-                    $scope.showEnrollmentDiv = false;
-                    $scope.outerForm.submitted = false;      
-                    $scope.broadCastSelections('dashboardWidgets');
+                    $scope.autoGenerateEvents(tei, $scope.selectedProgram, $scope.selectedOrgUnit, $scope.selectedEnrollment);                    
                 });
             }
             else{
@@ -221,25 +215,27 @@ trackerCapture.controller('EnrollmentController',
     };
     
     $scope.broadCastSelections = function(listeners){
-        var tei = getProcessedForm().tei;
+        var selections = CurrentSelection.get();
+        var tei = selections.tei;
+        var pr = selections.pr;;
         var enrollment = null;      
         if($scope.selectedEnrollment && $scope.selectedEnrollment.enrollment){
             enrollment = $scope.selectedEnrollment;
         }
-            
-        CurrentSelection.set({tei: tei, te: $scope.selectedEntity, prs: $scope.programs, pr: $scope.selectedProgram, enrollments: $scope.enrollments, selectedEnrollment: enrollment, optionSets: $scope.optionSets});
-        $timeout(function(){
+        CurrentSelection.set({tei: tei, te: $scope.selectedEntity, prs: $scope.programs, pr: pr, prNames: $scope.programNames, prStNames: $scope.programStageNames, enrollments: $scope.enrollments, selectedEnrollment: enrollment, optionSets: $scope.optionSets});
+        $timeout(function() { 
             $rootScope.$broadcast(listeners, {});
-        }, 200);
+        }, 100);
     };    
     
-    var getProcessedForm = function(){
+    var getProcessedForm = function(){        
+        $scope.attributesById = CurrentSelection.getAttributesById();
         var tei = angular.copy(selections.tei);
         tei.attributes = [];
         var formEmpty = true;
         for(var k in $scope.attributesById){
             if( $scope.selectedTei[k] ){
-                tei.attributes.push({attribute: $scope.attributesById[k].id, value: $scope.selectedTei[k], type: $scope.attributesById[k].valueType});
+                tei.attributes.push({attribute: $scope.attributesById[k].id, value: $scope.selectedTei[k], displayName: $scope.attributesById[k].name, type: $scope.attributesById[k].valueType});
                 formEmpty = false;
             }
         }
@@ -248,8 +244,7 @@ trackerCapture.controller('EnrollmentController',
     };
     
     var processSelectedTei = function(){
-        $scope.selectedTei = null;
-        $scope.selectedTei = angular.copy(selections.tei); 
+        $scope.selectedTei = angular.copy(selections.tei);
         angular.forEach($scope.selectedTei.attributes, function(att){
             $scope.selectedTei[att.attribute] = att.value;
         });
@@ -303,26 +298,26 @@ trackerCapture.controller('EnrollmentController',
         });
     };
             
-    $scope.autoGenerateEvents = function(){
-        if($scope.selectedTei && $scope.selectedProgram && $scope.selectedOrgUnit && $scope.selectedEnrollment){            
+    $scope.autoGenerateEvents = function(tei, program, orgUnit, enrollment){
+        if(tei && program && orgUnit && enrollment){            
             var dhis2Events = {events: []};
-            angular.forEach($scope.selectedProgram.programStages, function(stage){
+            angular.forEach(program.programStages, function(stage){
                 if(stage.autoGenerateEvent){
                     var newEvent = {
-                            trackedEntityInstance: $scope.selectedTei.trackedEntityInstance,
-                            program: $scope.selectedProgram.id,
+                            trackedEntityInstance: tei.trackedEntityInstance,
+                            program: program.id,
                             programStage: stage.id,
-                            orgUnit: $scope.selectedOrgUnit.id,                        
-                            dueDate: DateUtils.formatFromUserToApi( EventUtils.getEventDueDate(dhis2Events.events, stage, $scope.selectedEnrollment) ),
+                            orgUnit: orgUnit.id,                        
+                            dueDate: DateUtils.formatFromUserToApi( EventUtils.getEventDueDate(dhis2Events.events, stage, enrollment) ),
                             status: 'SCHEDULE'
                         };
                     
                     if(stage.openAfterEnrollment){
                         if(stage.reportDateToUse === 'dateOfIncident'){
-                            newEvent.eventDate = DateUtils.formatFromUserToApi($scope.selectedEnrollment.dateOfIncident);
+                            newEvent.eventDate = DateUtils.formatFromUserToApi(enrollment.dateOfIncident);
                         }
                         else{
-                            newEvent.eventDate = DateUtils.formatFromUserToApi($scope.selectedEnrollment.dateOfEnrollment);
+                            newEvent.eventDate = DateUtils.formatFromUserToApi(enrollment.dateOfEnrollment);
                         }
                     }
                     
@@ -330,9 +325,17 @@ trackerCapture.controller('EnrollmentController',
                 }
             });
             
+            $scope.showEnrollmentDiv = false;
+            $scope.outerForm.submitted = false;
+            
+            CurrentSelection.set({tei: tei, te: $scope.selectedEntity, prs: $scope.programs, pr: program, prNames: $scope.programNames, prStNames: $scope.programStageNames, enrollments: $scope.enrollments, selectedEnrollment: enrollment, optionSets: $scope.optionSets});
             if(dhis2Events.events.length > 0){
                 DHIS2EventFactory.create(dhis2Events).then(function(data) {
+                    $scope.broadCastSelections('dashboardWidgets');
                 });
+            }
+            else{
+                $scope.broadCastSelections('dashboardWidgets');
             }
         }
     };

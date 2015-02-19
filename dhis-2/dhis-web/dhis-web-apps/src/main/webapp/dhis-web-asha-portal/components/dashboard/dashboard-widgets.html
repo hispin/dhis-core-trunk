@@ -4,20 +4,12 @@
 
 <div class="modal-body">   
     <table class="listTable dhis2-table-striped-border">
-        <tr ng-repeat="biggerWidget in biggerDashboardWidgets">
+        <tr ng-repeat="widget in dashboardWidgets">
             <td>
-                {{biggerWidget.title | translate}}
+                {{widget.title | translate}}
             </td>
             <td>
-                <input type="checkbox" ng-model="biggerWidget.show">
-            </td>
-        </tr>
-        <tr ng-repeat="smallerWidget in smallerDashboardWidgets">
-            <td>
-                {{smallerWidget.title | translate}}
-            </td>
-            <td>
-                <input type="checkbox" ng-model="smallerWidget.show">
+                <input type="checkbox" ng-model="widget.show" ng-change="closeOpenWidget(widget)">
             </td>
         </tr>
     </table>    
@@ -25,4 +17,4 @@
 
 <div class="modal-footer">     
     <button type="button" class="btn btn-default" data-ng-click="close()">{{'close'| translate}}</button>
-</div> 
+</div>

@@ -24,7 +24,6 @@ trackerCapture.controller('ProfileController',
     //listen for the selected entity
     var selections = {};
     $scope.$on('dashboardWidgets', function(event, args) {
-        $scope.enrollmentEditing = args.enrollmentEditing;
         selections = CurrentSelection.get();
         $scope.selectedTei = angular.copy(selections.tei);
         $scope.trackedEntity = selections.te;
@@ -40,12 +39,13 @@ trackerCapture.controller('ProfileController',
         angular.forEach($scope.selectedTei.attributes, function(att){
             $scope.selectedTei[att.attribute] = att.value;
         });
+        
         delete $scope.selectedTei.attributes;
         
-        if($scope.selectedProgram && $scope.selectedProgram.id){            
-            AttributesFactory.getByProgram($scope.selectedProgram).then(function(atts){
-                $scope.attributes = atts;
-
+        AttributesFactory.getByProgram($scope.selectedProgram).then(function(atts){
+            $scope.attributes = atts;
+            
+            if($scope.selectedProgram && $scope.selectedProgram.id){
                 $scope.selectedProgram.hasCustomForm = false;               
                 TEFormService.getByProgram($scope.selectedProgram, atts).then(function(teForm){                    
                     if(angular.isObject(teForm)){                        
@@ -55,17 +55,13 @@ trackerCapture.controller('ProfileController',
                         $scope.customForm = CustomFormService.getForTrackedEntity($scope.trackedEntityForm, $scope.widget);
                     }                    
                 });
-            });                
-        }
-        else{            
-            AttributesFactory.getWithoutProgram().then(function(atts){
-                $scope.attributes = atts;
-            });
-        }
+            }            
+        });
     });
     
     //listen for enrollment editing
     $scope.$on('enrollmentEditing', function(event, args) { 
+        console.log('the editing:  ', args.enrollmentEditing);
         $scope.enrollmentEditing = args.enrollmentEditing;
     });
     

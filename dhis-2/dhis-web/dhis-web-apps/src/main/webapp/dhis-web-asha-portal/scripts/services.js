@@ -48,6 +48,40 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };
 })
 
+/* Service to fetch/store dasboard widgets */
+.service('DashboardLayoutService', function($http) {
+    
+    var w = {};
+    w.enrollmentWidget = {title: 'enrollment', view: "components/enrollment/enrollment.html", show: true, expand: true, parent: 'biggerWidget', order: 0};
+    w.dataentryWidget = {title: 'dataentry', view: "components/dataentry/dataentry.html", show: true, expand: true, parent: 'biggerWidget', order: 1};
+    w.reportWidget = {title: 'report', view: "components/report/tei-report.html", show: true, expand: true, parent: 'biggerWidget', order: 2};
+    w.selectedWidget = {title: 'current_selections', view: "components/selected/selected.html", show: false, expand: true, parent: 'smallerWidget', order: 0};
+    w.profileWidget = {title: 'profile', view: "components/profile/profile.html", show: true, expand: true, parent: 'smallerWidget', order: 1};
+    w.relationshipWidget = {title: 'relationships', view: "components/relationship/relationship.html", show: true, expand: true, parent: 'smallerWidget', order: 2};
+    w.notesWidget = {title: 'notes', view: "components/notes/notes.html", show: true, expand: true, parent: 'smallerWidget', order: 3};            
+    var defaultLayout = new Object();
+    defaultLayout['DEFAULT'] = {widgets: w, program: 'DEFAULT'};
+    
+    return {
+        saveLayout: function(dashboardLayout){
+            var layout = JSON.stringify(dashboardLayout);
+            var promise = $http.post( '../api/userSettings/dhis2-tracker-dashboard?value=' + layout, '', {headers: {'Content-Type': 'text/plain;charset=utf-8'}}).then(function(response){
+                return response.data;
+            });
+            return promise;            
+        },
+        get: function(){            
+            var promise = $http.get(  '../api/userSettings/dhis2-tracker-dashboard' ).then(function(response){                
+                return response.data === "" ? defaultLayout: response.data;
+            }, function(){
+                console.log('has failed....');
+                return defaultLayout;
+            });
+            return promise;
+        }
+    };
+})
+
 /* Factory to fetch optionSets */
 .factory('OptionSetService', function($q, $rootScope, TCStorageService) { 
     return {
@@ -299,42 +333,95 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };    
 })
 
+/* Factory for fetching OrgUnit */
+.factory('OrgUnitFactory', function($http) {    
+    var orgUnit, orgUnitPromise, rootOrgUnitPromise, myOrgUnitsPromise;    
+    return {
+        get: function(uid){            
+            if( orgUnit !== uid ){
+                orgUnitPromise = $http.get( '../api/organisationUnits.json?filter=id:eq:' + uid + '&fields=id,name,children[id,name,children[id,name]]&paging=false' ).then(function(response){
+                    orgUnit = response.data.id;
+                    return response.data;
+                });
+            }
+            return orgUnitPromise;
+        },        
+        getRoot: function(){
+            if(!rootOrgUnitPromise){
+                rootOrgUnitPromise = $http.get( '../api/organisationUnits.json?filter=level:eq:1&fields=id,name,children[id,name,children[id,name]]&paging=false' ).then(function(response){
+                    return response.data;
+                });
+            }
+            return rootOrgUnitPromise;
+        },
+        getMine: function(){
+            if(!myOrgUnitsPromise){
+                myOrgUnitsPromise = $http.get('../api/me/organisationUnits').then(function(response){
+                    return response.data;
+                });
+            }
+            return myOrgUnitsPromise;
+        }
+    }; 
+})
+
 /* Service to deal with enrollment */
-.service('EnrollmentService', function($http) {
+.service('EnrollmentService', function($http, DateUtils) {
     
+    var convertFromApiToUser = function(enrollment){
+        if(enrollment.enrollments){
+            angular.forEach(enrollment.enrollments, function(enrollment){
+                enrollment.dateOfIncident = DateUtils.formatFromApiToUser(enrollment.dateOfIncident);
+                enrollment.dateOfEnrollment = DateUtils.formatFromApiToUser(enrollment.dateOfEnrollment);                
+            });
+        }
+        else{
+            enrollment.dateOfIncident = DateUtils.formatFromApiToUser(enrollment.dateOfIncident);
+            enrollment.dateOfEnrollment = DateUtils.formatFromApiToUser(enrollment.dateOfEnrollment);
+        }
+        
+        return enrollment;
+    };
+    var convertFromUserToApi = function(enrollment){
+        enrollment.dateOfIncident = DateUtils.formatFromUserToApi(enrollment.dateOfIncident);
+        enrollment.dateOfEnrollment = DateUtils.formatFromUserToApi(enrollment.dateOfEnrollment);
+        return enrollment;
+    };
     return {        
         get: function( enrollmentUid ){
             var promise = $http.get(  '../api/enrollments/' + enrollmentUid ).then(function(response){
-                return response.data;
+                return convertFromApiToUser(response.data);
             });
             return promise;
         },
         getByEntity: function( entity ){
             var promise = $http.get(  '../api/enrollments?trackedEntityInstance=' + entity ).then(function(response){
-                return response.data;
+                return convertFromApiToUser(response.data);
             });
             return promise;
         },
         getByEntityAndProgram: function( entity, program ){
             var promise = $http.get(  '../api/enrollments?trackedEntityInstance=' + entity + '&program=' + program ).then(function(response){
-                return response.data;
+                return convertFromApiToUser(response.data);
             });
             return promise;
         },
         getByStartAndEndDate: function( program, orgUnit, ouMode, startDate, endDate ){
             var promise = $http.get(  '../api/enrollments.json?program=' + program + '&orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&startDate=' + startDate + '&endDate=' + endDate + '&paging=false').then(function(response){
-                return response.data;
+                return convertFromApiToUser(response.data);
             });
             return promise;
         },
         enroll: function( enrollment ){
-            var promise = $http.post(  '../api/enrollments', enrollment ).then(function(response){
+            var en = convertFromUserToApi(angular.copy(enrollment));
+            var promise = $http.post(  '../api/enrollments', en ).then(function(response){
                 return response.data;
             });
             return promise;
         },
         update: function( enrollment ){
-            var promise = $http.put( '../api/enrollments/' + enrollment.enrollment , enrollment).then(function(response){
+            var en = convertFromUserToApi(angular.copy(enrollment));
+            var promise = $http.put( '../api/enrollments/' + en.enrollment , en ).then(function(response){
                 return response.data;
             });
             return promise;
@@ -429,6 +516,10 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                     });
 
                     angular.forEach(tei.attributes, function(att){
+                        if(attsById[att.attribute]){
+                            att.displayName = attsById[att.attribute].name;
+                        }
+                        
                         if(att.type === 'trueOnly'){
                             if(att.value === 'true'){
                                 att.value = true;
@@ -680,25 +771,36 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             return def.promise;            
         }, 
         getByProgram: function(program){
-            
-            var attributes = [];
-            var programAttributes = [];
-
             var def = $q.defer();
-            this.getAll().then(function(atts){
-                angular.forEach(atts, function(attribute){
-                    attributes[attribute.id] = attribute;
-                });
+            this.getAll().then(function(atts){                
+                
+                if(program && program.id){
+                    var attributes = [];
+                    var programAttributes = [];
+                    angular.forEach(atts, function(attribute){
+                        attributes[attribute.id] = attribute;
+                    });
 
-                angular.forEach(program.programTrackedEntityAttributes, function(pAttribute){
-                    var att = attributes[pAttribute.trackedEntityAttribute.id];
-                    att.mandatory = pAttribute.mandatory;
-                    if(pAttribute.displayInList){
-                        att.displayInListNoProgram = true;
-                    }                    
-                    programAttributes.push(att);                
-                });
-                def.resolve(programAttributes);
+                    angular.forEach(program.programTrackedEntityAttributes, function(pAttribute){
+                        var att = attributes[pAttribute.trackedEntityAttribute.id];
+                        att.mandatory = pAttribute.mandatory;
+                        if(pAttribute.displayInList){
+                            att.displayInListNoProgram = true;
+                        }                    
+                        programAttributes.push(att);                
+                    });
+                    
+                    def.resolve(programAttributes);
+                }                
+                else{
+                    var attributes = [];
+                    angular.forEach(atts, function(attribute){
+                        if (attribute.displayInListNoProgram) {
+                            attributes.push(attribute);
+                        }
+                    });     
+                    def.resolve(attributes);
+                }                
             });
             return def.promise;    
         },
@@ -782,8 +884,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             });            
             return promise;
         },
-        getEventsByProgram: function(entity, orgUnit, program){   
-            var promise = $http.get( '../api/events.json?' + 'trackedEntityInstance=' + entity + '&orgUnit=' + orgUnit + '&program=' + program + '&paging=false').then(function(response){
+        getEventsByProgram: function(entity, program){   
+            var promise = $http.get( '../api/events.json?' + 'trackedEntityInstance=' + entity + '&program=' + program + '&paging=false').then(function(response){
                 return response.data.events;
             });            
             return promise;
@@ -1014,6 +1116,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     this.currentSelection = '';
     this.relationshipInfo = '';
     this.optionSets = null;
+    this.attributesById = null;
     
     this.set = function(currentSelection){  
         this.currentSelection = currentSelection;        
@@ -1035,6 +1138,13 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     this.getOptionSets = function(){
         return this.optionSets;
     };    
+    
+    this.setAttributesById = function(attributesById){
+        this.attributesById = attributesById;
+    };
+    this.getAttributesById = function(){
+        return this.attributesById;
+    };  
 })
 
 .service('TEIGridService', function(OrgUnitService, OptionSetService, DateUtils, $translate, AttributesFactory){
@@ -1235,29 +1345,6 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             var dueDate = moment(referenceDate, calendarSetting.momentFormat).add('d', offset)._d;
             dueDate = $filter('date')(dueDate, calendarSetting.keyDateFormat); 
             return dueDate;
-        },
-        getEventOrgUnitName: function(orgUnitId){            
-            if(orgUnitId){
-                OrgUnitService.open().then(function(){
-                    OrgUnitService.get(orgUnitId).then(function(ou){
-                        if(ou){
-                            return ou.n;             
-                        }                                                       
-                    });                            
-                }); 
-            }
-        },
-        setEventOrgUnitName: function(dhis2Event){            
-            if(dhis2Event.orgUnit){
-                OrgUnitService.open().then(function(){
-                    OrgUnitService.get(dhis2Event.orgUnit).then(function(ou){
-                        if(ou){
-                            dhis2Event.eventOrgUnitName = ou.n;
-                            return dhis2Event;                            
-                        }                                                       
-                    });                            
-                }); 
-            }
         },
         reconstruct: function(dhis2Event, programStage, optionSets){
             
