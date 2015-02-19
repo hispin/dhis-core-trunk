@@ -28,13 +28,12 @@ package org.hisp.dhis.dataadmin.action.sqlview;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.opensymphony.xwork2.Action;
+import org.hisp.dhis.common.IllegalQueryException;
 import org.hisp.dhis.i18n.I18n;
+import org.hisp.dhis.sqlview.SqlView;
 import org.hisp.dhis.sqlview.SqlViewService;
 
-import java.util.Map;
-
-import static org.hisp.dhis.sqlview.ResourceTableNameMap.getIgnoredNameMap;
+import com.opensymphony.xwork2.Action;
 
 /**
  * @author Dang Duy Hieu
@@ -43,21 +42,7 @@ public class ValidateAddUpdateSqlViewAction
     implements Action
 {
     private static final String ADD = "add";
-
-    private static final String SEMICOLON = ";";
-
-    private static final String SEPERATE = "|";
-
-    private static final String SPACE = " ";
-
-    private static final String INTO = " into ";
-
-    private static final String REGEX_SELECT_QUERY = "^(?i)\\s*select\\s{1,}.+$";
-
-    private static final String PREFIX_REGEX_IGNORE_TABLES_QUERY = "^(?i).+((?<=[^\\d\\w])(";
-
-    private static final String SUFFIX_REGEX_IGNORE_TABLES_QUERY = ")(?=[^\\d\\w])).*$";
-
+    
     // -------------------------------------------------------------------------
     // Dependencies
     // -------------------------------------------------------------------------
@@ -105,6 +90,13 @@ public class ValidateAddUpdateSqlViewAction
         this.sqlquery = sqlquery;
     }
 
+    private boolean query;
+
+    public void setQuery( boolean query )
+    {
+        this.query = query;
+    }
+
     // -------------------------------------------------------------------------
     // Output
     // -------------------------------------------------------------------------
@@ -123,8 +115,8 @@ public class ValidateAddUpdateSqlViewAction
     @Override
     public String execute()
     {
-        message = "";
-
+        message = null;
+        
         if ( name == null || name.trim().isEmpty() )
         {
             message = i18n.getString( "name_is_null" );
@@ -134,7 +126,7 @@ public class ValidateAddUpdateSqlViewAction
 
         if ( mode.equals( ADD ) && sqlViewService.getSqlView( name ) != null )
         {
-            message = i18n.getString( "name_in_used" );
+            message = i18n.getString( "name_in_use" );
 
             return INPUT;
         }
@@ -146,62 +138,29 @@ public class ValidateAddUpdateSqlViewAction
             return INPUT;
         }
 
-        final String ignoredRegex = this.setUpIgnoredRegex();
-
-        sqlquery = sqlViewService.makeUpForQueryStatement( sqlquery );
-
-        for ( String s : sqlquery.split( SEMICOLON ) )
+        try
         {
-            String tmp = new String( s.toLowerCase() );
-
-            if ( !s.matches( REGEX_SELECT_QUERY ) || tmp.contains( INTO ) )
-            {
-                message = i18n.getString( "sqlquery_is_invalid" ) + "<br/>" + i18n.getString( "sqlquery_is_welformed" );
-
-                return INPUT;
-            }
-
-            if ( tmp.concat( SPACE ).matches( ignoredRegex ) )
-            {
-                message = i18n.getString( "sqlquery_is_not_allowed" );
-
-                return INPUT;
-            }
+            SqlView sqlView = new SqlView( name, sqlquery, false ); // Avoid variable check
+            
+            sqlViewService.validateSqlView( sqlView, null, null );
+        }
+        catch ( IllegalQueryException ex )
+        {
+            message = ex.getMessage();
+            
+            return INPUT;
         }
 
-        message = sqlViewService.testSqlGrammar( sqlquery );
-
-        if ( !message.equals( "" ) )
+        if ( !query )
+        {
+            message = sqlViewService.testSqlGrammar( sqlquery );
+        }
+        
+        if ( message != null )
         {
             return INPUT;
         }
 
         return SUCCESS;
-    }
-
-    // -------------------------------------------------------------------------
-    // Supportive methods
-    // -------------------------------------------------------------------------
-
-    private String setUpIgnoredRegex()
-    {
-        int i = 0;
-        int len = getIgnoredNameMap().size();
-
-        StringBuffer ignoredRegex = new StringBuffer( PREFIX_REGEX_IGNORE_TABLES_QUERY );
-
-        for ( Map.Entry<String, String> entry : getIgnoredNameMap().entrySet() )
-        {
-            ignoredRegex.append( entry.getValue() );
-
-            if ( ++i < len )
-            {
-                ignoredRegex.append( SEPERATE );
-            }
-        }
-
-        ignoredRegex.append( SUFFIX_REGEX_IGNORE_TABLES_QUERY );
-
-        return ignoredRegex.toString();
     }
 }

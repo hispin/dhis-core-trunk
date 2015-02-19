@@ -29,37 +29,37 @@ package org.hisp.dhis.sqlview;
  */
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
 
-import org.hisp.dhis.common.GenericIdentifiableObjectStore;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.hisp.dhis.common.Grid;
+import org.hisp.dhis.common.IllegalQueryException;
 import org.hisp.dhis.system.grid.ListGrid;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * @author Dang Duy Hieu
- * @version $Id DefaultSqlViewService.java July 06, 2010$
  */
 @Transactional
 public class DefaultSqlViewService
     implements SqlViewService
 {
+    private static final Log log = LogFactory.getLog( DefaultSqlViewService.class );
+    
     // -------------------------------------------------------------------------
     // Dependencies
     // -------------------------------------------------------------------------
 
-    private GenericIdentifiableObjectStore<SqlView> sqlViewStore;
+    private SqlViewStore sqlViewStore;
 
-    public void setSqlViewStore( GenericIdentifiableObjectStore<SqlView> sqlViewStore )
+    public void setSqlViewStore( SqlViewStore sqlViewStore )
     {
         this.sqlViewStore = sqlViewStore;
-    }
-
-    private SqlViewExpandStore sqlViewExpandStore;
-
-    public void setSqlViewExpandStore( SqlViewExpandStore sqlViewExpandStore )
-    {
-        this.sqlViewExpandStore = sqlViewExpandStore;
     }
 
     // -------------------------------------------------------------------------
@@ -135,12 +135,6 @@ public class DefaultSqlViewService
     }
 
     @Override
-    public String makeUpForQueryStatement( String query )
-    {
-        return query.replaceAll( "\\s*;\\s+", ";" ).replaceAll( ";+", ";" ).replaceAll( "\\s+", " " ).trim();
-    }
-
-    @Override
     public int getSqlViewCountByName( String name )
     {
         return sqlViewStore.getCountLikeName( name );
@@ -153,35 +147,157 @@ public class DefaultSqlViewService
     @Override
     public boolean viewTableExists( String viewTableName )
     {
-        return sqlViewExpandStore.viewTableExists( viewTableName );
+        return sqlViewStore.viewTableExists( viewTableName );
     }
 
     @Override
-    public String createViewTable( SqlView sqlViewInstance )
+    public String createViewTable( SqlView sqlView )
     {
-        return sqlViewExpandStore.createViewTable( sqlViewInstance );
+        return sqlViewStore.createViewTable( sqlView );
+    }
+    
+    @Override
+    public void createAllViews()
+    {
+        Collection<SqlView> views = getAllSqlViews();
+        
+        for ( SqlView view : views )
+        {
+            if ( !view.isQuery() )
+            {
+                createViewTable( view );
+            }
+        }
     }
 
     @Override
-    public Grid getSqlViewGrid( SqlView sqlView, Map<String, String> criteria )
+    public Grid getSqlViewGrid( SqlView sqlView, Map<String, String> criteria, Map<String, String> variables )
     {
         Grid grid = new ListGrid();
         grid.setTitle( sqlView.getName() );
 
-        sqlViewExpandStore.setUpDataSqlViewTable( grid, sqlView.getViewName(), criteria );
-
+        validateSqlView( sqlView, criteria, variables );
+        
+        if ( sqlView.isQuery() )
+        {
+            final String sql = substituteSql( sqlView.getSqlQuery(), variables );
+            
+            sqlViewStore.executeQuery( grid, sql );
+        }
+        else
+        {
+            sqlViewStore.setUpDataSqlViewTable( grid, sqlView.getViewName(), criteria );
+        }
+        
         return grid;
+    }
+    
+    @Override
+    public String substituteSql( String sql, Map<String, String> variables )
+    {
+        String sqlQuery = sql;
+     
+        if ( variables != null )
+        {
+            for ( String key : variables.keySet() )
+            {
+                if ( key != null && StringUtils.isAlphanumericSpace( key ) )
+                {
+                    final String regex = "\\$\\{(" + key + ")\\}";
+                    final String var = variables.get( key );
+                    
+                    if ( var != null && StringUtils.isAlphanumericSpace( var ) )
+                    {
+                        sqlQuery = sqlQuery.replaceAll( regex, var );
+                    }
+                }
+            }
+        }
+        
+        return sqlQuery;
+    }
+
+    @Override
+    public Set<String> getVariables( String sql )
+    {
+        Set<String> variables = new HashSet<>();
+        
+        Matcher matcher = VARIABLE_PATTERN.matcher( sql );
+        
+        while ( matcher.find() )
+        {
+            variables.add( matcher.group( 1 ) );
+        }
+        
+        return variables;
+    }
+
+    @Override
+    public void validateSqlView( SqlView sqlView, Map<String, String> criteria, Map<String, String> variables )
+        throws IllegalQueryException
+    {
+        String violation = null;
+        
+        if ( sqlView == null || sqlView.getSqlQuery() == null )
+        {
+            violation = "SQL query is null";
+        }
+        
+        final Set<String> sqlVars = getVariables( sqlView.getSqlQuery() );
+        final String sql = sqlView.getSqlQuery();
+        
+        if ( !SELECT_PATTERN.matcher( sqlView.getSqlQuery() ).matches() )
+        {
+            violation = "SQL query must be a select query";
+        }
+        
+        if ( sql.contains( ";" ) && !sql.trim().endsWith( ";" ) )
+        {
+            violation = "SQL query can only contain a single semi-colon at the end of the query";
+        }
+        
+        if ( variables != null && variables.keySet().contains( null ) )
+        {
+            violation = "Variables contains null key";
+        }
+
+        if ( variables != null && variables.values().contains( null ) )
+        {
+            violation = "Variables contains null value";
+        }
+        
+        if ( sqlView.isQuery() && !sqlVars.isEmpty() && ( variables == null || !variables.keySet().containsAll( sqlVars ) ) )
+        {
+            violation = "SQL query contains variables which were not supplied in request: " + sqlVars;
+        }
+        
+        if ( sql.matches( SqlView.getProtectedTablesRegex() ) )
+        {
+            violation = "SQL query contains references to protected tables";
+        }
+        
+        if ( sql.matches( SqlView.getIllegalKeywordsRegex() ) )
+        {
+            violation = "SQL query contains illegal keywords";
+        }
+        
+        if ( violation != null )
+        {
+            log.warn( "Validation failed: " + violation );
+            
+            throw new IllegalQueryException( violation );
+        }
     }
 
     @Override
     public String testSqlGrammar( String sql )
     {
-        return sqlViewExpandStore.testSqlGrammar( sql );
+        return sqlViewStore.testSqlGrammar( sql );
     }
 
     @Override
     public void dropViewTable( String sqlViewTableName )
     {
-        sqlViewExpandStore.dropViewTable( sqlViewTableName );
+        sqlViewStore.dropViewTable( sqlViewTableName );
     }
 }

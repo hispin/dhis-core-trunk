@@ -28,16 +28,24 @@ package org.hisp.dhis.webapi.controller;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.google.common.collect.Lists;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.hisp.dhis.common.DimensionService;
 import org.hisp.dhis.common.DimensionalObject;
-import org.hisp.dhis.common.DxfNamespaces;
 import org.hisp.dhis.common.IdentifiableObjectManager;
 import org.hisp.dhis.common.NameableObject;
 import org.hisp.dhis.common.comparator.IdentifiableObjectNameComparator;
 import org.hisp.dhis.dataset.DataSet;
+import org.hisp.dhis.dxf2.common.TranslateOptions;
 import org.hisp.dhis.node.AbstractNode;
 import org.hisp.dhis.node.Node;
+import org.hisp.dhis.node.NodeUtils;
 import org.hisp.dhis.node.types.CollectionNode;
 import org.hisp.dhis.node.types.RootNode;
 import org.hisp.dhis.webapi.utils.ContextUtils;
@@ -52,12 +60,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import com.google.common.collect.Lists;
 
 @Controller
 @RequestMapping( value = DimensionController.RESOURCE_PATH )
@@ -94,7 +97,7 @@ public class DimensionController
 
     @RequestMapping( value = "/{uid}/items", method = RequestMethod.GET )
     public @ResponseBody RootNode getItems( @PathVariable String uid, @RequestParam Map<String, String> parameters,
-        Model model, HttpServletRequest request, HttpServletResponse response )
+        TranslateOptions translateOptions, Model model, HttpServletRequest request, HttpServletResponse response )
     {
         List<String> fields = Lists.newArrayList( contextService.getParameterValues( "fields" ) );
         List<String> filters = Lists.newArrayList( contextService.getParameterValues( "filter" ) );
@@ -105,13 +108,12 @@ public class DimensionController
         }
 
         List<NameableObject> items = dimensionService.getCanReadDimensionItems( uid );
-
         items = objectFilterService.filter( items, filters );
         Collections.sort( items, IdentifiableObjectNameComparator.INSTANCE );
 
-        RootNode rootNode = new RootNode( "metadata" );
-        rootNode.setDefaultNamespace( DxfNamespaces.DXF_2_0 );
-        rootNode.setNamespace( DxfNamespaces.DXF_2_0 );
+        translate( items, translateOptions );
+
+        RootNode rootNode = NodeUtils.createMetadata();
 
         CollectionNode collectionNode = rootNode.addChild( fieldFilterService.filter( getEntityClass(), items, fields ) );
         collectionNode.setName( "items" );

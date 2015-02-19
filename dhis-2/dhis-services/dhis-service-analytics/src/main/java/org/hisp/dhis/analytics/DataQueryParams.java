@@ -121,7 +121,7 @@ public class DataQueryParams
     /**
      * Indicates that full precision should be provided for values.
      */
-    private boolean skipRounding;
+    protected boolean skipRounding;
     
     /**
      * Indicates i) if the names of all ancestors of the organisation units part
@@ -635,6 +635,14 @@ public class DataQueryParams
     public boolean isAggregationType( AggregationType aggregationType )
     {
         return this.aggregationType != null && this.aggregationType.equals( aggregationType );
+    }
+    
+    /**
+     * Indicates whether an aggregation type is specified.
+     */
+    public boolean hasAggregationType()
+    {
+        return this.aggregationType != null;
     }
 
     /**

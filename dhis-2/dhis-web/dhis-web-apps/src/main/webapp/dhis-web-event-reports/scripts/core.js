@@ -313,7 +313,7 @@ Ext.onReady( function() {
 
 				// hideEmptyRows: boolean (false)
 
-                // countType: string ('events') - 'events', 'tracked_entity_instance'
+                // outputType: string ('EVENT') - 'EVENT', 'TRACKED_ENTITY_INSTANCE', 'ENROLLMENT'
 
                 // aggregationType: string ('default') - 'default', 'count', 'sum'
 
@@ -492,7 +492,7 @@ Ext.onReady( function() {
 					layout.showRowSubTotals = Ext.isBoolean(config.rowSubTotals) ? config.rowSubTotals : (Ext.isBoolean(config.showRowSubTotals) ? config.showRowSubTotals : true);
 					layout.showDimensionLabels = Ext.isBoolean(config.showDimensionLabels) ? config.showDimensionLabels : (Ext.isBoolean(config.showDimensionLabels) ? config.showDimensionLabels : true);
 					layout.hideEmptyRows = Ext.isBoolean(config.hideEmptyRows) ? config.hideEmptyRows : false;
-					layout.countType = Ext.isString(config.countType) && !Ext.isEmpty(config.countType) ? config.countType : 'events';
+					layout.outputType = Ext.isString(config.outputType) && !Ext.isEmpty(config.outputType) ? config.outputType : 'EVENT';
                     layout.aggregationType = Ext.isString(config.aggregationType) ? config.aggregationType : 'default';
 
 					layout.showHierarchy = Ext.isBoolean(config.showHierarchy) ? config.showHierarchy : false;
@@ -974,7 +974,7 @@ Ext.onReady( function() {
 					return name;
 				}
 
-				name += metaData.optionNames[id] || metaData.names[id];
+				name += metaData.booleanNames[id] || metaData.optionNames[id] || metaData.names[id] || id;
 
 				return name;
 			};
@@ -1255,12 +1255,13 @@ Ext.onReady( function() {
                     optionMap = {};
 
                     if (header) {
-                        for (var j = 0, id; j < header.ids.length; j++) {
+                        for (var j = 0, id, name; j < header.ids.length; j++) {
                             id = header.ids[j];
+                            name = xResponse.metaData.booleanNames[id] || xResponse.metaData.optionNames[id] || xResponse.metaData.names[id] || id;
 // TODO, items used?
                             dim.items.push({
                                 id: id,
-                                name: xResponse.metaData.optionNames[id] || xResponse.metaData.names[id] || id
+                                name: name
                             });
                         }
                     }
@@ -1305,7 +1306,7 @@ Ext.onReady( function() {
                     }
                 }
 
-                // Re-layout
+                // re-layout
                 layout = api.layout.Layout(xLayout);
 
                 if (layout) {
@@ -1750,7 +1751,11 @@ Ext.onReady( function() {
                     meta = ['ou', 'pe'],
                     ouHierarchy,
                     names,
-					headers;
+					headers,
+                    booleanNameMap = {
+                        'true': ER.i18n.yes || 'Yes',
+                        'false': ER.i18n.no || 'No'
+                    };
 
 				response = Ext.clone(response);
 				headers = response.headers;
@@ -1759,6 +1764,7 @@ Ext.onReady( function() {
                 names[emptyId] = emptyId;
 
                 response.metaData.optionNames = {};
+                response.metaData.booleanNames = {};
 				response.nameHeaderMap = {};
 				response.idValueMap = {};
 
@@ -1799,8 +1805,8 @@ Ext.onReady( function() {
                         else {
 							var objects = [];
 
-                            for (var j = 0, id, fullId, name, isHierarchy; j < response.rows.length; j++) {
-                                id = response.rows[j][i] || emptyId;
+                            for (var k = 0, id, fullId, name, isHierarchy; k < response.rows.length; k++) {
+                                id = response.rows[k][i] || emptyId;
                                 fullId = header.name + id;
                                 isHierarchy = service.layout.isHierarchy(xLayout, response, id);
 
@@ -1813,12 +1819,18 @@ Ext.onReady( function() {
                                 names[fullId] = name;
 
                                 // update rows
-                                response.rows[j][i] = fullId;
+                                response.rows[k][i] = fullId;
 
                                 // update ou hierarchy
                                 if (isHierarchy) {
 									ouHierarchy[fullId] = ouHierarchy[id];
 								}
+
+                                // update boolean metadata
+                                if (header.type === 'java.lang.Boolean') {
+                                    response.metaData.booleanNames[id] = booleanNameMap[id];
+                                    response.metaData.booleanNames[fullId] = booleanNameMap[id];
+                                }
 
 								objects.push({
 									id: fullId,
@@ -1830,7 +1842,7 @@ Ext.onReady( function() {
                             if (!header.optionSet) {
                                 support.prototype.array.sort(objects, 'ASC', 'sortingId');
                             }
-                            
+
                             header.ids = Ext.Array.pluck(objects, 'id');
                         }
                     }
@@ -2052,6 +2064,16 @@ Ext.onReady( function() {
 					}
 				}
 
+                // values
+                if (view.value) {
+                    paramString += '&value=' + view.value;
+				}
+
+                // aggregation type
+                if (view.aggregationType) {
+                    paramString += '&aggregationType=' + view.aggregationType;
+                }
+
                 // dates
                 if (view.startDate && view.endDate) {
                     paramString += '&startDate=' + view.startDate + '&endDate=' + view.endDate;
@@ -2065,11 +2087,9 @@ Ext.onReady( function() {
                     paramString += '&limit=' + view.topLimit + '&sortOrder=' + (view.sortOrder < 0 ? 'ASC' : 'DESC');
                 }
 
-                // count type
-                if (view.dataType === 'aggregated_values' && view.countType) {
-                    if (view.countType === 'tracked_entity_instances') {
-                        paramString += '&uniqueInstances=true';
-                    }
+                // output type
+                if (view.dataType === 'aggregated_values' && view.outputType) {
+                    paramString += '&outputType=' + view.outputType;
                 }
 
                 // sorting
@@ -2415,7 +2435,7 @@ Ext.onReady( function() {
 
 							// sortable column headers. last dim only.
 							if (i === xColAxis.dims - 1 && doSortableColumnHeaders()) {
-                                
+
 								//condoId = xColAxis.ids[j].split('-').join('');
 								condoId = xColAxis.ids[j];
 							}
@@ -2524,7 +2544,7 @@ Ext.onReady( function() {
                             }]);
                         }
                     }
-                    
+
 	//axisAllObjects = [ [ dim, dim ]
 	//				     [ dim, dim ]
 	//				     [ dim, dim ]

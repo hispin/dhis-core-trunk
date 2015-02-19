@@ -28,8 +28,13 @@ package org.hisp.dhis.webapi.controller;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import java.io.IOException;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.lang.StringUtils;
-import org.hisp.dhis.common.DxfNamespaces;
+import org.hisp.dhis.node.NodeUtils;
 import org.hisp.dhis.node.types.CollectionNode;
 import org.hisp.dhis.node.types.ComplexNode;
 import org.hisp.dhis.node.types.RootNode;
@@ -43,10 +48,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -86,10 +87,7 @@ public class IndexController
 
     private RootNode createRootNode()
     {
-        RootNode rootNode = new RootNode( "metadata" );
-        rootNode.setNamespace( DxfNamespaces.DXF_2_0 );
-        rootNode.setDefaultNamespace( DxfNamespaces.DXF_2_0 );
-
+        RootNode rootNode = NodeUtils.createMetadata();
         CollectionNode collectionNode = rootNode.addChild( new CollectionNode( "resources" ) );
 
         for ( Schema schema : schemaService.getSchemas() )

@@ -29,6 +29,7 @@ package org.hisp.dhis.dxf2.events.event;
  */
 
 import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstance;
+import org.hisp.dhis.dxf2.common.IdSchemes;
 import org.hisp.dhis.event.EventStatus;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.program.Program;
@@ -45,4 +46,7 @@ public interface EventStore
 {
     List<Event> getAll( Program program, ProgramStage programStage, ProgramStatus programStatus, Boolean followUp, List<OrganisationUnit> organisationUnits,
         TrackedEntityInstance trackedEntityInstance, Date startDate, Date endDate, EventStatus status );
+
+    List<Event> getAll( Program program, ProgramStage programStage, ProgramStatus programStatus, Boolean followUp, List<OrganisationUnit> organisationUnits,
+        TrackedEntityInstance trackedEntityInstance, Date startDate, Date endDate, EventStatus status, IdSchemes idSchemes );
 }

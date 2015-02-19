@@ -484,6 +484,12 @@ public class TableAlteror
         // reporttable col/row subtotals
         executeSql( "update reporttable set colsubtotals = subtotals where colsubtotals is null" );
         executeSql( "update reporttable set rowsubtotals = subtotals where rowsubtotals is null" );
+        
+        // reporttable upgrade counttype to outputtype
+        executeSql( "update eventreport set outputtype = 'EVENT' where outputtype is null and counttype = 'events'" );
+        executeSql( "update eventreport set outputtype = 'TRACKED_ENTITY_INSTANCE' where outputtype is null and counttype = 'tracked_entity_instances'" );
+        executeSql( "update eventreport set outputtype = 'EVENT' where outputtype is null" );
+        executeSql( "alter table eventreport drop column counttype" );
 
         executeSql( "update chart set reportingmonth = false where reportingmonth is null" );
         executeSql( "update chart set reportingbimonth = false where reportingbimonth is null" );
@@ -522,7 +528,13 @@ public class TableAlteror
 
         // eventreport col/row subtotals
         executeSql( "update eventreport set colsubtotals = subtotals where colsubtotals is null" );
-        executeSql( "update eventreport set rowsubtotals = subtotals where rowsubtotals is null" );        
+        executeSql( "update eventreport set rowsubtotals = subtotals where rowsubtotals is null" );
+        
+        // eventchart upgrade counttype to outputtype
+        executeSql( "update eventchart set outputtype = 'EVENT' where outputtype is null and counttype = 'events'" );
+        executeSql( "update eventchart set outputtype = 'TRACKED_ENTITY_INSTANCE' where outputtype is null and counttype = 'tracked_entity_instances'" );
+        executeSql( "update eventchart set outputtype = 'EVENT' where outputtype is null" );
+        executeSql( "alter table eventchart drop column counttype" );
 
         executeSql( "update eventchart set sortorder = 0 where sortorder is null" );
 
@@ -695,10 +707,13 @@ public class TableAlteror
         executeSql( "alter table validationrulegroup rename column validationgroupid to validationrulegroupid" );
         executeSql( "update sqlview set sqlviewid=viweid" );
         executeSql( "alter table sqlview drop column viewid" );
+        executeSql( "update sqlview set query = false where query is null" );
 
         executeSql( "UPDATE dashboard SET publicaccess='--------' WHERE publicaccess is null" );
 
-        executeSql( "UPDATE optionset SET version=1 WHERE version IS NULL" );
+        executeSql( "UPDATE optionset SET version=0 WHERE version IS NULL" );
+        executeSql( "UPDATE dataset SET version=0 WHERE version IS NULL" );
+        executeSql( "UPDATE program SET version=0 WHERE version IS NULL" );
 
         executeSql( "ALTER TABLE datavalue ALTER COLUMN lastupdated TYPE timestamp" );
         executeSql( "ALTER TABLE completedatasetregistration ALTER COLUMN date TYPE timestamp" );

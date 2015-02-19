@@ -28,30 +28,39 @@ package org.hisp.dhis.eventreport;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.hisp.dhis.analytics.AggregationType;
+import org.hisp.dhis.analytics.EventOutputType;
 import org.hisp.dhis.common.BaseAnalyticalObject;
+import org.hisp.dhis.common.BaseDimensionalObject;
 import org.hisp.dhis.common.BaseIdentifiableObject;
 import org.hisp.dhis.common.DxfNamespaces;
 import org.hisp.dhis.common.EventAnalyticalObject;
 import org.hisp.dhis.common.IdentifiableObject;
 import org.hisp.dhis.common.MergeStrategy;
+import org.hisp.dhis.common.NameableObject;
 import org.hisp.dhis.common.view.DetailedView;
 import org.hisp.dhis.common.view.DimensionalView;
 import org.hisp.dhis.common.view.ExportView;
+import org.hisp.dhis.dataelement.DataElement;
 import org.hisp.dhis.i18n.I18nFormat;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.program.Program;
 import org.hisp.dhis.program.ProgramStage;
+import org.hisp.dhis.trackedentity.TrackedEntityAttribute;
 import org.hisp.dhis.user.User;
+import org.hisp.dhis.util.ObjectUtils;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 /**
  * @author Lars Helge Overland
@@ -62,12 +71,7 @@ public class EventReport
     implements EventAnalyticalObject
 {
     public static final String DATA_TYPE_AGGREGATED_VALUES = "aggregated_values";
-
     public static final String DATA_TYPE_INDIVIDUAL_CASES = "individual_cases";
-
-    public static final String COUNT_TYPE_EVENTS = "events";
-
-    public static final String COUNT_TYPE_TRACKED_ENTITY_INSTANCES = "tracked_entity_instances";
 
     /**
      * Program. Required.
@@ -88,7 +92,22 @@ public class EventReport
      * End date.
      */
     private Date endDate;
-
+    
+    /**
+     * Data element value dimension.
+     */
+    private DataElement dataElementValueDimension;
+    
+    /**
+     * Attribute value dimension.
+     */
+    private TrackedEntityAttribute attributeValueDimension;
+    
+    /**
+     * Aggregation type.
+     */
+    private AggregationType aggregationType;
+    
     /**
      * Type of data, can be aggregated values and individual cases.
      */
@@ -130,10 +149,10 @@ public class EventReport
     private boolean colSubTotals;
 
     /**
-     * Indicates count type.
+     * Indicates output type.
      */
-    private String countType;
-
+    private EventOutputType outputType;
+    
     /**
      * Indicates rendering of empty rows for the table.
      */
@@ -158,6 +177,15 @@ public class EventReport
      * The font size of the text in the table.
      */
     private boolean showDimensionLabels;
+
+    // -------------------------------------------------------------------------
+    // Analytical properties
+    // -------------------------------------------------------------------------
+
+    /**
+     * Value dimension.
+     */
+    private transient NameableObject value;
 
     // -------------------------------------------------------------------------
     // Constructors
@@ -200,6 +228,8 @@ public class EventReport
         {
             filters.addAll( getDimensionalObjectList( filter ) );
         }
+        
+        value = ObjectUtils.firstNonNull( dataElementValueDimension, attributeValueDimension );
     }
 
     // -------------------------------------------------------------------------
@@ -262,6 +292,47 @@ public class EventReport
     public void setEndDate( Date endDate )
     {
         this.endDate = endDate;
+    }
+
+    @JsonProperty
+    @JsonSerialize( as = BaseIdentifiableObject.class )
+    @JsonView( { DetailedView.class, ExportView.class, DimensionalView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public DataElement getDataElementValueDimension()
+    {
+        return dataElementValueDimension;
+    }
+
+    public void setDataElementValueDimension( DataElement dataElementValueDimension )
+    {
+        this.dataElementValueDimension = dataElementValueDimension;
+    }
+
+    @JsonProperty
+    @JsonSerialize( as = BaseIdentifiableObject.class )
+    @JsonView( { DetailedView.class, ExportView.class, DimensionalView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public TrackedEntityAttribute getAttributeValueDimension()
+    {
+        return attributeValueDimension;
+    }
+
+    public void setAttributeValueDimension( TrackedEntityAttribute attributeValueDimension )
+    {
+        this.attributeValueDimension = attributeValueDimension;
+    }
+
+    @JsonProperty
+    @JsonView( { DetailedView.class, ExportView.class, DimensionalView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public AggregationType getAggregationType()
+    {
+        return aggregationType;
+    }
+
+    public void setAggregationType( AggregationType aggregationType )
+    {
+        this.aggregationType = aggregationType;
     }
 
     @JsonProperty
@@ -387,14 +458,14 @@ public class EventReport
     @JsonProperty
     @JsonView( { DetailedView.class, ExportView.class, DimensionalView.class } )
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
-    public String getCountType()
+    public EventOutputType getOutputType()
     {
-        return countType;
+        return outputType;
     }
 
-    public void setCountType( String countType )
+    public void setOutputType( EventOutputType outputType )
     {
-        this.countType = countType;
+        this.outputType = outputType;
     }
 
     @JsonProperty
@@ -449,6 +520,29 @@ public class EventReport
         this.showDimensionLabels = showDimensionLabels;
     }
 
+    // -------------------------------------------------------------------------
+    // Analytical properties
+    // -------------------------------------------------------------------------
+
+    @JsonProperty
+    @JsonDeserialize( as = BaseDimensionalObject.class )
+    @JsonSerialize( as = BaseDimensionalObject.class )
+    @JsonView( { DimensionalView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public NameableObject getValue()
+    {
+        return value;
+    }
+
+    public void setValue( NameableObject value )
+    {
+        this.value = value;
+    }
+
+    // -------------------------------------------------------------------------
+    // Merge with
+    // -------------------------------------------------------------------------
+
     @Override
     public void mergeWith( IdentifiableObject other, MergeStrategy strategy )
     {
@@ -456,47 +550,53 @@ public class EventReport
 
         if ( other.getClass().isInstance( this ) )
         {
-            EventReport eventReport = (EventReport) other;
+            EventReport report = (EventReport) other;
 
-            rowSubTotals = eventReport.isRowSubTotals();
-            colSubTotals = eventReport.isColSubTotals();
-            hideEmptyRows = eventReport.isHideEmptyRows();
-            rowTotals = eventReport.isRowTotals();
-            colTotals = eventReport.isColTotals();
-            showHierarchy = eventReport.isShowHierarchy();
-            showDimensionLabels = eventReport.isShowDimensionLabels();
+            rowSubTotals = report.isRowSubTotals();
+            colSubTotals = report.isColSubTotals();
+            hideEmptyRows = report.isHideEmptyRows();
+            rowTotals = report.isRowTotals();
+            colTotals = report.isColTotals();
+            showHierarchy = report.isShowHierarchy();
+            showDimensionLabels = report.isShowDimensionLabels();
 
             if ( MergeStrategy.MERGE_ALWAYS.equals( strategy ) )
             {
-                dataType = eventReport.getDataType();
-                program = eventReport.getProgram();
-                programStage = eventReport.getProgramStage();
-                startDate = eventReport.getStartDate();
-                endDate = eventReport.getEndDate();
-                countType = eventReport.getCountType();
-                displayDensity = eventReport.getDisplayDensity();
-                fontSize = eventReport.getFontSize();
+                dataElementValueDimension = report.getDataElementValueDimension();
+                attributeValueDimension = report.getAttributeValueDimension();
+                aggregationType = report.getAggregationType();
+                dataType = report.getDataType();
+                program = report.getProgram();
+                programStage = report.getProgramStage();
+                startDate = report.getStartDate();
+                endDate = report.getEndDate();
+                outputType = report.getOutputType();
+                displayDensity = report.getDisplayDensity();
+                fontSize = report.getFontSize();
             }
             else if ( MergeStrategy.MERGE_IF_NOT_NULL.equals( strategy ) )
             {
-                dataType = eventReport.getDataType() == null ? dataType : eventReport.getDataType();
-                program = eventReport.getProgram() == null ? program : eventReport.getProgram();
-                programStage = eventReport.getProgramStage() == null ? programStage : eventReport.getProgramStage();
-                startDate = eventReport.getStartDate() == null ? startDate : eventReport.getStartDate();
-                endDate = eventReport.getEndDate() == null ? endDate : eventReport.getEndDate();
-                countType = eventReport.getCountType() == null ? countType : eventReport.getCountType();
-                displayDensity = eventReport.getDisplayDensity() == null ? displayDensity : eventReport.getDisplayDensity();
-                fontSize = eventReport.getFontSize() == null ? fontSize : eventReport.getFontSize();
+                dataElementValueDimension = report.getDataElementValueDimension() == null ? dataElementValueDimension : report.getDataElementValueDimension();
+                attributeValueDimension = report.getAttributeValueDimension() == null ? attributeValueDimension : report.getAttributeValueDimension();
+                aggregationType = report.getAggregationType() == null ? aggregationType : report.getAggregationType();
+                dataType = report.getDataType() == null ? dataType : report.getDataType();
+                program = report.getProgram() == null ? program : report.getProgram();
+                programStage = report.getProgramStage() == null ? programStage : report.getProgramStage();
+                startDate = report.getStartDate() == null ? startDate : report.getStartDate();
+                endDate = report.getEndDate() == null ? endDate : report.getEndDate();
+                outputType = report.getOutputType() == null ? outputType : report.getOutputType();
+                displayDensity = report.getDisplayDensity() == null ? displayDensity : report.getDisplayDensity();
+                fontSize = report.getFontSize() == null ? fontSize : report.getFontSize();
             }
 
             columnDimensions.clear();
-            columnDimensions.addAll( eventReport.getColumnDimensions() );
+            columnDimensions.addAll( report.getColumnDimensions() );
 
             rowDimensions.clear();
-            rowDimensions.addAll( eventReport.getRowDimensions() );
+            rowDimensions.addAll( report.getRowDimensions() );
 
             filterDimensions.clear();
-            filterDimensions.addAll( eventReport.getFilterDimensions() );
+            filterDimensions.addAll( report.getFilterDimensions() );
         }
     }
 }

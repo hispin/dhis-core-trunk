@@ -63,7 +63,14 @@ function insertDataElement( element ) {
   var programStageId = getFieldValue('programStageId');
   var dataElementId = element.options[element.selectedIndex].value;
 
-  insertTextCommon('expression', "[DE:" + programStageId + "." + dataElementId + "]");
+  insertTextCommon('expression', "#{" + programStageId + "." + dataElementId + "}");
+  getConditionDescription();
+}
+
+function insertData( element, key ){
+   var attributeId = element.options[element.selectedIndex].value;
+
+  insertTextCommon('expression', key + "{" + attributeId + "}");
   getConditionDescription();
 }
 
@@ -87,12 +94,28 @@ function insertOperator( value ) {
 }
 
 function getConditionDescription() {
-  $.postJSON('getProgramIndicatorDescripttion.action',
-    {
-      expression: getFieldValue('expression')
-    }, function( json ) {
-      byId('aggregationDescription').innerHTML = json.message;
-    })
+	var  expression = getFieldValue('expression');
+	if( expression == '' )
+	{
+		setInnerHTML('aggregationDescription', '');
+	}
+	else
+	{
+	  $.postJSON('getProgramIndicatorDescription.action',
+		{
+		  expression: expression
+		}, function( json ) {
+			if( json.response =='error' ){
+				setFieldValue('checkExpression','');
+				$('#aggregationDescription').css('color','red');
+			}
+			else{
+				setFieldValue('checkExpression', json.message);
+				$('#aggregationDescription').css('color','black');
+			}
+			setInnerHTML('aggregationDescription', json.message);
+		});
+	}
 }
 
 function programIndicatorOnChange() {

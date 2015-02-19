@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.hisp.dhis.analytics.DataQueryParams;
+import org.hisp.dhis.analytics.EventOutputType;
 import org.hisp.dhis.analytics.Partitions;
 import org.hisp.dhis.analytics.SortOrder;
 import org.hisp.dhis.common.DimensionalObject;
@@ -65,7 +66,9 @@ public class EventQueryParams
     private List<QueryItem> items = new ArrayList<>();
     
     private List<QueryItem> itemFilters = new ArrayList<>();
-
+    
+    private NameableObject value;
+    
     private List<String> asc = new ArrayList<>();
     
     private List<String> desc = new ArrayList<>();
@@ -80,7 +83,7 @@ public class EventQueryParams
     
     private Integer limit;
     
-    private boolean uniqueInstances;
+    private EventOutputType outputType;
     
     private boolean coordinatesOnly;
     
@@ -107,8 +110,9 @@ public class EventQueryParams
 
         params.dimensions = new ArrayList<>( this.dimensions );
         params.filters = new ArrayList<>( this.filters );
-        params.aggregationType = this.aggregationType;
         params.displayProperty = this.displayProperty;
+        params.aggregationType = this.aggregationType;
+        params.skipRounding = this.skipRounding;
 
         params.partitions = new Partitions( this.partitions );
         params.periodType = this.periodType;
@@ -119,6 +123,7 @@ public class EventQueryParams
         params.endDate = this.endDate;
         params.items = new ArrayList<>( this.items );
         params.itemFilters = new ArrayList<>( this.itemFilters );
+        params.value = this.value;
         params.asc = new ArrayList<>( this.asc );
         params.desc = new ArrayList<>( this.desc );
         params.organisationUnitMode = this.organisationUnitMode;
@@ -126,7 +131,7 @@ public class EventQueryParams
         params.pageSize = this.pageSize;
         params.sortOrder = this.sortOrder;
         params.limit = this.limit;
-        params.uniqueInstances = this.uniqueInstances;
+        params.outputType = this.outputType;
         params.coordinatesOnly = this.coordinatesOnly;
         
         params.periodType = this.periodType;
@@ -184,6 +189,27 @@ public class EventQueryParams
         }
         
         return duplicates;
+    }
+    
+    /**
+     * Get NameableObjects part of items and item filters.
+     * @return
+     */
+    public Set<NameableObject> getNameableObjectItems()
+    {
+        Set<NameableObject> objects = new HashSet<NameableObject>();
+        
+        for ( QueryItem item : items )
+        {
+            objects.add( item.getItem() );
+        }
+        
+        for ( QueryItem item : itemFilters )
+        {
+            objects.add( item.getItem() );
+        }
+        
+        return objects;
     }
     
     public boolean isOrganisationUnitMode( String mode )
@@ -244,6 +270,11 @@ public class EventQueryParams
         return limit != null && limit > 0;
     }
     
+    public boolean hasValueDimension()
+    {
+        return value != null;
+    }
+        
     /**
      * Indicates whether the program of this query requires registration of
      * tracked entity instances.
@@ -269,8 +300,10 @@ public class EventQueryParams
             "Stage: " + programStage + ", " +
             "Start date: " + startDate + ", " +
             "End date: " + endDate + ", " +
-            "Items " + items + ", " +
+            "Items: " + items + ", " +
             "Item filters: " + itemFilters + ", " +
+            "Value: " + value + ", " +
+            "Aggregation type: " + aggregationType + ", " +
             "Dimensions: " + dimensions + ", " +
             "Filters: " + filters + "]";
     }
@@ -337,6 +370,16 @@ public class EventQueryParams
     public void setItemFilters( List<QueryItem> itemFilters )
     {
         this.itemFilters = itemFilters;
+    }
+
+    public NameableObject getValue()
+    {
+        return value;
+    }
+
+    public void setValue( NameableObject value )
+    {
+        this.value = value;
     }
 
     public List<String> getAsc()
@@ -421,14 +464,14 @@ public class EventQueryParams
         this.limit = limit;
     }
     
-    public boolean isUniqueInstances()
+    public EventOutputType getOutputType()
     {
-        return uniqueInstances;
+        return outputType;
     }
 
-    public void setUniqueInstances( boolean uniqueInstances )
+    public void setOutputType( EventOutputType outputType )
     {
-        this.uniqueInstances = uniqueInstances;
+        this.outputType = outputType;
     }
 
     public boolean isCoordinatesOnly()

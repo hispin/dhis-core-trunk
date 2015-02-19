@@ -28,14 +28,6 @@ package org.hisp.dhis.schema;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.util.List;
-import java.util.Map;
-
-import org.hisp.dhis.common.DxfNamespaces;
-import org.hisp.dhis.common.IdentifiableObject;
-import org.hisp.dhis.common.NameableObject;
-import org.springframework.core.Ordered;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
@@ -45,6 +37,13 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.hisp.dhis.common.DxfNamespaces;
+import org.hisp.dhis.common.IdentifiableObject;
+import org.hisp.dhis.common.NameableObject;
+import org.springframework.core.Ordered;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -323,6 +322,11 @@ public class Schema implements Ordered
         return Lists.newArrayList( propertyMap.values() );
     }
 
+    public boolean haveProperty( String propertyName )
+    {
+        return getPropertyMap().containsKey( propertyName );
+    }
+
     @JsonIgnore
     public Map<String, Property> getPropertyMap()
     {
@@ -332,6 +336,16 @@ public class Schema implements Ordered
     public void setPropertyMap( Map<String, Property> propertyMap )
     {
         this.propertyMap = propertyMap;
+    }
+
+    public void addProperty( Property property )
+    {
+        if ( property == null || property.getName() == null || propertyMap.containsKey( property.getName() ) )
+        {
+            return;
+        }
+
+        propertyMap.put( property.getName(), property );
     }
 
     @JsonIgnore

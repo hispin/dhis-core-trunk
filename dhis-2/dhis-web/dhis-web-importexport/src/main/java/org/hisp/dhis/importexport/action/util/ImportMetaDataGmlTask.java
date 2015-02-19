@@ -31,7 +31,7 @@ package org.hisp.dhis.importexport.action.util;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hisp.dhis.dxf2.gml.GmlImportService;
-import org.hisp.dhis.dxf2.metadata.ImportOptions;
+import org.hisp.dhis.dxf2.common.ImportOptions;
 
 import org.hisp.dhis.scheduling.TaskId;
 
@@ -47,6 +47,10 @@ public class ImportMetaDataGmlTask
 {
     private static final Log log = LogFactory.getLog( ImportMetaDataGmlTask.class );
 
+    private TaskId taskId;
+
+    private String userUid;
+
     // -------------------------------------------------------------------------
     // Dependencies
     // -------------------------------------------------------------------------
@@ -56,10 +60,6 @@ public class ImportMetaDataGmlTask
     private ImportOptions importOptions;
 
     private InputStream inputStream;
-
-    private TaskId taskId;
-
-    private String userUid;
 
     // -------------------------------------------------------------------------
     // Constructors

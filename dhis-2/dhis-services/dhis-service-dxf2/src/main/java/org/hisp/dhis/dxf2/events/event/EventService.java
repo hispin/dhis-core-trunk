@@ -31,7 +31,8 @@ package org.hisp.dhis.dxf2.events.event;
 import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.dxf2.importsummary.ImportSummaries;
 import org.hisp.dhis.dxf2.importsummary.ImportSummary;
-import org.hisp.dhis.dxf2.metadata.ImportOptions;
+import org.hisp.dhis.dxf2.common.ImportOptions;
+import org.hisp.dhis.dxf2.common.IdSchemes;
 import org.hisp.dhis.event.EventStatus;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.program.Program;
@@ -58,6 +59,9 @@ public interface EventService
 
     Events getEvents( Program program, ProgramStage programStage, ProgramStatus programStatus, Boolean followUp, List<OrganisationUnit> organisationUnit,
         TrackedEntityInstance trackedEntityInstance, Date startDate, Date endDate, EventStatus status );
+
+    Events getEvents( Program program, ProgramStage programStage, ProgramStatus programStatus, Boolean followUp, List<OrganisationUnit> organisationUnit,
+        TrackedEntityInstance trackedEntityInstance, Date startDate, Date endDate, EventStatus status, IdSchemes idSchemes );
 
     Event getEvent( String uid );
 

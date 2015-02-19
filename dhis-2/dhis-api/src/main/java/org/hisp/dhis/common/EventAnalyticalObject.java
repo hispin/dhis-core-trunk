@@ -30,8 +30,11 @@ package org.hisp.dhis.common;
 
 import java.util.Date;
 
+import org.hisp.dhis.analytics.EventOutputType;
+import org.hisp.dhis.dataelement.DataElement;
 import org.hisp.dhis.program.Program;
 import org.hisp.dhis.program.ProgramStage;
+import org.hisp.dhis.trackedentity.TrackedEntityAttribute;
 
 /**
  * @author Lars Helge Overland
@@ -46,4 +49,20 @@ public interface EventAnalyticalObject
     Date getStartDate();
     
     Date getEndDate();
+    
+    EventOutputType getOutputType();
+    
+    NameableObject getValue();
+
+    // -------------------------------------------------------------------------
+    // Base class emulation methods
+    // -------------------------------------------------------------------------
+    
+    DataElement getDataElementValueDimension();
+
+    void setDataElementValueDimension( DataElement dataElementValueDimension );
+
+    TrackedEntityAttribute getAttributeValueDimension();
+    
+    void setAttributeValueDimension( TrackedEntityAttribute attributeValueDimension );   
 }

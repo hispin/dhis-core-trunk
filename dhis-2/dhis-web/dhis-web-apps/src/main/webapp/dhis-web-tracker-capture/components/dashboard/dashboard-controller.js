@@ -21,7 +21,7 @@ trackerCapture.controller('DashboardController',
     $scope.selectedProgramId = ($location.search()).program; 
     $scope.selectedOrgUnit = storage.get('SELECTED_OU');
     $scope.selectedProgram;    
-    $scope.selectedTei;   
+    $scope.selectedTei;
     
     //dashboard items   
     var getDashboardLayout = function(){        
@@ -39,45 +39,45 @@ trackerCapture.controller('DashboardController',
                 selectedLayout = $scope.dashboardLayouts [$scope.selectedProgram.id] ? $scope.dashboardLayouts [$scope.selectedProgram.id] : selectedLayout;
             }
 
-            for(var widget in selectedLayout.widgets){
-                switch(selectedLayout.widgets[widget].title){
+            angular.forEach(selectedLayout.widgets, function(widget){
+                switch(widget.title){
                     case 'enrollment':
-                        $rootScope.enrollmentWidget = selectedLayout.widgets[widget];
+                        $rootScope.enrollmentWidget = widget;
                         $rootScope.dashboardWidgets.push($rootScope.enrollmentWidget);
-                        $scope.dashboardStatus[widget] = selectedLayout.widgets[widget];
+                        $scope.dashboardStatus[widget.title] = angular.copy(widget);
                         break;
                     case 'dataentry':
-                        $rootScope.dataentryWidget = selectedLayout.widgets[widget];
+                        $rootScope.dataentryWidget = widget;
                         $rootScope.dashboardWidgets.push($rootScope.dataentryWidget);
-                        $scope.dashboardStatus[widget] = selectedLayout.widgets[widget];
+                        $scope.dashboardStatus[widget.title] = angular.copy(widget);
                         break;
                     case 'report':
-                        $rootScope.reportWidget = selectedLayout.widgets[widget];
+                        $rootScope.reportWidget = widget;
                         $rootScope.dashboardWidgets.push($rootScope.reportWidget);
-                        $scope.dashboardStatus[widget] = selectedLayout.widgets[widget];
+                        $scope.dashboardStatus[widget.title] = angular.copy(widget);
                         break;
                     case 'current_selections':
-                        $rootScope.selectedWidget = selectedLayout.widgets[widget];
+                        $rootScope.selectedWidget = widget;
                         $rootScope.dashboardWidgets.push($rootScope.selectedWidget);
-                        $scope.dashboardStatus[widget] = selectedLayout.widgets[widget];
+                        $scope.dashboardStatus[widget.title] = angular.copy(widget);
                         break;
                     case 'profile':
-                        $rootScope.profileWidget = selectedLayout.widgets[widget];
+                        $rootScope.profileWidget = widget;
                         $rootScope.dashboardWidgets.push($rootScope.profileWidget);
-                        $scope.dashboardStatus[widget] = selectedLayout.widgets[widget];
+                        $scope.dashboardStatus[widget.title] = angular.copy(widget);
                         break;
                     case 'relationships':
-                        $rootScope.relationshipWidget = selectedLayout.widgets[widget];
+                        $rootScope.relationshipWidget = widget;
                         $rootScope.dashboardWidgets.push($rootScope.relationshipWidget);
-                        $scope.dashboardStatus[widget] = selectedLayout.widgets[widget];
+                        $scope.dashboardStatus[widget.title] = angular.copy(widget);
                         break;    
                     case 'notes':
-                        $rootScope.notesWidget = selectedLayout.widgets[widget];
+                        $rootScope.notesWidget = widget;
                         $rootScope.dashboardWidgets.push($rootScope.notesWidget);
-                        $scope.dashboardStatus[widget] = selectedLayout.widgets[widget];
+                        $scope.dashboardStatus[widget.title] = angular.copy(widget);
                         break;    
                 }
-            }
+            });
 
             angular.forEach(orderByFilter($filter('filter')($scope.dashboardWidgets, {parent: "biggerWidget"}), 'order'), function(w){
                 $scope.dashboardWidgetsOrder.biggerWidgets.push(w.title);
@@ -86,6 +86,8 @@ trackerCapture.controller('DashboardController',
             angular.forEach(orderByFilter($filter('filter')($scope.dashboardWidgets, {parent: "smallerWidget"}), 'order'), function(w){
                 $scope.dashboardWidgetsOrder.smallerWidgets.push(w.title);
             });
+            
+            $scope.broadCastSelections();
         });        
     };
     
@@ -118,11 +120,18 @@ trackerCapture.controller('DashboardController',
                         ProgramFactory.getAll().then(function(programs){
                             $scope.programs = [];
 
+                            $scope.programNames = [];  
+                            $scope.programStageNames = [];        
+                            
                             //get programs valid for the selected ou and tei
                             angular.forEach(programs, function(program){
+                                $scope.programNames[program.id] = {id: program.id, name: program.name};
+                                angular.forEach(program.programStages, function(stage){                
+                                    $scope.programStageNames[stage.id] = {id: stage.id, name: stage.name};
+                                });
                                 if(program.organisationUnits.hasOwnProperty($scope.selectedOrgUnit.id) &&
                                    program.trackedEntity.id === $scope.selectedTei.trackedEntity){
-                                    $scope.programs.push(program);
+                                    $scope.programs.push(program);                                    
                                 }
 
                                 if($scope.selectedProgramId && program.id === $scope.selectedProgramId || selectedEnrollment && selectedEnrollment.program === program.id){
@@ -130,11 +139,9 @@ trackerCapture.controller('DashboardController',
                                 }
                             });
                             
-                            getDashboardLayout();                            
-
-                            //broadcast selected items for dashboard controllers
-                            CurrentSelection.set({tei: $scope.selectedTei, te: $scope.trackedEntity, prs: $scope.programs, pr: $scope.selectedProgram, enrollments: response.enrollments, selectedEnrollment: selectedEnrollment, optionSets: $scope.optionSets});
-                            $scope.broadCastSelections();                        
+                            //prepare selected items for broadcast
+                            CurrentSelection.set({tei: $scope.selectedTei, te: $scope.trackedEntity, prs: $scope.programs, pr: $scope.selectedProgram, prNames: $scope.programNames, prStNames: $scope.programStageNames, enrollments: response.enrollments, selectedEnrollment: selectedEnrollment, optionSets: $scope.optionSets});                            
+                            getDashboardLayout();                    
                         });
                     });
                 });            
@@ -177,12 +184,15 @@ trackerCapture.controller('DashboardController',
                     $scope.orderChanged = true;
                 }
             }
+            
+            if($scope.orderChanged){
+                saveDashboardLayout();
+            }
         }
     });
     
     $scope.applySelectedProgram = function(){
         getDashboardLayout();
-        $scope.broadCastSelections(); 
     };
     
     $scope.broadCastSelections = function(){
@@ -192,10 +202,10 @@ trackerCapture.controller('DashboardController',
         $scope.trackedEntity = selections.te;
         $scope.optionSets = selections.optionSets;
         
-        CurrentSelection.set({tei: $scope.selectedTei, te: $scope.trackedEntity, prs: $scope.programs, pr: $scope.selectedProgram, enrollments: selections.enrollments, selectedEnrollment: null, optionSets: $scope.optionSets});
+        CurrentSelection.set({tei: $scope.selectedTei, te: $scope.trackedEntity, prs: $scope.programs, pr: $scope.selectedProgram, prNames: $scope.programNames, prStNames: $scope.programStageNames, enrollments: selections.enrollments, selectedEnrollment: null, optionSets: $scope.optionSets});        
         $timeout(function() { 
             $rootScope.$broadcast('selectedItems', {programExists: $scope.programs.length > 0});            
-        }, 100); 
+        }, 100);
     };     
     
     $scope.back = function(){
@@ -209,27 +219,15 @@ trackerCapture.controller('DashboardController',
     
     $scope.removeWidget = function(widget){        
         widget.show = false;
-        trackWidgetStatusChange(widget);
+        saveDashboardLayout();
     };
     
     $scope.expandCollapse = function(widget){
         widget.expand = !widget.expand;
-        trackWidgetStatusChange(widget);
+        saveDashboardLayout();;
     };
     
-    var trackWidgetStatusChange = function(widget){
-        var w = $scope.dashboardStatus[widget.title];
-        
-        if(!angular.equals(w, widget) && $scope.widgetsChanged.indexOf(widget.title) === -1){
-            $scope.widgetsChanged.push(widget.title);
-        }        
-        if(angular.equals(w, widget) && $scope.widgetsChanged.indexOf(widget.title) !== -1){
-            var idx = $scope.widgetsChanged.indexOf(widget.title);
-            $scope.widgetsChanged.splice(idx,1);
-        }
-    };
-    
-    $scope.saveDashboardLayout = function(){        
+    var saveDashboardLayout = function(){
         var widgets = [];
         angular.forEach($rootScope.dashboardWidgets, function(widget){
             var w = angular.copy(widget);            
@@ -246,22 +244,12 @@ trackerCapture.controller('DashboardController',
             }            
             widgets.push(w);
         });
-        
-        //$scope.dashboardLayouts 
             
         if($scope.selectedProgram && $scope.selectedProgram.id){
             $scope.dashboardLayouts[$scope.selectedProgram.id] = {widgets: widgets, program: $scope.selectedProgram.id};
         }
         
-        DashboardLayoutService.saveLayout($scope.dashboardLayouts).then(function(){            
-            if($scope.selectedProgramId && $scope.selectedProgram && $scope.selectedProgramId === $scope.selectedProgram.id ||
-                    !$scope.selectedProgramId && !$scope.selectedProgram){
-                $route.reload();
-            }
-            else{
-                $location.path('/dashboard').search({tei: $scope.selectedTeiId,                                            
-                                            program: $scope.selectedProgram ? $scope.selectedProgram.id: null});
-            }            
+        DashboardLayoutService.saveLayout($scope.dashboardLayouts).then(function(){
         });
     };
     
@@ -276,6 +264,6 @@ trackerCapture.controller('DashboardController',
     };
     
     $rootScope.closeOpenWidget = function(widget){
-        trackWidgetStatusChange(widget);
+        saveDashboardLayout();
     };
 });

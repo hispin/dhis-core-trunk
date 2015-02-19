@@ -30,8 +30,11 @@ package org.hisp.dhis.sqlview;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.hisp.dhis.common.Grid;
+import org.hisp.dhis.common.IllegalQueryException;
 
 /**
  * @author Dang Duy Hieu
@@ -39,10 +42,16 @@ import org.hisp.dhis.common.Grid;
  */
 public interface SqlViewService
 {
-    String ID = SqlViewService.class.getName();
-
+    final String ID = SqlViewService.class.getName();
+    
+    final String VARIABLE_EXPRESSION = "\\$\\{(\\w+)\\}";
+    final String SELECT_EXPRESSION = "^(?i)\\s*select\\s+.+";
+    
+    final Pattern VARIABLE_PATTERN = Pattern.compile( VARIABLE_EXPRESSION, Pattern.DOTALL );
+    final Pattern SELECT_PATTERN = Pattern.compile( SELECT_EXPRESSION, Pattern.DOTALL );
+    
     // -------------------------------------------------------------------------
-    // SqlView
+    // CRUD
     // -------------------------------------------------------------------------
 
     int saveSqlView( SqlView sqlView );
@@ -67,21 +76,66 @@ public interface SqlViewService
     
     Collection<SqlView> getAllSqlViewsNoAcl();
 
-    String makeUpForQueryStatement( String query );
-
     int getSqlViewCountByName( String name );
     
     // -------------------------------------------------------------------------
-    // SqlView Expanded
+    // SQL view
     // -------------------------------------------------------------------------
 
     boolean viewTableExists( String viewTableName );
 
-    String createViewTable( SqlView sqlViewInstance );
+    String createViewTable( SqlView sqlView );
 
+    void createAllViews();
+    
     void dropViewTable( String viewName );
-
-    Grid getSqlViewGrid( SqlView sqlView, Map<String, String> criteria );
+    
+    /**
+    * Returns the SQL view as a grid.
+    * 
+    * @param sqlView the SQL view to render.
+    * @param criteria the criteria on the format key:value, will be applied as
+    *        criteria on the SQL result set.
+    * @param variables the variables on the format key:value, will be substituted
+    *        with variables inside the SQL view.
+    * @return a grid.
+    */
+    Grid getSqlViewGrid( SqlView sqlView, Map<String, String> criteria, Map<String, String> variables );
+    
+    /**
+     * Substitutes the given SQL query string with the given variables. SQL variables
+     * are on the format ${key}.
+     * 
+     * @param sql the SQL string.
+     * @param variables the variables.
+     * @return the substituted SQL.
+     */
+    String substituteSql( String sql, Map<String, String> variables );
+    
+    /**
+     * Validates the given SQL view. Checks include:
+     * 
+     * <ul>
+     * <li>All necessary variables are supplied.</li>
+     * <li>Variable keys and values do not contain null values.</li>
+     * <li>Invalid tables are not present in SQL query.</li>
+     * </ul>
+     * 
+     * @param sqlView the SQL view.
+     * @param criteria the criteria.
+     * @param variables the variables.
+     * @throws IllegalQueryException if SQL view is invalid.
+     */
+    void validateSqlView( SqlView sqlView, Map<String, String> criteria, Map<String, String> variables )
+        throws IllegalQueryException;
+    
+    /**
+     * Returns the variables contained in the given SQL.
+     * 
+     * @param sql the SQL query string.
+     * @return a set of variable keys.
+     */
+    Set<String> getVariables( String sql );
     
     String testSqlGrammar( String sql );
 }

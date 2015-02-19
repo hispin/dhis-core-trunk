@@ -395,7 +395,9 @@ Ext.onReady( function() {
 				return record;
             },
             setRecord: function(record) {
-                this.valueCmp.setValue(record.filter);
+				if (record.filter) {
+					this.valueCmp.setValue(record.filter.split(':')[1]);
+                }
             },
             initComponent: function() {
                 var container = this;
@@ -413,12 +415,12 @@ Ext.onReady( function() {
                     editable: false,
                     width: operatorCmpWidth + valueCmpWidth,
                     style: 'margin-bottom:0',
-                    value: 'false',
+                    value: 'true',
                     store: {
                         fields: ['id', 'name'],
                         data: [
-                            {id: 'true', name: 'Yes'},
-                            {id: 'false', name: 'No'}
+                            {id: 'true', name: ER.i18n.yes},
+                            {id: 'false', name: ER.i18n.no}
                         ]
                     }
                 });
@@ -1004,7 +1006,9 @@ Ext.onReady( function() {
             fixedFilterStore,
 			filter,
 			filterStore,
+            onValueSelect,
 			value,
+            aggregationType,
 
 			getStore,
 			getStoreKeys,
@@ -1021,11 +1025,12 @@ Ext.onReady( function() {
 			window,
 
 			margin = 1,
-			defaultWidth = 160,
+			defaultWidth = 210,
 			defaultHeight = 220,
 			maxHeight = (ns.app.viewport.getHeight() - 100) / 2,
 
-			dataType = 'aggregated_values';
+			dataType = 'aggregated_values',
+            defaultValueId = 'default';
 
 		getStore = function(data) {
 			var config = {};
@@ -1066,6 +1071,17 @@ Ext.onReady( function() {
 		rowStore = getStore();
         fixedFilterStore = getStore();
         filterStore = getStore();
+        valueStore = getStore();
+
+        // store functions
+        valueStore.addDefaultData = function() {
+            if (!this.getById(defaultValueId)) {
+                this.insert(0, {
+                    id: defaultValueId,
+                    name: NS.i18n.number_of_events
+                });
+            }
+        };
 
         fixedFilterStore.setListHeight = function() {
             var fixedFilterHeight = 26 + (this.getRange().length * 21) + 1;
@@ -1087,7 +1103,7 @@ Ext.onReady( function() {
 				height: 25,
 				items: {
 					xtype: 'label',
-					text: NS.i18n.column,
+					text: NS.i18n.column_dimensions,
 					cls: 'ns-toolbar-multiselect-leftright-label'
 				}
 			},
@@ -1111,7 +1127,7 @@ Ext.onReady( function() {
 			cls: 'ns-toolbar-multiselect-leftright',
 			width: defaultWidth,
 			height: defaultHeight,
-			style: 'margin-bottom:0px',
+			style: 'margin-right:' + margin + 'px; margin-bottom:0px',
 			valueField: 'id',
 			displayField: 'name',
 			dragGroup: 'layoutDD',
@@ -1121,7 +1137,7 @@ Ext.onReady( function() {
 				height: 25,
 				items: {
 					xtype: 'label',
-					text: NS.i18n.row,
+					text: NS.i18n.row_dimensions,
 					cls: 'ns-toolbar-multiselect-leftright-label'
 				}
 			},
@@ -1153,7 +1169,7 @@ Ext.onReady( function() {
 				height: 25,
 				items: {
 					xtype: 'label',
-					text: NS.i18n.filter,
+					text: NS.i18n.report_filter,
 					cls: 'ns-toolbar-multiselect-leftright-label'
 				}
 			},
@@ -1179,7 +1195,6 @@ Ext.onReady( function() {
 			store: filterStore,
 			listeners: {
 				afterrender: function(ms) {
-
 					ms.store.on('add', function() {
 						Ext.defer( function() {
 							ms.boundList.getSelectionModel().deselectAll();
@@ -1187,6 +1202,91 @@ Ext.onReady( function() {
 					});
 				}
 			}
+		});
+
+        aggregationType = Ext.create('Ext.form.field.ComboBox', {
+			cls: 'ns-combo h22',
+			width: 70,
+			height: 22,
+			style: 'margin: 0',
+            fieldStyle: 'height: 22px',
+			queryMode: 'local',
+			valueField: 'id',
+			editable: false,
+            disabled: true,
+            value: 'COUNT',
+            disabledValue: 'COUNT',
+            defaultValue: 'AVERAGE',
+            setDisabled: function() {
+                this.setValue(this.disabledValue);
+                this.disable();
+            },
+            setEnabled: function() {
+                this.setValue(this.defaultValue);
+                this.enable();
+            },
+			store: Ext.create('Ext.data.Store', {
+				fields: ['id', 'text'],
+				data: [
+					{id: 'COUNT', text: NS.i18n.count},
+					{id: 'AVERAGE', text: NS.i18n.average},
+					{id: 'SUM', text: NS.i18n.sum},
+					{id: 'STDDEV', text: NS.i18n.stddev},
+					{id: 'VARIANCE', text: NS.i18n.variance},
+					{id: 'MIN', text: NS.i18n.min},
+					{id: 'MAX', text: NS.i18n.max}
+				]
+			}),
+            resetData: function() {
+                this.setDisabled();
+            }
+		});
+
+        onValueSelect = function(id) {
+            if (id === defaultValueId) {
+                aggregationType.setDisabled();
+            }
+            else {
+                aggregationType.setEnabled();
+
+                // remove ux and layout item
+                if (hasDimension(id, valueStore)) {
+                    ns.app.accordion.getUx(id).removeDataElement();
+                }
+            }
+        };
+
+		value = Ext.create('Ext.form.field.ComboBox', {
+			cls: 'ns-combo h24',
+			width: defaultWidth - 4,
+			height: 24,
+            fieldStyle: 'height: 24px',
+			queryMode: 'local',
+			valueField: 'id',
+            displayField: 'name',
+			editable: false,
+			store: valueStore,
+            value: defaultValueId,
+            setDefaultData: function() {
+                valueStore.addDefaultData();
+                this.setValue(defaultValueId);
+                aggregationType.resetData();
+            },
+            setDefaultDataIf: function() {
+                if (!value.getValue()) {
+                    this.setDefaultData();
+                }
+            },
+            resetData: function() {
+                valueStore.removeAll();
+                this.clearValue();
+                aggregationType.resetData();
+            },
+            listeners: {
+                select: function(cb, r) {
+                    onValueSelect(r[0].data.id);
+                }
+            }
 		});
 
 		selectPanel = Ext.create('Ext.panel.Panel', {
@@ -1209,39 +1309,61 @@ Ext.onReady( function() {
 					]
 				},
 				{
-					layout: 'column',
+					xtype: 'container',
+                    layout: 'column',
 					bodyStyle: 'border:0 none',
 					items: [
-						row
+						row,
+                        {
+                            xtype: 'panel',
+                            bodyStyle: 'padding: 1px',
+                            width: defaultWidth,
+                            height: 220,
+                            items: value,
+                            tbar: {
+                                height: 25,
+                                style: 'padding: 1px',
+                                items: [
+                                    {
+                                        xtype: 'label',
+                                        height: 22,
+                                        style: 'padding-left: 6px; line-height: 22px',
+                                        text: 'Value'
+                                    },
+                                    '->',
+                                    aggregationType
+                                ]
+                            }
+                        }
 					]
 				}
 			]
 		});
 
-        addDimension = function(record, store) {
+        addDimension = function(record, store, excludedStores) {
             var store = dimensionStoreMap[record.id] || store || filterStore;
 
-            if (!hasDimension(record.id)) {
+            if (!hasDimension(record.id, excludedStores) && record.id !== value.getValue()) {
                 store.add(record);
             }
         };
 
-        removeDimension = function(dataElementId) {
-            var stores = [colStore, rowStore, filterStore, fixedFilterStore];
+        removeDimension = function(id, excludedStores) {
+            var stores = Ext.Array.difference([colStore, rowStore, filterStore, fixedFilterStore, valueStore], Ext.Array.from(excludedStores));
 
             for (var i = 0, store, index; i < stores.length; i++) {
                 store = stores[i];
-                index = store.findExact('id', dataElementId);
+                index = store.findExact('id', id);
 
                 if (index != -1) {
                     store.remove(store.getAt(index));
-                    dimensionStoreMap[dataElementId] = store;
+                    dimensionStoreMap[id] = store;
                 }
             }
         };
 
-        hasDimension = function(id) {
-            var stores = [colStore, rowStore, filterStore, fixedFilterStore];
+        hasDimension = function(id, excludedStores) {
+            var stores = Ext.Array.difference([colStore, rowStore, filterStore, fixedFilterStore, valueStore], Ext.Array.from(excludedStores));
 
             for (var i = 0, store, index; i < stores.length; i++) {
                 store = stores[i];
@@ -1274,6 +1396,10 @@ Ext.onReady( function() {
                 map[record.data.id] = fixedFilterStore;
             });
 
+            valueStore.each(function(record) {
+                map[record.data.id] = valueStore;
+            });
+
             return map;
         };
 
@@ -1293,6 +1419,8 @@ Ext.onReady( function() {
 			rowStore.removeAll();
 			fixedFilterStore.removeAll();
 			filterStore.removeAll();
+            valueStore.removeAll();
+            value.clearValue();
 
 			if (!isAll) {
 				colStore.add({id: dimConf.organisationUnit.dimensionName, name: dimConf.organisationUnit.name});
@@ -1314,12 +1442,25 @@ Ext.onReady( function() {
 			rowStore: rowStore,
             fixedFilterStore: fixedFilterStore,
 			filterStore: filterStore,
+            valueStore: valueStore,
+            value: value,
             addDimension: addDimension,
             removeDimension: removeDimension,
             hasDimension: hasDimension,
             saveState: saveState,
             resetData: resetData,
             reset: reset,
+            getValueConfig: function() {
+                var config = {},
+                    valueId = value.getValue();
+
+                if (valueId && valueId !== defaultValueId) {
+                    config.value = valueId;
+                    config.aggregationType = aggregationType.getValue();
+                }
+
+                return config;
+            },
 			hideOnBlur: true,
 			items: selectPanel,
 			bbar: [
@@ -1362,6 +1503,9 @@ Ext.onReady( function() {
 							ns.core.web.window.addHideOnBlurHandler(w);
 						}
 					}
+
+                    // value
+                    value.setDefaultDataIf();
 				},
                 render: function() {
 					reset();
@@ -1699,7 +1843,7 @@ Ext.onReady( function() {
 			showDimensionLabels,
 			hideEmptyRows,
             limit,
-            countType,
+            outputType,
             aggregationType,
 			showHierarchy,
 			digitGroupSeparator,
@@ -1763,22 +1907,23 @@ Ext.onReady( function() {
             style: 'margin-top:' + separatorTopMargin + 'px'
         });
 
-        countType = Ext.create('Ext.form.field.ComboBox', {
+        outputType = Ext.create('Ext.form.field.ComboBox', {
 			cls: 'ns-combo',
 			style: 'margin-bottom:' + comboBottomMargin + 'px',
 			width: comboboxWidth,
 			labelWidth: 130,
-			fieldLabel: NS.i18n.count_type,
+			fieldLabel: NS.i18n.output_type,
 			labelStyle: 'color:#333',
 			queryMode: 'local',
 			valueField: 'id',
 			editable: false,
-			value: 'events',
+			value: 'EVENT',
 			store: Ext.create('Ext.data.Store', {
 				fields: ['id', 'text'],
 				data: [
-					{id: 'events', text: NS.i18n.events},
-					{id: 'tracked_entity_instances', text: NS.i18n.tracked_entity_instances}
+					{id: 'EVENT', text: NS.i18n.event},
+					{id: 'ENROLLMENT', text: NS.i18n.enrollment},
+					{id: 'TRACKED_ENTITY_INSTANCE', text: NS.i18n.tracked_entity_instance}
 				]
 			})
 		});
@@ -1862,7 +2007,7 @@ Ext.onReady( function() {
                 showDimensionLabels,
 				hideEmptyRows,
                 limit,
-                countType
+                outputType
                 //aggregationType
 			]
 		};
@@ -1904,7 +2049,7 @@ Ext.onReady( function() {
 					hideEmptyRows: hideEmptyRows.getValue(),
                     sortOrder: limit.getSortOrder(),
                     topLimit: limit.getTopLimit(),
-					countType: countType.getValue(),
+					outputType: outputType.getValue(),
 					showHierarchy: showHierarchy.getValue(),
                     showDimensionLabels: showDimensionLabels.getValue(),
 					displayDensity: displayDensity.getValue(),
@@ -1921,7 +2066,7 @@ Ext.onReady( function() {
 				showDimensionLabels.setValue(Ext.isBoolean(layout.showDimensionLabels) ? layout.showDimensionLabels : true);
 				hideEmptyRows.setValue(Ext.isBoolean(layout.hideEmptyRows) ? layout.hideEmptyRows : false);
 				limit.setValues(layout.sortOrder, layout.topLimit);
-				countType.setValue(Ext.isString(layout.countType) ? layout.countType : 'events');
+				outputType.setValue(Ext.isString(layout.outputType) ? layout.outputType : 'EVENT');
                 //aggregationType.setValue(Ext.isString(layout.aggregationType) ? layout.aggregationType : 'default');
 				showHierarchy.setValue(Ext.isBoolean(layout.showHierarchy) ? layout.showHierarchy : false);
 				displayDensity.setValue(Ext.isString(layout.displayDensity) ? layout.displayDensity : 'normal');
@@ -2008,7 +2153,7 @@ Ext.onReady( function() {
                     w.showDimensionLabels = showDimensionLabels;
 					w.hideEmptyRows = hideEmptyRows;
                     w.limit = limit;
-					w.countType = countType;
+					w.outputType = outputType;
 					w.showHierarchy = showHierarchy;
 					w.displayDensity = displayDensity;
 					w.fontSize = fontSize;
@@ -3345,7 +3490,16 @@ Ext.onReady( function() {
                     property: 'name',
                     direction: 'ASC'
                 }
-            ]
+            ],
+            onLoadData: function() {
+                var layoutWindow = ns.app.aggregateLayoutWindow;
+
+                this.each( function(record) {
+                    if (Ext.Array.contains(['int', 'number'], (record.data.valueType || record.data.type))) {
+                        layoutWindow.valueStore.add(record.data);
+                    }
+                });
+            }
 		});
 
 		organisationUnitGroupStore = Ext.create('Ext.data.Store', {
@@ -3550,10 +3704,12 @@ Ext.onReady( function() {
             var load;
 
             programId = layout ? layout.program.id : programId;
-			stage.clearValue();
 
+            // reset
+			stage.clearValue();
 			dataElementsByStageStore.removeAll();
 			dataElementSelected.removeAllDataElements(true);
+            ns.app.aggregateLayoutWindow.value.resetData();
 
             load = function(stages) {
                 stage.enable();
@@ -3643,6 +3799,7 @@ Ext.onReady( function() {
 		onStageSelect = function(stageId, layout) {
             if (!layout) {
                 dataElementSelected.removeAllDataElements(true);
+                ns.app.aggregateLayoutWindow.value.resetData();
             }
 
 			loadDataElements(stageId, layout);
@@ -3659,6 +3816,7 @@ Ext.onReady( function() {
                     data = Ext.Array.clean([].concat(attributes || [], dataElements || []));
 
 				dataElementsByStageStore.loadData(data);
+                dataElementsByStageStore.onLoadData();
 
                 if (layout) {
                     var dataDimensions = ns.core.service.layout.getDataDimensionsFromLayout(layout),
@@ -3798,6 +3956,17 @@ Ext.onReady( function() {
 
 				return hasDataElement;
 			},
+            getUxById: function(dataElementId) {
+                var ux;
+
+                this.items.each(function(item) {
+					if (item.dataElement.id === dataElementId) {
+						ux = item;
+					}
+				});
+
+                return ux;
+            },
 			removeAllDataElements: function(reset) {
 				var items = this.items.items,
 					len = items.length;
@@ -3816,6 +3985,7 @@ Ext.onReady( function() {
 			index = index || dataElementSelected.items.items.length;
 
 			getUxType = function(element) {
+
 				if (Ext.isObject(element.optionSet) && Ext.isString(element.optionSet.id)) {
 					return 'Ext.ux.panel.OrganisationUnitGroupSetContainer';
 				}
@@ -3830,6 +4000,10 @@ Ext.onReady( function() {
 
 				if (element.type === 'date') {
 					return 'Ext.ux.panel.DataElementDateContainer';
+				}
+
+				if (element.type === 'bool' || element.type === 'trueOnly') {
+					return 'Ext.ux.panel.DataElementBooleanContainer';
 				}
 
 				return 'Ext.ux.panel.DataElementIntegerContainer';
@@ -3849,7 +4023,7 @@ Ext.onReady( function() {
                         dataElementsByStageStore.sort();
                     }
 
-                    ns.app.aggregateLayoutWindow.removeDimension(element.id);
+                    ns.app.aggregateLayoutWindow.removeDimension(element.id, ns.app.aggregateLayoutWindow.valueStore);
                     ns.app.queryLayoutWindow.removeDimension(element.id);
 				}
 			};
@@ -3867,10 +4041,9 @@ Ext.onReady( function() {
         selectDataElements = function(items, layout) {
             var dataElements = [],
 				allElements = [],
-                fixedFilterElementIds = [],
                 aggWindow = ns.app.aggregateLayoutWindow,
                 queryWindow = ns.app.queryLayoutWindow,
-                includeKeys = ['int', 'number', 'boolean', 'bool'],
+                includeKeys = ['int', 'number', 'bool', 'boolean', 'trueOnly'],
                 ignoreKeys = ['pe', 'ou'],
                 recordMap = {
 					'pe': {id: 'pe', name: 'Periods'},
@@ -3931,19 +4104,18 @@ Ext.onReady( function() {
                 element.name = element.name || element.displayName;
                 recordMap[element.id] = element;
 
-				ux = addUxFromDataElement(element);
+                // add ux if not selected as value
+                if (element.id !== aggWindow.value.getValue()) {
+                    ux = addUxFromDataElement(element);
 
-                if (layout) {
-                    ux.setRecord(element);
+                    if (layout) {
+                        ux.setRecord(element);
+                    }
                 }
 
                 store = Ext.Array.contains(includeKeys, element.type) || element.optionSet ? aggWindow.rowStore : aggWindow.fixedFilterStore;
 
-                if (store === aggWindow.fixedFilterStore) {
-					fixedFilterElementIds.push(element.id);
-				}
-
-                aggWindow.addDimension(element, store);
+                aggWindow.addDimension(element, store, valueStore);
                 queryWindow.colStore.add(element);
 			}
 
@@ -5567,6 +5739,7 @@ Ext.onReady( function() {
 				columns = [],
 				rows = [],
 				filters = [],
+                values = [],
 				a;
 
 			view.dataType = dataType;
@@ -5726,8 +5899,6 @@ Ext.onReady( function() {
 				});
 			}
 
-            // view
-
 			if (columns.length) {
 				view.columns = columns;
 			}
@@ -5737,6 +5908,9 @@ Ext.onReady( function() {
 			if (filters.length) {
 				view.filters = filters;
 			}
+
+            // value, aggregation type
+            Ext.apply(view, layoutWindow.getValueConfig());
 
 			return view;
 		};
@@ -5804,6 +5978,10 @@ Ext.onReady( function() {
 			reset: reset,
 			setGui: setGui,
 			getView: getView,
+
+            getUx: function(id) {
+                return dataElementSelected.getUxById(id);
+            },
 
             listeners: {
                 added: function() {
@@ -5932,13 +6110,19 @@ Ext.onReady( function() {
 			};
 
 			web.window.addHideOnBlurHandler = function(w) {
-				var el = Ext.get(Ext.query('.x-mask')[0]);
+				var masks = Ext.query('.x-mask');
 
-				el.on('click', function() {
-					if (w.hideOnBlur) {
-						w.hide();
-					}
-				});
+                for (var i = 0, el; i < masks.length; i++) {
+                    el = Ext.get(masks[i]);
+
+                    if (el.getWidth() == Ext.getBody().getWidth()) {
+                        el.on('click', function() {
+                            if (w.hideOnBlur) {
+                                w.hide();
+                            }
+                        });
+                    }
+                }
 
 				w.hasHideOnBlurHandler = true;
 			};
@@ -7170,30 +7354,63 @@ Ext.onReady( function() {
 								showSeparator: false,
 								items: [
 									{
-										text: NS.i18n.go_to_event_charts + '&nbsp;&nbsp;', //i18n
+										text: NS.i18n.go_to_event_charts + '&nbsp;&nbsp;',
 										cls: 'ns-menu-item-noicon',
-										handler: function() {
-											window.location.href = ns.core.init.contextPath + '/dhis-web-event-visualizer';
+										listeners: {
+											render: function(b) {
+												this.getEl().dom.addEventListener('click', function(e) {
+													if (!b.disabled) {
+														if (e.button === 0 && !e.ctrlKey) {
+															window.location.href = ns.core.init.contextPath + '/dhis-web-event-visualizer';
+														}
+														else if ((e.ctrlKey && Ext.Array.contains([0,1], e.button)) || (!e.ctrlKey && e.button === 1)) {
+															window.open(ns.core.init.contextPath + '/dhis-web-event-visualizer', '_blank');
+														}
+													}
+												});
+											}
 										}
 									},
 									'-',
 									{
-										text: NS.i18n.open_this_table_as_chart + '&nbsp;&nbsp;', //i18n
+										text: NS.i18n.open_this_table_as_chart + '&nbsp;&nbsp;',
 										cls: 'ns-menu-item-noicon',
 										disabled: !(NS.isSessionStorage && ns.app.layout),
-										handler: function() {
-											if (NS.isSessionStorage) {
-												ns.app.layout.parentGraphMap = ns.app.accordion.treePanel.getParentGraphMap();
-												ns.core.web.storage.session.set(ns.app.layout, 'eventanalytical', ns.core.init.contextPath + '/dhis-web-event-visualizer/index.html?s=eventanalytical');
+										listeners: {
+											render: function(b) {
+												this.getEl().dom.addEventListener('click', function(e) {
+													if (!b.disabled && NS.isSessionStorage) {
+														ns.app.layout.parentGraphMap = ns.app.accordion.treePanel.getParentGraphMap();
+														ns.core.web.storage.session.set(ns.app.layout, 'eventanalytical');
+
+														if (e.button === 0 && !e.ctrlKey) {
+															window.location.href = ns.core.init.contextPath + '/dhis-web-event-visualizer/index.html?s=eventanalytical';
+														}
+														else if ((e.ctrlKey && Ext.Array.contains([0,1], e.button)) || (!e.ctrlKey && e.button === 1)) {
+															window.open(ns.core.init.contextPath + '/dhis-web-event-visualizer/index.html?s=eventanalytical', '_blank');
+														}
+													}
+												});
 											}
 										}
 									},
 									{
-										text: NS.i18n.open_last_chart + '&nbsp;&nbsp;', //i18n
+										text: NS.i18n.open_last_chart + '&nbsp;&nbsp;',
 										cls: 'ns-menu-item-noicon',
 										disabled: !(NS.isSessionStorage && JSON.parse(sessionStorage.getItem('dhis2')) && JSON.parse(sessionStorage.getItem('dhis2'))['eventchart']),
-										handler: function() {
-											window.location.href = ns.core.init.contextPath + '/dhis-web-event-visualizer/index.html?s=eventchart';
+										listeners: {
+											render: function(b) {
+												this.getEl().dom.addEventListener('click', function(e) {
+													if (!b.disabled) {
+														if (e.button === 0 && !e.ctrlKey) {
+															window.location.href = ns.core.init.contextPath + '/dhis-web-event-visualizer/index.html?s=eventchart';
+														}
+														else if ((e.ctrlKey && Ext.Array.contains([0,1], e.button)) || (!e.ctrlKey && e.button === 1)) {
+															window.open(ns.core.init.contextPath + '/dhis-web-event-visualizer/index.html?s=eventchart', '_blank');
+														}
+													}
+												});
+											}
 										}
 									}
 								],

@@ -32,6 +32,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.hisp.dhis.trackedentity.TrackedEntityAttribute;
+import org.hisp.dhis.util.ObjectUtils;
+
 /**
  * Class which encapsulates a query parameter and value. Operator and filter 
  * are inherited from QueryFilter.
@@ -44,7 +47,7 @@ public class QueryItem
 
     private List<QueryFilter> filters = new ArrayList<>();
     
-    private boolean numeric;
+    private String valueType;
     
     private String optionSet;
 
@@ -57,17 +60,17 @@ public class QueryItem
         this.item = item;
     }
 
-    public QueryItem( NameableObject item, boolean numeric, String optionSet )
+    public QueryItem( NameableObject item, String valueType, String optionSet )
     {
         this.item = item;
-        this.numeric = numeric;
+        this.valueType = valueType;
         this.optionSet = optionSet;
     }
     
-    public QueryItem( NameableObject item, QueryOperator operator, String filter, boolean numeric, String optionSet )
+    public QueryItem( NameableObject item, QueryOperator operator, String filter, String valueType, String optionSet )
     {
         this.item = item;
-        this.numeric = numeric;
+        this.valueType = valueType;
         this.optionSet = optionSet;
         
         if ( operator != null && filter != null )
@@ -76,11 +79,11 @@ public class QueryItem
         }
     }
     
-    public QueryItem( NameableObject item, List<QueryFilter> filters, boolean numeric, String optionSet )
+    public QueryItem( NameableObject item, List<QueryFilter> filters, String valueType, String optionSet )
     {
         this.item = item;
         this.filters = filters;
-        this.numeric = numeric;
+        this.valueType = valueType;
         this.optionSet = optionSet;
     }
     
@@ -95,7 +98,12 @@ public class QueryItem
     
     public String getTypeAsString()
     {
-        return isNumeric() ? Double.class.getName() : String.class.getName();
+        return ObjectUtils.VALUE_TYPE_JAVA_CLASS_MAP.get( valueType ).getName();
+    }
+    
+    public boolean isNumeric()
+    {
+        return Double.class.equals( getTypeAsString() );
     }
     
     public boolean hasFilter()
@@ -103,13 +111,13 @@ public class QueryItem
         return filters != null && !filters.isEmpty();
     }
 
-    public static List<QueryItem> getQueryItems( Collection<? extends NameableObject> objects )
+    public static List<QueryItem> getQueryItems( Collection<TrackedEntityAttribute> attributes )
     {
         List<QueryItem> queryItems = new ArrayList<>();
         
-        for ( NameableObject object : objects )
+        for ( TrackedEntityAttribute attribute : attributes )
         {
-            queryItems.add( new QueryItem( object, false, null ) );
+            queryItems.add( new QueryItem( attribute, attribute.getValueType(), attribute.hasOptionSet() ? attribute.getOptionSet().getUid() : null ) );
         }
         
         return queryItems;
@@ -151,7 +159,7 @@ public class QueryItem
     @Override
     public String toString()
     {
-        return "[Item: " + item + ", filters: " + filters + ", numeric: " + numeric + ", optionSet: " + optionSet + "]";
+        return "[Item: " + item + ", filters: " + filters + ", value type: " + valueType + ", optionSet: " + optionSet + "]";
     }
     
     // -------------------------------------------------------------------------
@@ -178,14 +186,14 @@ public class QueryItem
         this.filters = filters;
     }
 
-    public boolean isNumeric()
+    public String getValueType()
     {
-        return numeric;
+        return valueType;
     }
 
-    public void setNumeric( boolean numeric )
+    public void setValueType( String valueType )
     {
-        this.numeric = numeric;
+        this.valueType = valueType;
     }
 
     public String getOptionSet()

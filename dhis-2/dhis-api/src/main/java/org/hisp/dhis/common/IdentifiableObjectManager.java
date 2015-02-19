@@ -29,6 +29,10 @@ package org.hisp.dhis.common;
  */
 
 import org.hisp.dhis.common.NameableObject.NameableProperty;
+import org.hisp.dhis.query.Order;
+import org.hisp.dhis.query.Query;
+import org.hisp.dhis.query.Result;
+import org.hisp.dhis.query.ResultTransformer;
 
 import java.util.Collection;
 import java.util.Date;
@@ -69,6 +73,10 @@ public interface IdentifiableObjectManager
 
     <T extends IdentifiableObject> Collection<T> getAll( Class<T> clazz );
 
+    <T extends IdentifiableObject> Collection<T> getAll( Class<T> clazz, Order order );
+
+    <T extends IdentifiableObject> Collection<T> getAll( Class<T> clazz, List<Order> order );
+
     <T extends IdentifiableObject> Collection<T> getAllByName( Class<T> clazz, String name );
 
     <T extends IdentifiableObject> Collection<T> getAllByNameIgnoreCase( Class<T> clazz, String name );
@@ -85,10 +93,14 @@ public interface IdentifiableObjectManager
 
     <T extends IdentifiableObject> List<T> getBetween( Class<T> clazz, int first, int max );
 
+    <T extends IdentifiableObject> List<T> getBetween( Class<T> clazz, int first, int max, Order order );
+
+    <T extends IdentifiableObject> List<T> getBetween( Class<T> clazz, int first, int max, List<Order> order );
+
     <T extends IdentifiableObject> List<T> getBetweenSorted( Class<T> clazz, int first, int max );
 
     <T extends IdentifiableObject> List<T> getBetweenLikeName( Class<T> clazz, String name, int first, int max );
-    
+
     <T extends IdentifiableObject> List<T> getBetweenLikeName( Class<T> clazz, Set<String> words, int first, int max );
 
     <T extends IdentifiableObject> Collection<T> getByLastUpdated( Class<T> clazz, Date lastUpdated );
@@ -132,6 +144,10 @@ public interface IdentifiableObjectManager
     <T extends IdentifiableObject> int getCountLikeName( Class<T> clazz, String name );
 
     <T extends IdentifiableObject> int getCountLikeShortName( Class<T> clazz, String shortName );
+
+    Result query( Query query );
+
+    Result query( Query query, ResultTransformer transformer );
 
     void refresh( Object object );
 

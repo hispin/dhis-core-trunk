@@ -83,17 +83,12 @@ public class UpdateSqlViewAction
     @Override
     public String execute()
     {
-        if ( id == null || (id.intValue() == -1) )
-        {
-            return ERROR;
-        }
+        SqlView sqlView = sqlViewService.getSqlView( id );
 
-        SqlView sqlViewInstance = sqlViewService.getSqlView( id );
+        sqlView.setDescription( description.replaceAll( "\\s+", " " ).trim() );
+        sqlView.setSqlQuery( sqlquery );
 
-        sqlViewInstance.setDescription( description.replaceAll( "\\s+", " " ).trim() );
-        sqlViewInstance.setSqlQuery( sqlViewService.makeUpForQueryStatement( sqlquery ) );
-
-        sqlViewService.updateSqlView( sqlViewInstance );
+        sqlViewService.updateSqlView( sqlView.cleanSqlQuery() );
 
         return SUCCESS;
     }

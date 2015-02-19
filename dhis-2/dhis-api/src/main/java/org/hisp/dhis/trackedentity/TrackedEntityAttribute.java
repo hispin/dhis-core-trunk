@@ -52,31 +52,16 @@ import org.hisp.dhis.schema.annotation.PropertyRange;
 public class TrackedEntityAttribute
     extends BaseDimensionalObject
 {
-    /**
-     * Determines if a de-serialized file is compatible with this class.
-     */
-    private static final long serialVersionUID = 3026922158464592390L;
-
     public static final String TYPE_DATE = "date";
-
     public static final String TYPE_STRING = "string";
-
-    public static final String TYPE_NUMBER = "number";
-
-    public static final String VALUE_TYPE_LETTER = "letter";
-
+    public static final String TYPE_NUMBER = "number";    
+    public static final String TYPE_LETTER = "letter";
     public static final String TYPE_BOOL = "bool";
-
     public static final String TYPE_TRUE_ONLY = "trueOnly";
-
     public static final String TYPE_OPTION_SET = "optionSet";
-
     public static final String TYPE_PHONE_NUMBER = "phoneNumber";
-
     public static final String TYPE_TRACKER_ASSOCIATE = "trackerAssociate";
-
     public static final String TYPE_USERS = "users";
-
     public static final String TYPE_EMAIL = "email";
 
     private String description;
@@ -148,6 +133,23 @@ public class TrackedEntityAttribute
     public boolean hasOptionSet()
     {
         return optionSet != null;
+    }
+
+    /**
+     * Checks whether the given value is present among the options in the option
+     * set of this attribute, matching on code.
+     */
+    public Boolean isValidOptionValue( String value )
+    {
+        for ( Option option : this.getOptionSet().getOptions() )
+        {
+            if ( option.getCode().equals( value ) )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // -------------------------------------------------------------------------
@@ -339,19 +341,6 @@ public class TrackedEntityAttribute
     public void setConfidential( Boolean confidential )
     {
         this.confidential = confidential;
-    }
-
-    public Boolean isValidOptionValue( String value )
-    {
-        for ( Option option : this.getOptionSet().getOptions() )
-        {
-            if ( option.getCode().equals( value ) )
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     @Override

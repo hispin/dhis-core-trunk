@@ -49,8 +49,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.hisp.dhis.analytics.AggregationType;
 import org.hisp.dhis.analytics.AnalyticsSecurityManager;
 import org.hisp.dhis.analytics.AnalyticsService;
+import org.hisp.dhis.analytics.EventOutputType;
 import org.hisp.dhis.analytics.SortOrder;
 import org.hisp.dhis.analytics.event.EventAnalyticsManager;
 import org.hisp.dhis.analytics.event.EventAnalyticsService;
@@ -90,6 +92,8 @@ import org.hisp.dhis.user.CurrentUserService;
 import org.hisp.dhis.user.User;
 import org.hisp.dhis.util.Timer;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import com.google.common.base.MoreObjects;
 
 /**
  * @author Lars Helge Overland
@@ -340,15 +344,18 @@ public class DefaultEventAnalyticsService
 
     @Override
     public EventQueryParams getFromUrl( String program, String stage, String startDate, String endDate,
-        Set<String> dimension, Set<String> filter, boolean skipMeta, boolean hierarchyMeta, SortOrder sortOrder, 
-        Integer limit, boolean uniqueInstances, DisplayProperty displayProperty, I18nFormat format )
+        Set<String> dimension, Set<String> filter, String value, AggregationType aggregationType, boolean skipMeta, boolean skipRounding, boolean hierarchyMeta, 
+        SortOrder sortOrder, Integer limit, EventOutputType outputType, DisplayProperty displayProperty, I18nFormat format )
     {
         EventQueryParams params = getFromUrl( program, stage, startDate, endDate, dimension, filter, null, null, null,
             skipMeta, hierarchyMeta, false, displayProperty, null, null, format );
-        
+                
+        params.setValue( getValueDimension( value ) );
+        params.setAggregationType( aggregationType );
+        params.setSkipRounding( skipRounding );
         params.setSortOrder( sortOrder );
         params.setLimit( limit );
-        params.setUniqueInstances( uniqueInstances );
+        params.setOutputType( MoreObjects.firstNonNull( outputType, EventOutputType.EVENT ) );
         params.setAggregate( true );
 
         return params;
@@ -501,12 +508,14 @@ public class DefaultEventAnalyticsService
                     params.getItemFilters().add( getQueryItem( filter.getDimension(), filter.getFilter() ) );
                 }
             }
-        }
 
-        params.setProgram( object.getProgram() );
-        params.setProgramStage( object.getProgramStage() );
-        params.setStartDate( object.getStartDate() );
-        params.setEndDate( object.getEndDate() );
+            params.setProgram( object.getProgram() );
+            params.setProgramStage( object.getProgramStage() );
+            params.setStartDate( object.getStartDate() );
+            params.setEndDate( object.getEndDate() );
+            params.setValue( object.getValue() );
+            params.setOutputType( object.getOutputType() );
+        }
         
         return params;
     }
@@ -534,7 +543,7 @@ public class DefaultEventAnalyticsService
             throw new IllegalQueryException( "Query item or filter is invalid: " + dimensionString );
         }
         
-        QueryItem queryItem = getQuryItemFromUid( split[0] );
+        QueryItem queryItem = getQueryItemFromUid( split[0] );
         
         if ( split.length > 1 ) // Filters specified
         {   
@@ -624,7 +633,6 @@ public class DefaultEventAnalyticsService
                 {
                     map.putAll( IdentifiableObjectUtils.getUidNameMap( objects ) );
                 }
-
             }
         }
 
@@ -643,22 +651,46 @@ public class DefaultEventAnalyticsService
         return item;
     }
 
-    private QueryItem getQuryItemFromUid( String item )
+    private QueryItem getQueryItemFromUid( String item )
     {
         DataElement de = dataElementService.getDataElement( item );
 
         if ( de != null ) //TODO check if part of program
         {
-            return new QueryItem( de, de.isNumericType(), de.hasOptionSet() ? de.getOptionSet().getUid() : null );
+            return new QueryItem( de, de.getType(), de.hasOptionSet() ? de.getOptionSet().getUid() : null );
         }
 
         TrackedEntityAttribute at = attributeService.getTrackedEntityAttribute( item );
 
         if ( at != null )
         {
-            return new QueryItem( at, at.isNumericType(), at.hasOptionSet() ? at.getOptionSet().getUid() : null );
+            return new QueryItem( at, at.getValueType(), at.hasOptionSet() ? at.getOptionSet().getUid() : null );
         }
 
-        throw new IllegalQueryException( "Item identifier does not reference any item part of the program: " + item );
+        throw new IllegalQueryException( "Item identifier does not reference any data element or attribute part of the program: " + item );
+    }
+    
+    private NameableObject getValueDimension( String value )
+    {
+        if ( value == null )
+        {
+            return null;
+        }
+        
+        DataElement de = dataElementService.getDataElement( value );
+        
+        if ( de != null && de.isNumericType() )
+        {
+            return de;
+        }
+        
+        TrackedEntityAttribute at = attributeService.getTrackedEntityAttribute( value );
+        
+        if ( at != null && at.isNumericType() )
+        {
+            return at;
+        }
+        
+        throw new IllegalQueryException( "Value identifier does not reference any data element or attribute which are numeric type and part of the program: " + value );        
     }
 }

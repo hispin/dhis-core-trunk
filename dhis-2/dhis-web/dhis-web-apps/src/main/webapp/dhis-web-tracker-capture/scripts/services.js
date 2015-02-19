@@ -333,42 +333,95 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };    
 })
 
+/* Factory for fetching OrgUnit */
+.factory('OrgUnitFactory', function($http) {    
+    var orgUnit, orgUnitPromise, rootOrgUnitPromise, myOrgUnitsPromise;    
+    return {
+        get: function(uid){            
+            if( orgUnit !== uid ){
+                orgUnitPromise = $http.get( '../api/organisationUnits.json?filter=id:eq:' + uid + '&fields=id,name,children[id,name,children[id,name]]&paging=false' ).then(function(response){
+                    orgUnit = response.data.id;
+                    return response.data;
+                });
+            }
+            return orgUnitPromise;
+        },        
+        getRoot: function(){
+            if(!rootOrgUnitPromise){
+                rootOrgUnitPromise = $http.get( '../api/organisationUnits.json?filter=level:eq:1&fields=id,name,children[id,name,children[id,name]]&paging=false' ).then(function(response){
+                    return response.data;
+                });
+            }
+            return rootOrgUnitPromise;
+        },
+        getMine: function(){
+            if(!myOrgUnitsPromise){
+                myOrgUnitsPromise = $http.get('../api/me/organisationUnits').then(function(response){
+                    return response.data;
+                });
+            }
+            return myOrgUnitsPromise;
+        }
+    }; 
+})
+
 /* Service to deal with enrollment */
-.service('EnrollmentService', function($http) {
+.service('EnrollmentService', function($http, DateUtils) {
     
+    var convertFromApiToUser = function(enrollment){
+        if(enrollment.enrollments){
+            angular.forEach(enrollment.enrollments, function(enrollment){
+                enrollment.dateOfIncident = DateUtils.formatFromApiToUser(enrollment.dateOfIncident);
+                enrollment.dateOfEnrollment = DateUtils.formatFromApiToUser(enrollment.dateOfEnrollment);                
+            });
+        }
+        else{
+            enrollment.dateOfIncident = DateUtils.formatFromApiToUser(enrollment.dateOfIncident);
+            enrollment.dateOfEnrollment = DateUtils.formatFromApiToUser(enrollment.dateOfEnrollment);
+        }
+        
+        return enrollment;
+    };
+    var convertFromUserToApi = function(enrollment){
+        enrollment.dateOfIncident = DateUtils.formatFromUserToApi(enrollment.dateOfIncident);
+        enrollment.dateOfEnrollment = DateUtils.formatFromUserToApi(enrollment.dateOfEnrollment);
+        return enrollment;
+    };
     return {        
         get: function( enrollmentUid ){
             var promise = $http.get(  '../api/enrollments/' + enrollmentUid ).then(function(response){
-                return response.data;
+                return convertFromApiToUser(response.data);
             });
             return promise;
         },
         getByEntity: function( entity ){
             var promise = $http.get(  '../api/enrollments?trackedEntityInstance=' + entity ).then(function(response){
-                return response.data;
+                return convertFromApiToUser(response.data);
             });
             return promise;
         },
         getByEntityAndProgram: function( entity, program ){
             var promise = $http.get(  '../api/enrollments?trackedEntityInstance=' + entity + '&program=' + program ).then(function(response){
-                return response.data;
+                return convertFromApiToUser(response.data);
             });
             return promise;
         },
         getByStartAndEndDate: function( program, orgUnit, ouMode, startDate, endDate ){
             var promise = $http.get(  '../api/enrollments.json?program=' + program + '&orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&startDate=' + startDate + '&endDate=' + endDate + '&paging=false').then(function(response){
-                return response.data;
+                return convertFromApiToUser(response.data);
             });
             return promise;
         },
         enroll: function( enrollment ){
-            var promise = $http.post(  '../api/enrollments', enrollment ).then(function(response){
+            var en = convertFromUserToApi(angular.copy(enrollment));
+            var promise = $http.post(  '../api/enrollments', en ).then(function(response){
                 return response.data;
             });
             return promise;
         },
         update: function( enrollment ){
-            var promise = $http.put( '../api/enrollments/' + enrollment.enrollment , enrollment).then(function(response){
+            var en = convertFromUserToApi(angular.copy(enrollment));
+            var promise = $http.put( '../api/enrollments/' + en.enrollment , en ).then(function(response){
                 return response.data;
             });
             return promise;
@@ -831,8 +884,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             });            
             return promise;
         },
-        getEventsByProgram: function(entity, orgUnit, program){   
-            var promise = $http.get( '../api/events.json?' + 'trackedEntityInstance=' + entity + '&orgUnit=' + orgUnit + '&program=' + program + '&paging=false').then(function(response){
+        getEventsByProgram: function(entity, program){   
+            var promise = $http.get( '../api/events.json?' + 'trackedEntityInstance=' + entity + '&program=' + program + '&paging=false').then(function(response){
                 return response.data.events;
             });            
             return promise;
@@ -1292,29 +1345,6 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             var dueDate = moment(referenceDate, calendarSetting.momentFormat).add('d', offset)._d;
             dueDate = $filter('date')(dueDate, calendarSetting.keyDateFormat); 
             return dueDate;
-        },
-        getEventOrgUnitName: function(orgUnitId){            
-            if(orgUnitId){
-                OrgUnitService.open().then(function(){
-                    OrgUnitService.get(orgUnitId).then(function(ou){
-                        if(ou){
-                            return ou.n;             
-                        }                                                       
-                    });                            
-                }); 
-            }
-        },
-        setEventOrgUnitName: function(dhis2Event){            
-            if(dhis2Event.orgUnit){
-                OrgUnitService.open().then(function(){
-                    OrgUnitService.get(dhis2Event.orgUnit).then(function(ou){
-                        if(ou){
-                            dhis2Event.eventOrgUnitName = ou.n;
-                            return dhis2Event;                            
-                        }                                                       
-                    });                            
-                }); 
-            }
         },
         reconstruct: function(dhis2Event, programStage, optionSets){
             

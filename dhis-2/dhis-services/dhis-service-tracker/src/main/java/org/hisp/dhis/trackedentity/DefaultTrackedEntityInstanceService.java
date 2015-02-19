@@ -200,14 +200,12 @@ public class DefaultTrackedEntityInstanceService
         {
             if ( params.hasProgram() )
             {
-                params.addAttributesIfNotExist( QueryItem.getQueryItems( params.getProgram()
-                    .getTrackedEntityAttributes() ) );
+                params.addAttributesIfNotExist( QueryItem.getQueryItems( params.getProgram().getTrackedEntityAttributes() ) );
             }
             else
             {
                 Collection<TrackedEntityAttribute> filters = attributeService.getAllTrackedEntityAttributes();
-                Collection<TrackedEntityAttribute> attributes = attributeService
-                    .getTrackedEntityAttributesDisplayInList();
+                Collection<TrackedEntityAttribute> attributes = attributeService.getTrackedEntityAttributesDisplayInList();
                 filters.removeAll( attributes );
 
                 params.addAttributesIfNotExist( QueryItem.getQueryItems( attributes ) );
@@ -492,7 +490,7 @@ public class DefaultTrackedEntityInstanceService
             throw new IllegalQueryException( "Attribute does not exist: " + item );
         }
         
-        return new QueryItem( at, at.isNumericType(), at.hasOptionSet() ? at.getOptionSet().getUid() : null );
+        return new QueryItem( at, at.getValueType(), at.hasOptionSet() ? at.getOptionSet().getUid() : null );
     }
     
     /**

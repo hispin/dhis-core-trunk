@@ -28,14 +28,15 @@ package org.hisp.dhis.eventchart;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.hisp.dhis.analytics.AggregationType;
+import org.hisp.dhis.analytics.EventOutputType;
 import org.hisp.dhis.chart.BaseChart;
 import org.hisp.dhis.common.AnalyticsType;
+import org.hisp.dhis.common.BaseDimensionalObject;
 import org.hisp.dhis.common.BaseIdentifiableObject;
 import org.hisp.dhis.common.DimensionalObject;
 import org.hisp.dhis.common.DimensionalObjectUtils;
@@ -47,15 +48,22 @@ import org.hisp.dhis.common.NameableObject;
 import org.hisp.dhis.common.view.DetailedView;
 import org.hisp.dhis.common.view.DimensionalView;
 import org.hisp.dhis.common.view.ExportView;
+import org.hisp.dhis.dataelement.DataElement;
 import org.hisp.dhis.i18n.I18nFormat;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.program.Program;
 import org.hisp.dhis.program.ProgramStage;
+import org.hisp.dhis.trackedentity.TrackedEntityAttribute;
 import org.hisp.dhis.user.User;
+import org.hisp.dhis.util.ObjectUtils;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 /**
  * @author Jan Henrik Overland
@@ -68,19 +76,64 @@ public class EventChart
     public static final String COUNT_TYPE_EVENTS = "events";
     public static final String COUNT_TYPE_TRACKED_ENTITY_INSTANCES = "tracked_entity_instances";
 
+    /**
+     * Program. Required.
+     */
     private Program program;
 
+    /**
+     * Program stage.
+     */
     private ProgramStage programStage;
 
+    /**
+     * Start date.
+     */
     private Date startDate;
 
+    /**
+     * End date.
+     */
     private Date endDate;
 
+    /**
+     * Data element value dimension.
+     */
+    private DataElement dataElementValueDimension;
+    
+    /**
+     * Attribute value dimension.
+     */
+    private TrackedEntityAttribute attributeValueDimension;
+
+    /**
+     * Aggregation type.
+     */
+    private AggregationType aggregationType;
+    
+    /**
+     * Dimensions to crosstabulate / use as columns.
+     */
     private List<String> columnDimensions = new ArrayList<>();
 
+    /**
+     * Dimensions to use as rows.
+     */
     private List<String> rowDimensions = new ArrayList<>();
 
-    private String countType;
+    /**
+     * Indicates output type.
+     */
+    private EventOutputType outputType;
+
+    // -------------------------------------------------------------------------
+    // Analytical properties
+    // -------------------------------------------------------------------------
+
+    /**
+     * Value dimension.
+     */
+    private transient NameableObject value;
 
     // -------------------------------------------------------------------------
     // Constructors
@@ -125,6 +178,8 @@ public class EventChart
         {
             filters.addAll( getDimensionalObjectList( filter ) );
         }
+        
+        value = ObjectUtils.firstNonNull( dataElementValueDimension, attributeValueDimension );
     }
 
     @Override
@@ -222,6 +277,47 @@ public class EventChart
     }
 
     @JsonProperty
+    @JsonSerialize( as = BaseIdentifiableObject.class )
+    @JsonView( { DetailedView.class, ExportView.class, DimensionalView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public DataElement getDataElementValueDimension()
+    {
+        return dataElementValueDimension;
+    }
+
+    public void setDataElementValueDimension( DataElement dataElementValueDimension )
+    {
+        this.dataElementValueDimension = dataElementValueDimension;
+    }
+
+    @JsonProperty
+    @JsonSerialize( as = BaseIdentifiableObject.class )
+    @JsonView( { DetailedView.class, ExportView.class, DimensionalView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public TrackedEntityAttribute getAttributeValueDimension()
+    {
+        return attributeValueDimension;
+    }
+
+    public void setAttributeValueDimension( TrackedEntityAttribute attributeValueDimension )
+    {
+        this.attributeValueDimension = attributeValueDimension;
+    }
+
+    @JsonProperty
+    @JsonView( { DetailedView.class, ExportView.class, DimensionalView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public AggregationType getAggregationType()
+    {
+        return aggregationType;
+    }
+
+    public void setAggregationType( AggregationType aggregationType )
+    {
+        this.aggregationType = aggregationType;
+    }
+
+    @JsonProperty
     @JsonView( { DetailedView.class, ExportView.class } )
     @JacksonXmlElementWrapper( localName = "columnDimensions", namespace = DxfNamespaces.DXF_2_0 )
     @JacksonXmlProperty( localName = "columnDimension", namespace = DxfNamespaces.DXF_2_0 )
@@ -252,14 +348,33 @@ public class EventChart
     @JsonProperty
     @JsonView( { DetailedView.class, ExportView.class, DimensionalView.class } )
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
-    public String getCountType()
+    public EventOutputType getOutputType()
     {
-        return countType;
+        return outputType;
     }
 
-    public void setCountType( String countType )
+    public void setOutputType( EventOutputType outputType )
     {
-        this.countType = countType;
+        this.outputType = outputType;
+    }
+
+    // -------------------------------------------------------------------------
+    // Analytical properties
+    // -------------------------------------------------------------------------
+
+    @JsonProperty
+    @JsonDeserialize( as = BaseDimensionalObject.class )
+    @JsonSerialize( as = BaseDimensionalObject.class )
+    @JsonView( { DimensionalView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public NameableObject getValue()
+    {
+        return value;
+    }
+
+    public void setValue( NameableObject value )
+    {
+        this.value = value;
     }
 
     // -------------------------------------------------------------------------
@@ -273,30 +388,36 @@ public class EventChart
 
         if ( other.getClass().isInstance( this ) )
         {
-            EventChart eventChart = (EventChart) other;
+            EventChart chart = (EventChart) other;
 
             if ( MergeStrategy.MERGE_ALWAYS.equals( strategy ) )
             {
-                program = eventChart.getProgram();
-                programStage = eventChart.getProgramStage();
-                startDate = eventChart.getStartDate();
-                endDate = eventChart.getEndDate();
-                countType = eventChart.getCountType();
+                dataElementValueDimension = chart.getDataElementValueDimension();
+                attributeValueDimension = chart.getAttributeValueDimension();
+                aggregationType = chart.getAggregationType();
+                program = chart.getProgram();
+                programStage = chart.getProgramStage();
+                startDate = chart.getStartDate();
+                endDate = chart.getEndDate();
+                outputType = chart.getOutputType();
             }
             else if ( MergeStrategy.MERGE_IF_NOT_NULL.equals( strategy ) )
             {
-                program = eventChart.getProgram() == null ? program : eventChart.getProgram();
-                programStage = eventChart.getProgramStage() == null ? programStage : eventChart.getProgramStage();
-                startDate = eventChart.getStartDate() == null ? startDate : eventChart.getStartDate();
-                endDate = eventChart.getEndDate() == null ? endDate : eventChart.getEndDate();
-                countType = eventChart.getCountType() == null ? countType : eventChart.getCountType();
+                dataElementValueDimension = chart.getDataElementValueDimension() == null ? dataElementValueDimension : chart.getDataElementValueDimension();
+                attributeValueDimension = chart.getAttributeValueDimension() == null ? attributeValueDimension : chart.getAttributeValueDimension();
+                aggregationType = chart.getAggregationType() == null ? aggregationType : chart.getAggregationType();
+                program = chart.getProgram() == null ? program : chart.getProgram();
+                programStage = chart.getProgramStage() == null ? programStage : chart.getProgramStage();
+                startDate = chart.getStartDate() == null ? startDate : chart.getStartDate();
+                endDate = chart.getEndDate() == null ? endDate : chart.getEndDate();
+                outputType = chart.getOutputType() == null ? outputType : chart.getOutputType();
             }
 
             columnDimensions.clear();
-            columnDimensions.addAll( eventChart.getColumnDimensions() );
+            columnDimensions.addAll( chart.getColumnDimensions() );
 
             rowDimensions.clear();
-            rowDimensions.addAll( eventChart.getRowDimensions() );
+            rowDimensions.addAll( chart.getRowDimensions() );
         }
     }
 }

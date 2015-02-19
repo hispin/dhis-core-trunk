@@ -28,8 +28,6 @@ package org.hisp.dhis.trackedentity.action.dataentryform;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.hisp.dhis.dataentryform.DataEntryForm;
 import org.hisp.dhis.dataentryform.DataEntryFormService;
 import org.hisp.dhis.program.Program;
@@ -47,8 +45,6 @@ import com.opensymphony.xwork2.Action;
 public class SaveTrackedEntityFormAction
     implements Action
 {
-    Log logger = LogFactory.getLog( getClass() );
-
     // -------------------------------------------------------------------------
     // Dependencies
     // -------------------------------------------------------------------------
@@ -141,6 +137,7 @@ public class SaveTrackedEntityFormAction
             {
                 registrationForm.setProgram( program );
             }
+            
             formService.saveTrackedEntityForm( registrationForm );
         }
         else
@@ -157,6 +154,7 @@ public class SaveTrackedEntityFormAction
                 dataEntryForm.setHtmlCode( designTextarea );
                 dataEntryFormService.updateDataEntryForm( dataEntryForm );
             }
+            
             registrationForm.setDataEntryForm( dataEntryForm );
             formService.updateTrackedEntityForm( registrationForm );
         }
@@ -167,5 +165,4 @@ public class SaveTrackedEntityFormAction
 
         return SUCCESS;
     }
-
 }
