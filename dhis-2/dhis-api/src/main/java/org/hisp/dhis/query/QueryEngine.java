@@ -35,7 +35,7 @@ import java.util.List;
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
-public interface QueryEngine
+public interface QueryEngine<T>
 {
-    List<? extends IdentifiableObject> query( Query query );
+    List<T> query( Query query );
 }

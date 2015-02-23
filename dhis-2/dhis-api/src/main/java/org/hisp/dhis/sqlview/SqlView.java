@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hisp.dhis.common.BaseIdentifiableObject;
 import org.hisp.dhis.common.DxfNamespaces;
 import org.hisp.dhis.common.IdentifiableObject;
@@ -58,7 +58,7 @@ public class SqlView
     public static final String PREFIX_VIEWNAME = "_view";
 
     public static final Set<String> PROTECTED_TABLES = Sets.newHashSet( "users", "userinfo", 
-        "trackedentityinstance", "trackedentityattribute", "trackedentityattributevalue", "relationship" );
+        "trackedentityattribute", "trackedentityattributevalue" );
     
     public static final Set<String> ILLEGAL_KEYWORDS = Sets.newHashSet( "delete", "alter", "update", 
         "create", "drop", "commit", "createdb", "createuser", "insert", "rename", "replace", "restore", "write" );

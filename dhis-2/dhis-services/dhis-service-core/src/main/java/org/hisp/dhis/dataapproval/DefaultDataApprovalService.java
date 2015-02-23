@@ -203,6 +203,13 @@ public class DefaultDataApprovalService
             DataApproval d = dataApprovalStore.getDataApproval( da.getDataApprovalLevel(), da.getDataSet(),
                     da.getPeriod(), da.getOrganisationUnit(), da.getAttributeOptionCombo() );
 
+            if ( d == null )
+            {
+                log.warn( "unapproveData: approval not found at " + da );
+
+                throw new DataMayNotBeAcceptedException();
+            }
+
             dataApprovalStore.deleteDataApproval( d );
         }
         
@@ -255,6 +262,13 @@ public class DefaultDataApprovalService
             DataApproval d = dataApprovalStore.getDataApproval( da.getDataApprovalLevel(), da.getDataSet(),
                     da.getPeriod(), da.getOrganisationUnit(), da.getAttributeOptionCombo() );
 
+            if ( d == null )
+            {
+                log.warn( "acceptData: approval not found at " + da );
+
+                throw new DataMayNotBeAcceptedException();
+            }
+
             d.setAccepted( true );
 
             dataApprovalStore.updateDataApproval( d );
@@ -291,8 +305,7 @@ public class DefaultDataApprovalService
 
             if ( !status.getPermissions().isMayUnaccept() )
             {
-                log.warn( "unacceptData: data may not be unaccepted, state " + ( status == null ? "(null)" : status.getState().name() )
-                        + " " + da + " " + status.getPermissions() );
+                log.warn( "unacceptData: data may not be unaccepted, state " + status.getState().name() + " " + da + " " + status.getPermissions() );
 
                 throw new DataMayNotBeUnacceptedException();
             }
@@ -306,6 +319,13 @@ public class DefaultDataApprovalService
 
             DataApproval d = dataApprovalStore.getDataApproval( da.getDataApprovalLevel(), da.getDataSet(),
                     da.getPeriod(), da.getOrganisationUnit(), da.getAttributeOptionCombo() );
+
+            if ( d == null )
+            {
+                log.warn( "unacceptData: approval not found at " + da );
+
+                throw new DataMayNotBeAcceptedException();
+            }
 
             d.setAccepted( false );
 

@@ -78,7 +78,7 @@ public class DefaultI18nLocaleService
         {
             langs.add( new BaseIdentifiableObject( lang, lang, new Locale( lang ).getDisplayLanguage() ) );
         }
-        
+
         for ( String country : Locale.getISOCountries() )
         {
             countrs.add( new BaseIdentifiableObject( country, country, new Locale( "en", country ).getDisplayCountry() ) );

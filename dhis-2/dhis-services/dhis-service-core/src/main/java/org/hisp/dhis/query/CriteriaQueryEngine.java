@@ -28,8 +28,10 @@ package org.hisp.dhis.query;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Criteria;
 import org.hibernate.criterion.Criterion;
+import org.hibernate.criterion.Disjunction;
 import org.hibernate.criterion.Restrictions;
 import org.hisp.dhis.common.IdentifiableObject;
 import org.hisp.dhis.hibernate.HibernateGenericStore;
@@ -37,8 +39,8 @@ import org.hisp.dhis.schema.Property;
 import org.hisp.dhis.schema.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,25 +48,16 @@ import java.util.Map;
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
-public class CriteriaQueryEngine implements QueryEngine
+public class CriteriaQueryEngine<T extends IdentifiableObject> implements QueryEngine<T>
 {
     @Autowired
-    private final List<HibernateGenericStore> hibernateGenericStores = new ArrayList<>();
+    private final List<HibernateGenericStore<? extends IdentifiableObject>> hibernateGenericStores = new ArrayList<>();
 
-    private final Map<Class<?>, HibernateGenericStore> stores = new HashMap<>();
-
-    @PostConstruct
-    public void init()
-    {
-        for ( HibernateGenericStore store : hibernateGenericStores )
-        {
-            stores.put( store.getClazz(), store );
-        }
-    }
+    private Map<Class<?>, HibernateGenericStore<? extends IdentifiableObject>> stores = new HashMap<>();
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public List<? extends IdentifiableObject> query( Query query )
+    public List<T> query( Query query )
     {
         Schema schema = query.getSchema();
 
@@ -73,7 +66,7 @@ public class CriteriaQueryEngine implements QueryEngine
             return new ArrayList<>();
         }
 
-        HibernateGenericStore store = stores.get( schema.getKlass() );
+        HibernateGenericStore store = getStore( (Class<? extends IdentifiableObject>) schema.getKlass() );
 
         if ( store == null )
         {
@@ -92,6 +85,8 @@ public class CriteriaQueryEngine implements QueryEngine
 
     private Criteria buildCriteria( Criteria criteria, Query query )
     {
+        Map<Operator, List<Restriction>> restrictions = new HashMap<>();
+
         if ( query.getFirstResult() != null )
         {
             criteria.setFirstResult( query.getFirstResult() );
@@ -104,7 +99,31 @@ public class CriteriaQueryEngine implements QueryEngine
 
         for ( Restriction restriction : query.getRestrictions() )
         {
-            criteria.add( getHibernateCriterion( query.getSchema(), restriction ) );
+            if ( !restrictions.containsKey( restriction.getOperator() ) )
+            {
+                restrictions.put( restriction.getOperator(), new ArrayList<Restriction>() );
+            }
+
+            restrictions.get( restriction.getOperator() ).add( restriction );
+        }
+
+        for ( Map.Entry<Operator, List<Restriction>> restriction : restrictions.entrySet() )
+        {
+            if ( restriction.getValue().size() == 1 )
+            {
+                criteria.add( getHibernateCriterion( query.getSchema(), restriction.getValue().get( 0 ) ) );
+            }
+            else
+            {
+                Disjunction disjunction = Restrictions.disjunction();
+
+                for ( Restriction r : restriction.getValue() )
+                {
+                    disjunction.add( getHibernateCriterion( query.getSchema(), r ) );
+                }
+
+                criteria.add( disjunction );
+            }
         }
 
         for ( Order order : query.getOrders() )
@@ -124,43 +143,54 @@ public class CriteriaQueryEngine implements QueryEngine
 
         Property property = schema.getProperty( restriction.getPath() );
 
+        List<Object> parameters = new ArrayList<>();
+
+        for ( Object parameter : restriction.getParameters() )
+        {
+            parameters.add( getValue( property, parameter ) );
+        }
+
         switch ( restriction.getOperator() )
         {
             case EQ:
             {
-                return Restrictions.eq( property.getFieldName(), restriction.getParameter( 0 ) );
+                return Restrictions.eq( property.getFieldName(), parameters.get( 0 ) );
             }
             case NE:
             {
-                return Restrictions.ne( property.getFieldName(), restriction.getParameter( 0 ) );
+                return Restrictions.ne( property.getFieldName(), parameters.get( 0 ) );
             }
             case GT:
             {
-                return Restrictions.gt( property.getFieldName(), restriction.getParameter( 0 ) );
+                return Restrictions.gt( property.getFieldName(), parameters.get( 0 ) );
             }
             case LT:
             {
-                return Restrictions.lt( property.getFieldName(), restriction.getParameter( 0 ) );
+                return Restrictions.lt( property.getFieldName(), parameters.get( 0 ) );
             }
             case GE:
             {
-                return Restrictions.ge( property.getFieldName(), restriction.getParameter( 0 ) );
+                return Restrictions.ge( property.getFieldName(), parameters.get( 0 ) );
             }
             case LE:
             {
-                return Restrictions.le( property.getFieldName(), restriction.getParameter( 0 ) );
+                return Restrictions.le( property.getFieldName(), parameters.get( 0 ) );
             }
             case BETWEEN:
             {
-                return Restrictions.between( property.getFieldName(), restriction.getParameter( 0 ), restriction.getParameter( 1 ) );
+                return Restrictions.between( property.getFieldName(), parameters.get( 0 ), parameters.get( 1 ) );
             }
             case LIKE:
             {
-                return Restrictions.like( property.getFieldName(), restriction.getParameter( 0 ) );
+                return Restrictions.like( property.getFieldName(), parameters.get( 0 ) );
+            }
+            case ILIKE:
+            {
+                return Restrictions.ilike( property.getFieldName(), parameters.get( 0 ) );
             }
             case IN:
             {
-                return Restrictions.in( property.getFieldName(), restriction.getParameters() );
+                return Restrictions.in( property.getFieldName(), parameters );
             }
         }
 
@@ -191,5 +221,104 @@ public class CriteriaQueryEngine implements QueryEngine
         }
 
         return criteriaOrder;
+    }
+
+    private void initStoreMap()
+    {
+        if ( !stores.isEmpty() )
+        {
+            return;
+        }
+
+        for ( HibernateGenericStore<? extends IdentifiableObject> store : hibernateGenericStores )
+        {
+            stores.put( store.getClazz(), store );
+        }
+    }
+
+    private HibernateGenericStore getStore( Class<? extends IdentifiableObject> klass )
+    {
+        initStoreMap();
+        return stores.get( klass );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <T> T getValue( Property property, Object objectValue )
+    {
+        Class<?> klass = property.getKlass();
+
+        if ( !String.class.isInstance( objectValue ) )
+        {
+            return (T) objectValue;
+        }
+
+        String value = (String) objectValue;
+
+        if ( klass.isInstance( value ) )
+        {
+            return (T) value;
+        }
+
+        if ( Boolean.class.isAssignableFrom( klass ) )
+        {
+            try
+            {
+                return (T) Boolean.valueOf( value );
+            }
+            catch ( Exception ignored )
+            {
+            }
+        }
+        else if ( Integer.class.isAssignableFrom( klass ) )
+        {
+            try
+            {
+                return (T) Integer.valueOf( value );
+            }
+            catch ( Exception ignored )
+            {
+            }
+        }
+        else if ( Float.class.isAssignableFrom( klass ) )
+        {
+            try
+            {
+                return (T) Float.valueOf( value );
+            }
+            catch ( Exception ignored )
+            {
+            }
+        }
+        else if ( Double.class.isAssignableFrom( klass ) )
+        {
+            try
+            {
+                return (T) Double.valueOf( value );
+            }
+            catch ( Exception ignored )
+            {
+            }
+        }
+        else if ( Date.class.isAssignableFrom( klass ) )
+        {
+            try
+            {
+                return (T) DateUtils.parseDate( value,
+                    "yyyy-MM-dd'T'HH:mm:ssZ",
+                    "yyyy-MM-dd'T'HH:mm:ss",
+                    "yyyy-MM-dd'T'HH:mm",
+                    "yyyy-MM-dd'T'HH",
+                    "yyyy-MM-dd",
+                    "yyyy-MM",
+                    "yyyyMMdd",
+                    "yyyyMM",
+                    "yyyy" );
+            }
+            catch ( Exception ignored )
+            {
+            }
+        }
+
+        return null;
     }
 }

@@ -35,7 +35,7 @@ import org.junit.Test;
 
 import java.util.Date;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -59,7 +59,13 @@ public class QueryTest
         schema.addProperty( createProperty( String.class, "id", true, true ) );
         schema.addProperty( createProperty( String.class, "name", true, true ) );
         schema.addProperty( createProperty( String.class, "code", true, true ) );
+        schema.addProperty( createProperty( Date.class, "created", true, true ) );
         schema.addProperty( createProperty( Date.class, "lastUpdated", true, true ) );
+
+        schema.addProperty( createProperty( Integer.class, "int", true, true ) );
+        schema.addProperty( createProperty( Long.class, "long", true, true ) );
+        schema.addProperty( createProperty( Float.class, "float", true, true ) );
+        schema.addProperty( createProperty( Double.class, "double", true, true ) );
 
         return schema;
     }
@@ -89,5 +95,26 @@ public class QueryTest
         query.add( new Restriction( "lastUpdated", Operator.BETWEEN, new Date(), 1, 2, 3, 4 ) );
 
         assertEquals( 0, query.getRestrictions().size() );
+    }
+
+    @Test
+    public void operatorValid()
+    {
+        Schema schema = createSchema();
+
+        assertTrue( Operator.EQ.isValid( schema.getProperty( "id" ) ) );
+        assertTrue( Operator.GE.isValid( schema.getProperty( "id" ) ) );
+        assertTrue( Operator.LT.isValid( schema.getProperty( "id" ) ) );
+        assertTrue( Operator.GE.isValid( schema.getProperty( "id" ) ) );
+        assertTrue( Operator.LE.isValid( schema.getProperty( "id" ) ) );
+        assertTrue( Operator.BETWEEN.isValid( schema.getProperty( "id" ) ) );
+        assertTrue( Operator.LIKE.isValid( schema.getProperty( "id" ) ) );
+
+        assertTrue( Operator.EQ.isValid( schema.getProperty( "int" ) ) );
+        assertTrue( Operator.EQ.isValid( schema.getProperty( "long" ) ) );
+        assertTrue( Operator.EQ.isValid( schema.getProperty( "float" ) ) );
+        assertTrue( Operator.EQ.isValid( schema.getProperty( "double" ) ) );
+
+        assertFalse( Operator.LIKE.isValid( schema.getProperty( "lastUpdated" ) ) );
     }
 }

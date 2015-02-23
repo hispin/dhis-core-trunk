@@ -37,7 +37,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hisp.dhis.appmanager.App;
@@ -221,6 +221,7 @@ public class AppController
         if ( config == null )
         {
             ContextUtils.conflictResponse( response, "No config specified" );
+            return;
         }
         
         String appBaseUrl = StringUtils.trimToNull( config.get( AppManager.KEY_APP_BASE_URL ) );

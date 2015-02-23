@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hisp.dhis.message.MessageSender;
@@ -78,12 +78,18 @@ public class SmsMessageSender
     {
         String message = null;
 
-        Map<String, String> gatewayMap = outboundSmsTransportService != null ? outboundSmsTransportService
-            .getGatewayMap() : null;
+        if ( outboundSmsTransportService == null )
+        {
+            return "No gateway";
+        }
+        
+        Map<String, String> gatewayMap = outboundSmsTransportService.getGatewayMap();
 
         String gatewayId = StringUtils.trimToNull( outboundSmsTransportService.getDefaultGateway() );
+        
+        boolean gatewayEnabled = outboundSmsTransportService.isEnabled();
 
-        if ( gatewayMap == null || gatewayId == null || !outboundSmsTransportService.isEnabled() )
+        if ( gatewayMap == null || gatewayId == null || !gatewayEnabled )
         {
             return "No gateway";
         }

@@ -28,7 +28,26 @@ package org.hisp.dhis.dxf2.datavalueset;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.csvreader.CsvReader;
+import static com.google.common.collect.Sets.newHashSet;
+import static org.apache.commons.lang3.StringUtils.trimToNull;
+import static org.hisp.dhis.common.IdentifiableProperty.UUID;
+import static org.hisp.dhis.system.notification.NotificationLevel.ERROR;
+import static org.hisp.dhis.system.notification.NotificationLevel.INFO;
+import static org.hisp.dhis.system.util.ConversionUtils.wrap;
+import static org.hisp.dhis.system.util.DateUtils.getDefaultDate;
+import static org.hisp.dhis.system.util.DateUtils.parseDate;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.amplecode.quick.BatchHandler;
 import org.amplecode.quick.BatchHandlerFactory;
 import org.amplecode.staxwax.factory.XMLFactory;
@@ -46,14 +65,14 @@ import org.hisp.dhis.dataset.CompleteDataSetRegistrationService;
 import org.hisp.dhis.dataset.DataSet;
 import org.hisp.dhis.dataset.DataSetService;
 import org.hisp.dhis.datavalue.DataValue;
+import org.hisp.dhis.dxf2.common.IdSchemes;
+import org.hisp.dhis.dxf2.common.ImportOptions;
+import org.hisp.dhis.dxf2.common.JacksonUtils;
 import org.hisp.dhis.dxf2.importsummary.ImportConflict;
 import org.hisp.dhis.dxf2.importsummary.ImportCount;
 import org.hisp.dhis.dxf2.importsummary.ImportStatus;
 import org.hisp.dhis.dxf2.importsummary.ImportSummary;
-import org.hisp.dhis.dxf2.common.ImportOptions;
 import org.hisp.dhis.dxf2.pdfform.PdfDataEntryFormUtil;
-import org.hisp.dhis.dxf2.common.IdSchemes;
-import org.hisp.dhis.dxf2.common.JacksonUtils;
 import org.hisp.dhis.i18n.I18n;
 import org.hisp.dhis.i18n.I18nManager;
 import org.hisp.dhis.importexport.ImportStrategy;
@@ -68,33 +87,16 @@ import org.hisp.dhis.period.Period;
 import org.hisp.dhis.period.PeriodService;
 import org.hisp.dhis.period.PeriodType;
 import org.hisp.dhis.scheduling.TaskId;
+import org.hisp.dhis.system.callable.IdentifiableObjectCallable;
 import org.hisp.dhis.system.notification.Notifier;
+import org.hisp.dhis.system.util.CachingMap;
 import org.hisp.dhis.system.util.DateUtils;
 import org.hisp.dhis.system.util.DebugUtils;
 import org.hisp.dhis.system.util.ValidationUtils;
 import org.hisp.dhis.user.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.nio.charset.Charset;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static com.google.common.collect.Sets.newHashSet;
-import static org.apache.commons.lang.StringUtils.trimToNull;
-import static org.hisp.dhis.common.IdentifiableProperty.UUID;
-import static org.hisp.dhis.system.notification.NotificationLevel.ERROR;
-import static org.hisp.dhis.system.notification.NotificationLevel.INFO;
-import static org.hisp.dhis.system.util.ConversionUtils.wrap;
-import static org.hisp.dhis.system.util.DateUtils.getDefaultDate;
-import static org.hisp.dhis.system.util.DateUtils.parseDate;
+import com.csvreader.CsvReader;
 
 /**
  * @author Lars Helge Overland
@@ -592,13 +594,13 @@ public class DefaultDataValueSetService
 
         I18n i18n = i18nManager.getI18n();
 
+        //----------------------------------------------------------------------
+        // Get import options
+        //----------------------------------------------------------------------
+
         importOptions = importOptions != null ? importOptions : ImportOptions.getDefaultImportOptions();
 
         log.info( "Import options: " + importOptions );
-
-        //----------------------------------------------------------------------
-        // Get id scheme
-        //----------------------------------------------------------------------
 
         IdentifiableProperty dvSetIdScheme = dataValueSet.getIdSchemeProperty();
         IdentifiableProperty dvSetDataElementIdScheme = dataValueSet.getDataElementIdSchemeProperty();
@@ -615,40 +617,47 @@ public class DefaultDataValueSetService
         boolean dryRun = dataValueSet.getDryRun() != null ? dataValueSet.getDryRun() : importOptions.isDryRun();
 
         ImportStrategy strategy = dataValueSet.getStrategy() != null ?
-            ImportStrategy.valueOf( dataValueSet.getStrategy() ) :
-            importOptions.getImportStrategy();
+            ImportStrategy.valueOf( dataValueSet.getStrategy() ) : importOptions.getImportStrategy();
 
         boolean skipExistingCheck = importOptions.isSkipExistingCheck();
 
         //----------------------------------------------------------------------
-        // Build meta-data maps
+        // Create meta-data maps
         //----------------------------------------------------------------------
 
-        Map<String, DataElement> dataElementMap = identifiableObjectManager.getIdMap( DataElement.class, dataElementIdScheme );
-        Map<String, OrganisationUnit> orgUnitMap = orgUnitIdScheme == UUID ? getUuidOrgUnitMap() : identifiableObjectManager.getIdMap( OrganisationUnit.class, orgUnitIdScheme );
+        CachingMap<String, DataElement> dataElementMap = new CachingMap<>();
+        CachingMap<String, OrganisationUnit> orgUnitMap = new CachingMap<>();
         Map<String, DataElementCategoryOptionCombo> categoryOptionComboMap = identifiableObjectManager.getIdMap( DataElementCategoryOptionCombo.class, idScheme );
         Map<String, Period> periodMap = new HashMap<>();
 
+        //----------------------------------------------------------------------
+        // Load meta-data maps
+        //----------------------------------------------------------------------
+
+        if ( importOptions.isPreheatCache() )
+        {
+            notifier.notify( id, "Loading data elements and organisation units" );
+            dataElementMap.putAll( identifiableObjectManager.getIdMap( DataElement.class, dataElementIdScheme ) );
+            orgUnitMap.putAll( getOrgUnitMap( orgUnitIdScheme ) );
+        }
+        
+        //----------------------------------------------------------------------
+        // Get outer meta-data
+        //----------------------------------------------------------------------
+
         DataSet dataSet = dataValueSet.getDataSet() != null ? identifiableObjectManager.getObject( DataSet.class, idScheme, dataValueSet.getDataSet() ) : null;
+        
         Date completeDate = getDefaultDate( dataValueSet.getCompleteDate() );
 
         Period outerPeriod = PeriodType.getPeriodFromIsoString( trimToNull( dataValueSet.getPeriod() ) );
 
-        OrganisationUnit outerOrgUnit = null;
+        OrganisationUnit outerOrgUnit = orgUnitMap.get( trimToNull( dataValueSet.getOrgUnit() ), 
+            new IdentifiableObjectCallable<>( identifiableObjectManager, OrganisationUnit.class, trimToNull( dataValueSet.getOrgUnit() ) ) );
 
         DataElementCategoryOptionCombo fallbackCategoryOptionCombo = categoryService.getDefaultDataElementCategoryOptionCombo();
 
-        if ( orgUnitIdScheme.equals( IdentifiableProperty.UUID ) )
-        {
-            outerOrgUnit = dataValueSet.getOrgUnit() == null ? null : organisationUnitService.getOrganisationUnitByUuid( dataValueSet.getOrgUnit() );
-        }
-        else
-        {
-            outerOrgUnit = dataValueSet.getOrgUnit() != null ? identifiableObjectManager.getObject( OrganisationUnit.class, orgUnitIdScheme, dataValueSet.getOrgUnit() ) : null;
-        }
-
-        DataElementCategoryOptionCombo outerAttrOptionCombo = dataValueSet.getAttributeOptionCombo() != null ?
-            identifiableObjectManager.getObject( DataElementCategoryOptionCombo.class, idScheme, trimToNull( dataValueSet.getAttributeOptionCombo() ) ) : null;
+        DataElementCategoryOptionCombo outerAttrOptionCombo = 
+            dataValueSet.getAttributeOptionCombo() != null ? categoryOptionComboMap.get( dataValueSet.getAttributeOptionCombo() ) : null;
 
         // ---------------------------------------------------------------------
         // Validation
@@ -715,9 +724,11 @@ public class DefaultDataValueSetService
 
             totalCount++;
 
-            DataElement dataElement = dataElementMap.get( trimToNull( dataValue.getDataElement() ) );
+            DataElement dataElement = dataElementMap.get( trimToNull( dataValue.getDataElement() ),
+                new IdentifiableObjectCallable<>( identifiableObjectManager, DataElement.class, trimToNull( dataValue.getDataElement() ) ) );
             Period period = outerPeriod != null ? outerPeriod : PeriodType.getPeriodFromIsoString( trimToNull( dataValue.getPeriod() ) );
-            OrganisationUnit orgUnit = outerOrgUnit != null ? outerOrgUnit : orgUnitMap.get( trimToNull( dataValue.getOrgUnit() ) );
+            OrganisationUnit orgUnit = outerOrgUnit != null ? outerOrgUnit : orgUnitMap.get( trimToNull( dataValue.getOrgUnit() ), 
+                new IdentifiableObjectCallable<>( identifiableObjectManager, OrganisationUnit.class, trimToNull( dataValue.getOrgUnit() ) ) );
             DataElementCategoryOptionCombo categoryOptionCombo = categoryOptionComboMap.get( trimToNull( dataValue.getCategoryOptionCombo() ) );
             DataElementCategoryOptionCombo attrOptionCombo = outerAttrOptionCombo != null ? outerAttrOptionCombo :
                 categoryOptionComboMap.get( trimToNull( dataValue.getAttributeOptionCombo() ) );
@@ -875,7 +886,7 @@ public class DefaultDataValueSetService
 
         int ignores = totalCount - importCount - updateCount;
 
-        summary.setDataValueCount( new ImportCount( importCount, updateCount, ignores, 0 ) );
+        summary.setImportCount( new ImportCount( importCount, updateCount, ignores, 0 ) );
         summary.setStatus( ImportStatus.SUCCESS );
         summary.setDescription( "Import process completed successfully" );
 
@@ -930,17 +941,10 @@ public class DefaultDataValueSetService
         summary.setDataSetComplete( DateUtils.getMediumDateString( completeDate ) );
     }
 
-    private Map<String, OrganisationUnit> getUuidOrgUnitMap()
+    private Map<String, OrganisationUnit> getOrgUnitMap( IdentifiableProperty orgUnitIdScheme )
     {
-        Map<String, OrganisationUnit> orgUnitMap = new HashMap<>();
-
-        Collection<OrganisationUnit> allOrganisationUnits = organisationUnitService.getAllOrganisationUnits();
-
-        for ( OrganisationUnit organisationUnit : allOrganisationUnits )
-        {
-            orgUnitMap.put( organisationUnit.getUuid(), organisationUnit );
-        }
-
-        return orgUnitMap;
+        return UUID.equals( orgUnitIdScheme ) ? 
+            organisationUnitService.getUuidOrganisationUnitMap() : 
+                identifiableObjectManager.getIdMap( OrganisationUnit.class, orgUnitIdScheme );
     }
 }

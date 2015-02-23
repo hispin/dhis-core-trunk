@@ -29,9 +29,12 @@ package org.hisp.dhis.query;
  */
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Optional;
+import org.hisp.dhis.schema.Property;
 import org.hisp.dhis.schema.Schema;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -89,9 +92,10 @@ public class Query
         return firstResult;
     }
 
-    public void setFirstResult( Integer firstResult )
+    public Query setFirstResult( Integer firstResult )
     {
         this.firstResult = firstResult;
+        return this;
     }
 
     public Integer getMaxResults()
@@ -99,9 +103,10 @@ public class Query
         return maxResults;
     }
 
-    public void setMaxResults( Integer maxResults )
+    public Query setMaxResults( Integer maxResults )
     {
         this.maxResults = maxResults;
+        return this;
     }
 
     // Builder
@@ -126,6 +131,12 @@ public class Query
         return this;
     }
 
+    public Query add( Collection<Restriction> restrictions )
+    {
+        this.restrictions.addAll( restrictions );
+        return this;
+    }
+
     public Query addOrder( Order... orders )
     {
         for ( Order order : orders )
@@ -139,12 +150,39 @@ public class Query
         return this;
     }
 
-    public Query addOrders( List<Order> orders )
+    public Query addOrders( Collection<Order> orders )
     {
         this.orders.addAll( orders );
         return this;
     }
 
+    public Query forceDefaultOrder()
+    {
+        orders.clear();
+        return setDefaultOrder();
+    }
+
+    public Query setDefaultOrder()
+    {
+        if ( !orders.isEmpty() )
+        {
+            return this;
+        }
+
+        Optional<Property> name = Optional.fromNullable( schema.getProperty( "name" ) );
+        Optional<Property> created = Optional.fromNullable( schema.getProperty( "created" ) );
+
+        if ( name.isPresent() )
+        {
+            addOrder( Order.asc( name.get() ) );
+        }
+        else if ( created.isPresent() )
+        {
+            addOrder( Order.desc( created.get() ) );
+        }
+
+        return this;
+    }
 
     @Override
     public String toString()

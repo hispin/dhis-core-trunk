@@ -28,28 +28,42 @@ package org.hisp.dhis.query;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import org.hisp.dhis.schema.Klass;
+
+import java.util.Date;
+
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
 public enum Operator
 {
-    // TODO should probably introduce typed parameters here, but for now we just use a simple integer
-    EQ( 1 ),
-    NE( 1 ),
-    GT( 1 ),
-    LT( 1 ),
-    GE( 1 ),
-    LE( 1 ),
-    BETWEEN( 2 ),
-    LIKE( 1 ),
+    EQ( Typed.from( String.class, Boolean.class, Number.class, Date.class ), 1 ),
+    NE( Typed.from( String.class, Boolean.class, Number.class, Date.class ), 1 ),
+    GT( Typed.from( String.class, Boolean.class, Number.class, Date.class ), 1 ),
+    LT( Typed.from( String.class, Boolean.class, Number.class, Date.class ), 1 ),
+    GE( Typed.from( String.class, Boolean.class, Number.class, Date.class ), 1 ),
+    LE( Typed.from( String.class, Boolean.class, Number.class, Date.class ), 1 ),
+    BETWEEN( Typed.from( String.class, Number.class, Date.class ), 2 ),
+    LIKE( Typed.from( String.class ), 1 ),
+    ILIKE( Typed.from( String.class ), 1 ),
     IN( 1, Integer.MAX_VALUE );
 
     Integer min;
 
     Integer max;
 
+    // default is to allow all types
+    Typed typed = Typed.from();
+
     Operator()
     {
+        this.min = null;
+        this.max = null;
+    }
+
+    Operator( Typed typed )
+    {
+        this.typed = typed;
         this.min = null;
         this.max = null;
     }
@@ -60,8 +74,22 @@ public enum Operator
         this.max = value;
     }
 
+    Operator( Typed typed, int value )
+    {
+        this.typed = typed;
+        this.min = value;
+        this.max = value;
+    }
+
     Operator( int min, int max )
     {
+        this.min = min;
+        this.max = max;
+    }
+
+    Operator( Typed typed, int min, int max )
+    {
+        this.typed = typed;
         this.min = min;
         this.max = max;
     }
@@ -74,5 +102,15 @@ public enum Operator
     public Integer getMax()
     {
         return max;
+    }
+
+    public boolean isValid( Klass klass )
+    {
+        return typed.isValid( klass );
+    }
+
+    public boolean isValid( Class<?> klass )
+    {
+        return typed.isValid( klass );
     }
 }

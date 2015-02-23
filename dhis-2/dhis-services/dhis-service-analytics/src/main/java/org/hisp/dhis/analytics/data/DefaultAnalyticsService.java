@@ -28,7 +28,7 @@ package org.hisp.dhis.analytics.data;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hisp.dhis.analytics.AggregationType;
@@ -473,18 +473,11 @@ public class DefaultAnalyticsService
 
             metaData.put( NAMES_META_KEY, uidNameMap );
 
-            List<String> periodUids = new ArrayList<>();
-
             Calendar calendar = PeriodType.getCalendar();
 
-            if ( calendar.isIso8601() )
-            {
-                periodUids = getUids( params.getDimensionOrFilter( PERIOD_DIM_ID ) );
-            }
-            else
-            {
-                periodUids = getLocalPeriodIdentifiers( params.getDimensionOrFilter( PERIOD_DIM_ID ), calendar );
-            }
+            List<String> periodUids = calendar.isIso8601() ? 
+                getUids( params.getDimensionOrFilter( PERIOD_DIM_ID ) ) :
+                    getLocalPeriodIdentifiers( params.getDimensionOrFilter( PERIOD_DIM_ID ), calendar );
 
             metaData.put( PERIOD_DIM_ID, periodUids );
             metaData.put( ORGUNIT_DIM_ID, getUids( params.getDimensionOrFilter( ORGUNIT_DIM_ID ) ) );

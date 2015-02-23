@@ -36,7 +36,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hisp.dhis.common.BaseIdentifiableObject;
 import org.hisp.dhis.common.CodeGenerator;
 import org.hisp.dhis.common.ListMap;
@@ -183,6 +183,7 @@ public class DefaultCsvImportService
             {
                 DataElement object = new DataElement();
                 setIdentifiableObject( object, values );
+                object.setCode( getSafe( values, 2, null, 230 ) ); //TODO temporary hack
                 object.setShortName( getSafe( values, 3, object.getName(), 50 ) );
                 object.setDescription( getSafe( values, 4, null, null ) );
                 object.setFormName( getSafe( values, 5, null, 230 ) );
