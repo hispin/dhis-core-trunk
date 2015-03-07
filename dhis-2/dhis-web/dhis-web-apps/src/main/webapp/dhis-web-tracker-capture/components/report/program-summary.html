@@ -1,6 +1,3 @@
-<script src="../dhis-web-commons/ouwt/ouwt.js"></script>
-<script src="scripts/tracker-capture.js"></script>
-
 <div id="leftBar">   
     <div class="left-bar-menu" ng-controller="LeftBarMenuController">
         <ul class="nav nav-pills nav-stacked">
@@ -12,7 +9,7 @@
         <ul>
         </ul>
     </div>
-    <img id="ouwt_loader" src="../images/ajax-loader-bar.gif"/>
+    <img id="ouwt_loader" src="../images/ajax-loader-bar.gif" alt="{{'loading_tree' | translate}}"/>
     <!--- selected org unit begins -->
     <input type="text" selected-org-unit ng-model="selectedOrgUnit.name" ng-hide=true>
     <!--- selected org unit ends  -->
@@ -55,25 +52,25 @@
                             </td>
                             <td>
                                 <span class='bold inline-block' ng-if='!dhis2Events[tei.id]'>{{'no_visit_made'| translate}}</span>
-                                <span class="inline-block" ng-repeat="ev in dhis2Events[tei.id] | orderBy: 'eventDate'">                                    
+                                <div class="inline-block" ng-repeat="ev in dhis2Events[tei.id] | orderBy: 'eventDate'">                                    
                                     <span class="block align-center">{{ev.orgUnitName}}</span>                   
-                                    <span class="empty-event-container" 
+                                    <div class="empty-event-container" 
                                          title="{{'no_data'| translate}}"
                                          ng-class="{'{{ev.statusColor}}': true}"
                                          ng-if='!ev.dataValues'>
                                         {{ev.name}}<br/>
                                         {{ev.eventDate}}
-                                    </span>
-                                    <span class="event-container" 
+                                    </div>
+                                    <div class="event-container" 
                                          title="{{'details'| translate}}"
                                          ng-class="{'{{ev.statusColor}}': true}"
                                          ng-if='ev.dataValues'
                                          ng-click="showEventDetails(ev, tei)">
                                         {{ev.name}}<br/>
                                         {{ev.eventDate}}
-                                    </span>                                    
+                                    </div>                                    
                                     <i class="fa fa-arrow-right" ng-show="$index < dhis2Events[tei.id].length - 1"></i>
-                                </span>                                             
+                                </div>                                             
                             </td>
                         </tr>
                     </table>

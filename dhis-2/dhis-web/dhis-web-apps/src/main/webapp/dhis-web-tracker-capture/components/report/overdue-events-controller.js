@@ -10,6 +10,8 @@ trackerCapture.controller('OverdueEventsController',
                 TEIGridService,
                 AttributesFactory,
                 ProgramFactory,
+                CurrentSelection,
+                OptionSetService,
                 storage) {    
     $scope.today = DateUtils.getToday();
     
@@ -18,6 +20,32 @@ trackerCapture.controller('OverdueEventsController',
     $scope.displayMode = {};
     $scope.printMode = false;
     
+    //get optionsets
+    $scope.optionSets = CurrentSelection.getOptionSets();
+    if(!$scope.optionSets){
+        $scope.optionSets = [];
+        OptionSetService.getAll().then(function(optionSets){
+            angular.forEach(optionSets, function(optionSet){                        
+                $scope.optionSets[optionSet.id] = optionSet;
+            });
+
+            CurrentSelection.setOptionSets($scope.optionSets);
+        });
+    }
+    
+    //get attributes
+    $scope.attributesById = CurrentSelection.getAttributesById();
+    if(!$scope.attributesById){
+        AttributesFactory.getAll().then(function(atts){
+            $scope.attributes = [];  
+            $scope.attributesById = [];
+            angular.forEach(atts, function(att){
+                $scope.attributesById[att.id] = att;
+            });
+            CurrentSelection.setAttributesById($scope.attributesById);
+        });
+    }    
+
     //Paging
     $scope.pager = {pageSize: 50, page: 1, toolBarDisplay: 5};   
     
@@ -25,6 +53,7 @@ trackerCapture.controller('OverdueEventsController',
     $scope.$watch('selectedOrgUnit', function() {
         $scope.reportFinished = false;
         $scope.reportStarted = false;
+        $scope.selectedProgram = null;
         if( angular.isObject($scope.selectedOrgUnit)){            
             storage.set('SELECTED_OU', $scope.selectedOrgUnit);            
             $scope.loadPrograms($scope.selectedOrgUnit);
@@ -35,30 +64,11 @@ trackerCapture.controller('OverdueEventsController',
     $scope.loadPrograms = function(orgUnit) {        
         $scope.selectedOrgUnit = orgUnit;        
         if (angular.isObject($scope.selectedOrgUnit)){
-            ProgramFactory.getAll().then(function(programs){
-                $scope.programs = programs;                
-                if($scope.programs.length === 1){
-                    $scope.selectedProgram = $scope.programs[0];
-                }
-                else{
-                    if(angular.isObject($scope.selectedProgram)){
-                        var continueLoop = true;
-                        for(var i=0; i<programs.length && continueLoop; i++){
-                            if(programs[i].id === $scope.selectedProgram.id){
-                                $scope.selectedProgram = programs[i];
-                                continueLoop = false;
-                            }
-                        }
-                        if(continueLoop){
-                            $scope.selectedProgram = null;
-                        }
-                    }
-                    else{
-                        $scope.selectedProgram = null;
-                    }
-                }
+            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram).then(function(response){
+                $scope.programs = response.programs;
+                $scope.selectedProgram = response.selectedProgram;
             });
-        }        
+        }
     };
     
     //watch for selection of program
@@ -102,20 +112,20 @@ trackerCapture.controller('OverdueEventsController',
                 }
                     
                 angular.forEach(data.eventRows, function(row){
-                    var overdueEvent = {};
+                    var overdueEvent = {};                    
                     angular.forEach(row.attributes, function(att){
-                        overdueEvent[att.attribute] = att.value;
+                        var val = AttributesFactory.formatAttributeValue(att, $scope.attributesById, $scope.optionSets, 'USER');                        
+                        overdueEvent[att.attribute] = val;                        
                     });
                     
                     overdueEvent.dueDate = DateUtils.formatFromApiToUser(row.dueDate);
                     overdueEvent.event = row.event;
                     overdueEvent.eventName = $scope.programStages[row.programStage].name;
-                    overdueEvent.orgUnitName = row.orgUnitName;                    
+                    overdueEvent.orgUnitName = row.eventOrgUnitName;                    
                     overdueEvent.followup = row.followup;
                     overdueEvent.program = row.program;
                     overdueEvent.programStage = row.programStage;
                     overdueEvent.trackedEntityInstance = row.trackedEntityInstance;
-                    overdueEvent.orgUnitName = row.registrationOrgUnit;
                     overdueEvent.created = DateUtils.formatFromApiToUser(row.registrationDate);;
                     $scope.overdueEvents.push(overdueEvent);
                     

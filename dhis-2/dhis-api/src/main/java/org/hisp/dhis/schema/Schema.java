@@ -41,6 +41,7 @@ import org.hisp.dhis.common.DxfNamespaces;
 import org.hisp.dhis.common.IdentifiableObject;
 import org.hisp.dhis.common.NameableObject;
 import org.springframework.core.Ordered;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -325,6 +326,22 @@ public class Schema implements Ordered, Klass
     public boolean haveProperty( String propertyName )
     {
         return getPropertyMap().containsKey( propertyName );
+    }
+
+    public Property propertyByRole( String role )
+    {
+        if ( !StringUtils.isEmpty( role ) )
+        {
+            for ( Property property : propertyMap.values() )
+            {
+                if ( property.isCollection() && property.isManyToMany() && (role.equals( property.getOwningRole() ) || role.equals( property.getInverseRole() )) )
+                {
+                    return property;
+                }
+            }
+        }
+
+        return null;
     }
 
     @JsonIgnore

@@ -10,6 +10,8 @@ trackerCapture.controller('UpcomingEventsController',
                 TEIGridService,
                 AttributesFactory,
                 ProgramFactory,
+                CurrentSelection,
+                OptionSetService,
                 storage) {
     $scope.today = DateUtils.getToday();
     
@@ -18,11 +20,38 @@ trackerCapture.controller('UpcomingEventsController',
     $scope.displayMode = {};
     $scope.printMode = false;
     
+    //get optionsets
+    $scope.optionSets = CurrentSelection.getOptionSets();
+    if(!$scope.optionSets){
+        $scope.optionSets = [];
+        OptionSetService.getAll().then(function(optionSets){
+            angular.forEach(optionSets, function(optionSet){                        
+                $scope.optionSets[optionSet.id] = optionSet;
+            });
+
+            CurrentSelection.setOptionSets($scope.optionSets);
+        });
+    }
+    
+    //get attributes
+    $scope.attributesById = CurrentSelection.getAttributesById();
+    if(!$scope.attributesById){
+        AttributesFactory.getAll().then(function(atts){
+            $scope.attributes = [];  
+            $scope.attributesById = [];
+            angular.forEach(atts, function(att){
+                $scope.attributesById[att.id] = att;
+            });
+            CurrentSelection.setAttributesById($scope.attributesById);
+        });
+    }
+    
     //Paging
     $scope.pager = {pageSize: 50, page: 1, toolBarDisplay: 5};
     
     //watch for selection of org unit from tree
-    $scope.$watch('selectedOrgUnit', function() {        
+    $scope.$watch('selectedOrgUnit', function() {      
+        $scope.selectedProgram = null;
         if( angular.isObject($scope.selectedOrgUnit)){            
             storage.set('SELECTED_OU', $scope.selectedOrgUnit);            
             $scope.loadPrograms($scope.selectedOrgUnit);
@@ -33,28 +62,9 @@ trackerCapture.controller('UpcomingEventsController',
     $scope.loadPrograms = function(orgUnit) {        
         $scope.selectedOrgUnit = orgUnit;        
         if (angular.isObject($scope.selectedOrgUnit)){
-            ProgramFactory.getAll().then(function(programs){
-                $scope.programs = programs;                
-                if($scope.programs.length === 1){
-                    $scope.selectedProgram = $scope.programs[0];
-                }
-                else{
-                    if(angular.isObject($scope.selectedProgram)){
-                        var continueLoop = true;
-                        for(var i=0; i<programs.length && continueLoop; i++){
-                            if(programs[i].id === $scope.selectedProgram.id){
-                                $scope.selectedProgram = programs[i];
-                                continueLoop = false;
-                            }
-                        }
-                        if(continueLoop){
-                            $scope.selectedProgram = null;
-                        }
-                    }
-                    else{
-                        $scope.selectedProgram = null;
-                    }
-                }
+            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram).then(function(response){
+                $scope.programs = response.programs;
+                $scope.selectedProgram = response.selectedProgram;
             });
         }        
     };
@@ -103,18 +113,19 @@ trackerCapture.controller('UpcomingEventsController',
             angular.forEach(data.eventRows, function(row){
                 var upcomingEvent = {};
                 angular.forEach(row.attributes, function(att){
-                    upcomingEvent[att.attribute] = att.value;
+                    var val = AttributesFactory.formatAttributeValue(att, $scope.attributesById, $scope.optionSets, 'USER');
+                    upcomingEvent[att.attribute] = val;                        
                 });
                     
                 upcomingEvent.dueDate = DateUtils.formatFromApiToUser(row.dueDate);
                 upcomingEvent.event = row.event;
                 upcomingEvent.eventName = $scope.programStages[row.programStage].name;
-                upcomingEvent.orgUnitName = row.orgUnitName;
+                upcomingEvent.eventOrgUnitName = row.eventOrgUnitName;
+                upcomingEvent.orgUnitName = row.eventOrgUnitName;
                 upcomingEvent.followup = row.followup;
                 upcomingEvent.program = row.program;
                 upcomingEvent.programStage = row.programStage;
-                upcomingEvent.trackedEntityInstance = row.trackedEntityInstance;
-                upcomingEvent.orgUnitName = row.registrationOrgUnit;
+                upcomingEvent.trackedEntityInstance = row.trackedEntityInstance;                
                 upcomingEvent.created = DateUtils.formatFromApiToUser(row.registrationDate);;
                 $scope.upcomingEvents.push(upcomingEvent);
 
@@ -145,7 +156,7 @@ trackerCapture.controller('UpcomingEventsController',
             AttributesFactory.getByProgram($scope.selectedProgram).then(function(atts){            
                 $scope.gridColumns = TEIGridService.generateGridColumns(atts, $scope.selectedOuMode);
                 
-                $scope.gridColumns.push({name: $translate('event_orgunit_name'), id: 'orgUnitName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
+                $scope.gridColumns.push({name: $translate('event_orgunit_name'), id: 'eventOrgUnitName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                 $scope.filterTypes['orgUnitName'] = 'string';
                 $scope.gridColumns.push({name: $translate('event_name'), id: 'eventName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                 $scope.filterTypes['eventName'] = 'string';
