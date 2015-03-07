@@ -50,6 +50,9 @@ import org.hisp.dhis.common.NameableObject;
 import org.hisp.dhis.dataelement.DataElement;
 import org.hisp.dhis.dataelement.DataElementService;
 import org.hisp.dhis.eventchart.EventChart;
+import org.hisp.dhis.legend.Legend;
+import org.hisp.dhis.legend.LegendService;
+import org.hisp.dhis.legend.LegendSet;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.organisationunit.OrganisationUnitService;
 import org.hisp.dhis.period.Period;
@@ -88,6 +91,11 @@ public class EventAnalyticsServiceTest
     
     private TrackedEntityAttribute atA;
     private TrackedEntityAttribute atB;
+    
+    private LegendSet legendSetA;
+    
+    private Legend legendA;
+    private Legend legendB;
 
     @Autowired
     private EventAnalyticsService analyticsService;
@@ -109,6 +117,9 @@ public class EventAnalyticsServiceTest
     
     @Autowired
     private TrackedEntityAttributeService attributeService;
+    
+    @Autowired
+    private LegendService legendService;
     
     @Override
     public void setUpTest()
@@ -133,7 +144,6 @@ public class EventAnalyticsServiceTest
         
         attributeService.addTrackedEntityAttribute( atA );
         attributeService.addTrackedEntityAttribute( atB );
-
                 
         prA = createProgram( 'A', new HashSet<ProgramStage>(), asSet( atA, atB ), asSet( ouA, ouB ) );
         programService.addProgram( prA );
@@ -145,6 +155,19 @@ public class EventAnalyticsServiceTest
         
         programStageDataElementService.addProgramStageDataElement( new ProgramStageDataElement( psA, deA, false ) );
         programStageDataElementService.addProgramStageDataElement( new ProgramStageDataElement( psA, deB, false ) );
+        
+        legendA = createLegend( 'A', 0d, 10d );
+        legendB = createLegend( 'B', 10d, 20d );
+
+        legendService.addLegend( legendA );
+        legendService.addLegend( legendB );
+        
+        legendSetA = createLegendSet( 'A' );
+        
+        legendSetA.getLegends().add( legendA );
+        legendSetA.getLegends().add( legendB );
+        
+        legendService.addLegendSet( legendSetA );
     }
 
     @Test
@@ -197,7 +220,7 @@ public class EventAnalyticsServiceTest
         chart.getRowDimensions().add( DimensionalObject.ORGUNIT_DIM_ID );
         chart.getFilterDimensions().add( DimensionalObject.PERIOD_DIM_ID );
         
-        chart.getAttributeDimensions().add( new TrackedEntityAttributeDimension( atA, "LE:5" ) );
+        chart.getAttributeDimensions().add( new TrackedEntityAttributeDimension( atA, null, "LE:5" ) );
         chart.getPeriods().add( peA );
         chart.getPeriods().add( peB );
         chart.getOrganisationUnits().add( ouA );
@@ -222,8 +245,8 @@ public class EventAnalyticsServiceTest
         chart.getRowDimensions().add( DimensionalObject.PERIOD_DIM_ID );
         chart.getFilterDimensions().add( DimensionalObject.ORGUNIT_DIM_ID );
         
-        chart.getAttributeDimensions().add( new TrackedEntityAttributeDimension( atA, "LE:5" ) );
-        chart.getDataElementDimensions().add( new TrackedEntityDataElementDimension( deA, "GE:100" ) );
+        chart.getAttributeDimensions().add( new TrackedEntityAttributeDimension( atA, null, "LE:5" ) );
+        chart.getDataElementDimensions().add( new TrackedEntityDataElementDimension( deA, null, "GE:100" ) );
         chart.getPeriods().add( peA );
         chart.getPeriods().add( peB );
         chart.getOrganisationUnits().add( ouA );
@@ -242,7 +265,7 @@ public class EventAnalyticsServiceTest
     {
         TrackedEntityAttribute tea = new TrackedEntityAttribute();
 
-        TrackedEntityAttributeDimension tead = new TrackedEntityAttributeDimension( tea, "EQ:2" );
+        TrackedEntityAttributeDimension tead = new TrackedEntityAttributeDimension( tea, null, "EQ:2" );
         
         EventChart chart = new EventChart();
         chart.getColumnDimensions().add( tea.getUid() );
@@ -273,5 +296,25 @@ public class EventAnalyticsServiceTest
         assertNotNull( items.get( 0 ).getName() );
         assertNotNull( items.get( 0 ).getCode() );
         assertNotNull( items.get( 0 ).getShortName() );
+    }
+
+    @Test
+    public void testGetFromUrlLegendSet()
+    {
+        Set<String> dimensionParams = new HashSet<>();
+        dimensionParams.add( deA.getUid() + "-" + legendSetA.getUid() + ":IN:" + legendA.getUid() + ";" + legendB.getUid() );
+        
+        Set<String> filterParams = new HashSet<>();
+        filterParams.add( "pe:201401;201402" );
+        filterParams.add( atA.getUid() + ":LE:5" );
+        
+        EventQueryParams params = analyticsService.getFromUrl( prA.getUid(), null, 
+            null, null, dimensionParams, filterParams, null, null, false, false, false, null, null, null, null, null );
+        
+        assertEquals( prA, params.getProgram() );
+        assertEquals( 1, params.getItems().size() );
+        assertEquals( legendSetA, params.getItems().get( 0 ).getLegendSet() );
+        assertEquals( 1, params.getItemFilters().size() );
+        assertEquals( 2, params.getFilterPeriods().size() );
     }
 }

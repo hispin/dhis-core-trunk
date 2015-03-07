@@ -41,9 +41,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.hisp.dhis.common.DimensionService;
 import org.hisp.dhis.common.Grid;
 import org.hisp.dhis.common.MergeStrategy;
+import org.hisp.dhis.dxf2.common.ImportOptions;
 import org.hisp.dhis.dxf2.common.JacksonUtils;
 import org.hisp.dhis.i18n.I18nFormat;
 import org.hisp.dhis.i18n.I18nManager;
+import org.hisp.dhis.legend.LegendService;
 import org.hisp.dhis.mapping.MappingService;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.organisationunit.OrganisationUnitService;
@@ -84,6 +86,9 @@ public class ReportTableController
 
     @Autowired
     private MappingService mappingService;
+    
+    @Autowired
+    private LegendService legendService;
 
     @Autowired
     private I18nManager i18nManager;
@@ -97,7 +102,7 @@ public class ReportTableController
 
     @Override
     @RequestMapping( method = RequestMethod.POST, consumes = "application/json" )
-    public void postJsonObject( HttpServletRequest request, HttpServletResponse response ) throws Exception
+    public void postJsonObject( ImportOptions importOptions, HttpServletRequest request, HttpServletResponse response ) throws Exception
     {
         ReportTable reportTable = JacksonUtils.fromJson( request.getInputStream(), ReportTable.class );
 
@@ -110,7 +115,7 @@ public class ReportTableController
 
     @Override
     @RequestMapping( value = "/{uid}", method = RequestMethod.PUT, consumes = "application/json" )
-    public void putJsonObject( @PathVariable String uid, HttpServletRequest request, HttpServletResponse response ) throws Exception
+    public void putJsonObject( ImportOptions importOptions, @PathVariable String uid, HttpServletRequest request, HttpServletResponse response ) throws Exception
     {
         ReportTable reportTable = reportTableService.getReportTable( uid );
 
@@ -304,7 +309,7 @@ public class ReportTableController
 
         if ( reportTable.getLegendSet() != null )
         {
-            reportTable.setLegendSet( mappingService.getMapLegendSet( reportTable.getLegendSet().getUid() ) );
+            reportTable.setLegendSet( legendService.getLegendSet( reportTable.getLegendSet().getUid() ) );
         }
     }
 }

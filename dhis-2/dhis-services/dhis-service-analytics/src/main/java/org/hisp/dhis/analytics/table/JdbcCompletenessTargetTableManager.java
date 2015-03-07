@@ -98,7 +98,7 @@ public class JdbcCompletenessTargetTableManager
         
         sqlCreate += statementBuilder.getTableOptions( false );
 
-        log.info( "Creating table: " + tableName );
+        log.info( "Creating table: " + tableName + ", columns: " + columns.size() );
         
         log.debug( "Create SQL: " + sqlCreate );
         
@@ -119,17 +119,21 @@ public class JdbcCompletenessTargetTableManager
             }
 
             final String tableName = table.getTempTableName();
-            
+
             String sql = "insert into " + table.getTempTableName() + " (";
-    
-            for ( String[] col : getDimensionColumns( table ) )
+
+            List<String[]> columns = getDimensionColumns( table );
+            
+            validateDimensionColumns( columns );
+
+            for ( String[] col : columns )
             {
                 sql += col[0] + ",";
             }
     
             sql += "value) select ";
     
-            for ( String[] col : getDimensionColumns( table ) )
+            for ( String[] col : columns )
             {
                 sql += col[2] + ",";
             }
@@ -137,7 +141,7 @@ public class JdbcCompletenessTargetTableManager
             sql +=
                 "1 as value " +
                 "from datasetsource dss " +
-                "left join dataset ds on dss.datasetid=ds.datasetid " +
+                "inner join dataset ds on dss.datasetid=ds.datasetid " +
                 "left join _orgunitstructure ous on dss.sourceid=ous.organisationunitid " +
                 "left join _organisationunitgroupsetstructure ougs on dss.sourceid=ougs.organisationunitid";            
     

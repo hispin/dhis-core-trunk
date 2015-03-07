@@ -49,6 +49,7 @@ body {
 
 body,
 .x-body,
+.x-btn-default-small .x-btn-inner,
 .x-btn-default-toolbar-small .x-btn-inner,
 .x-form-item,
 .x-panel-header-text-default,
@@ -211,17 +212,18 @@ table.pivot {
 	-ms-user-select: all;
 	user-select: all;
 }
-table.comfortable td {
-	padding: 10px;
+
+table.pivot.displaydensity-comfortable td {
+	padding: 7px;
 }
-table.compact td {
+table.pivot.displaydensity-compact td {
 	padding: 3px;
 }
 
-table.large td {
+table.pivot.fontsize-large td {
 	font-size: 13px;
 }
-table.small td {
+table.pivot.fontsize-small td {
 	font-size: 10px;
 }
 
@@ -333,6 +335,23 @@ table.small td {
 
 
 /*----------------------------------------------------------------------------
+ * NS viewport
+ *--------------------------------------------------------------------------*/
+
+.ns-viewport-text * {
+    padding: 3px 10px;
+    font-size: 13px;
+    color: #515a62;
+}
+.ns-viewport-text h3 {
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+    padding: 0 0 8px 0;
+}
+
+
+/*----------------------------------------------------------------------------
  * Panel
  *--------------------------------------------------------------------------*/
 
@@ -435,13 +454,23 @@ table.small td {
 
 	/* Custom */
 .ns-combo.h21 .x-form-trigger {
-    height: 21px;
+    height: 21px !important;
 }
 .ns-combo.h22 .x-form-trigger {
-    height: 22px;
+    height: 22px !important;
 }
 .ns-combo.h24 .x-form-trigger {
-    height: 24px;
+    height: 24px !important;
+}
+
+    /* Option selector */
+.ns-optionselector .x-boundlist-selected {
+    background-color: #fff;
+    border-color: #fff
+}
+.ns-optionselector .x-boundlist-selected.x-boundlist-item-over {
+    background-color: #ddd;
+    border-color: #ddd
 }
 
 
@@ -581,6 +610,10 @@ table.small td {
 	/* Icons */
 .x-form-checkbox {
     background-image: url('../images/checkbox.gif');
+}
+
+.x-form-cb-wrap {
+    padding-top: 2px;
 }
 
 
@@ -805,11 +838,25 @@ table.small td {
     background-image: url('../images/trigger.gif');
     background-position: 0 0;
     width: 17px;
+    border-top-right-radius: 2px;
 }
 .ns-button-combotrigger-disabled,
 .ns-button-combotrigger-disabled * {
     opacity: 0.8;
     cursor: default !important;
+}
+
+	/* Link button */
+.ns-linkbutton.x-btn-default-small {
+    border: 1px solid transparent;
+    background: transparent;
+}
+.ns-linkbutton .x-btn-inner {
+    color: #3162c5;
+    padding: 0;
+}
+.ns-linkbutton.x-btn-over .x-btn-inner {
+    text-decoration: underline;
 }
 
 

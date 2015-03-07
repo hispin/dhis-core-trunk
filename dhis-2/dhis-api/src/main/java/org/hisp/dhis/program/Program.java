@@ -185,18 +185,57 @@ public class Program
     }
 
     /**
+     * Returns data elements which are part of the stages of this program which
+     * have a legend set and is of numeric value type.
+     */
+    public Set<DataElement> getDataElementsWithLegendSet()
+    {
+        Set<DataElement> elements = new HashSet<>();
+
+        for ( DataElement element : getAllDataElements() )
+        {
+            if ( element != null && element.hasLegendSet() && element.isNumericType() )
+            {
+                elements.add( element );
+            }
+        }
+
+        return elements;
+    }
+    
+    /**
      * Returns TrackedEntityAttributes from ProgramTrackedEntityAttributes. Use
      * getAttributes() to access the persisted attribute list.
      */
     public List<TrackedEntityAttribute> getTrackedEntityAttributes()
     {
-        List<TrackedEntityAttribute> entityAttributes = new ArrayList<>();
+        List<TrackedEntityAttribute> attributes = new ArrayList<>();
+        
         for ( ProgramTrackedEntityAttribute programAttribute : programAttributes )
         {
-            entityAttributes.add( programAttribute.getAttribute() );
+            attributes.add( programAttribute.getAttribute() );
         }
 
-        return entityAttributes;
+        return attributes;
+    }
+
+    /**
+     * Returns TrackedEntityAttributes from ProgramTrackedEntityAttributes which
+     * have a legend set and is of numeric value type.
+     */
+    public List<TrackedEntityAttribute> getTrackedEntityAttributesWithLegendSet()
+    {
+        List<TrackedEntityAttribute> attributes = new ArrayList<>();
+        
+        for ( TrackedEntityAttribute attribute : getTrackedEntityAttributes() )
+        {
+            if ( attribute != null && attribute.hasLegendSet() && attribute.isNumericType() )
+            {
+                attributes.add( attribute );
+            }
+        }
+        
+        return attributes;
     }
 
     public ProgramStage getProgramStageByStage( int stage )
@@ -574,7 +613,7 @@ public class Program
 
             version = program.getVersion();
 
-            if ( MergeStrategy.MERGE_ALWAYS.equals( strategy ) )
+            if ( strategy.isReplace() )
             {
                 description = program.getDescription();
                 dateOfEnrollmentDescription = program.getDateOfEnrollmentDescription();
@@ -592,7 +631,7 @@ public class Program
                 dataEntryMethod = program.getDataEntryMethod();
                 trackedEntity = program.getTrackedEntity();
             }
-            else if ( MergeStrategy.MERGE_IF_NOT_NULL.equals( strategy ) )
+            else if ( strategy.isMerge() )
             {
                 description = program.getDescription() == null ? description : program.getDescription();
                 dateOfEnrollmentDescription = program.getDateOfEnrollmentDescription() == null ? dateOfEnrollmentDescription : program.getDateOfEnrollmentDescription();

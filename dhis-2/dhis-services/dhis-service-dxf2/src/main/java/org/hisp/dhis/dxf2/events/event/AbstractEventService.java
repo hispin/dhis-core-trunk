@@ -34,16 +34,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.SessionFactory;
 import org.hisp.dhis.common.CodeGenerator;
+import org.hisp.dhis.common.IdentifiableObjectManager;
 import org.hisp.dhis.common.IdentifiableProperty;
 import org.hisp.dhis.dataelement.DataElement;
 import org.hisp.dhis.dataelement.DataElementService;
+import org.hisp.dhis.dxf2.common.IdSchemes;
+import org.hisp.dhis.dxf2.common.ImportOptions;
 import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.dxf2.importsummary.ImportConflict;
 import org.hisp.dhis.dxf2.importsummary.ImportStatus;
 import org.hisp.dhis.dxf2.importsummary.ImportSummaries;
 import org.hisp.dhis.dxf2.importsummary.ImportSummary;
-import org.hisp.dhis.dxf2.common.ImportOptions;
-import org.hisp.dhis.dxf2.common.IdSchemes;
 import org.hisp.dhis.event.EventStatus;
 import org.hisp.dhis.i18n.I18nManager;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
@@ -58,8 +59,10 @@ import org.hisp.dhis.program.ProgramStageInstanceService;
 import org.hisp.dhis.program.ProgramStageService;
 import org.hisp.dhis.program.ProgramStatus;
 import org.hisp.dhis.scheduling.TaskId;
+import org.hisp.dhis.system.callable.IdentifiableObjectCallable;
 import org.hisp.dhis.system.notification.NotificationLevel;
 import org.hisp.dhis.system.notification.Notifier;
+import org.hisp.dhis.system.util.CachingMap;
 import org.hisp.dhis.system.util.DateUtils;
 import org.hisp.dhis.system.util.DebugUtils;
 import org.hisp.dhis.system.util.ValidationUtils;
@@ -69,9 +72,11 @@ import org.hisp.dhis.trackedentitycomment.TrackedEntityCommentService;
 import org.hisp.dhis.trackedentitydatavalue.TrackedEntityDataValue;
 import org.hisp.dhis.trackedentitydatavalue.TrackedEntityDataValueService;
 import org.hisp.dhis.user.CurrentUserService;
+import org.hisp.dhis.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -141,9 +146,22 @@ public abstract class AbstractEventService
     @Autowired
     protected SessionFactory sessionFactory;
 
+    @Autowired
+    protected IdentifiableObjectManager manager;
+
     protected final int FLUSH_FREQUENCY = 20;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    private CachingMap<String, OrganisationUnit> organisationUnitCache = new CachingMap<>();
+
+    private CachingMap<String, Program> programCache = new CachingMap<>();
+
+    private CachingMap<String, ProgramStage> programStageCache = new CachingMap<>();
+
+    private CachingMap<String, DataElement> dataElementCache = new CachingMap<>();
+
+    private List<Program> accessiblePrograms = new ArrayList<>();
 
     // -------------------------------------------------------------------------
     // CREATE
@@ -153,12 +171,13 @@ public abstract class AbstractEventService
     public ImportSummaries addEvents( List<Event> events, ImportOptions importOptions )
     {
         ImportSummaries importSummaries = new ImportSummaries();
-
         int counter = 0;
+
+        User user = currentUserService.getCurrentUser();
 
         for ( Event event : events )
         {
-            importSummaries.addImportSummary( addEvent( event, importOptions ) );
+            importSummaries.addImportSummary( addEvent( event, user, importOptions ) );
 
             if ( counter % FLUSH_FREQUENCY == 0 )
             {
@@ -206,9 +225,15 @@ public abstract class AbstractEventService
     @Override
     public ImportSummary addEvent( Event event, ImportOptions importOptions )
     {
-        Program program = programService.getProgram( event.getProgram() );
+        return addEvent( event, currentUserService.getCurrentUser(), importOptions );
+    }
+
+    protected ImportSummary addEvent( Event event, User user, ImportOptions importOptions )
+    {
+        Program program = getProgram( event.getProgram() );
+        ProgramStage programStage = getProgramStage( event.getProgramStage() );
+
         ProgramInstance programInstance;
-        ProgramStage programStage = programStageService.getProgramStage( event.getProgramStage() );
         ProgramStageInstance programStageInstance = null;
 
         if ( importOptions == null )
@@ -234,7 +259,7 @@ public abstract class AbstractEventService
         Assert.notNull( program );
         Assert.notNull( programStage );
 
-        if ( verifyProgramAccess( program ) )
+        if ( verifyProgramAccess( program, user ) )
         {
             return new ImportSummary( ImportStatus.ERROR,
                 "Current user does not have permission to access this program" );
@@ -360,7 +385,7 @@ public abstract class AbstractEventService
         }
 
         return saveEvent( program, programInstance, programStage, programStageInstance, organisationUnit, event,
-            importOptions );
+            user, importOptions );
     }
 
     // -------------------------------------------------------------------------
@@ -463,7 +488,7 @@ public abstract class AbstractEventService
             dueDate = DateUtils.parseDate( event.getDueDate() );
         }
 
-        String storedBy = getStoredBy( event, null );
+        String storedBy = getStoredBy( event, null, currentUserService.getCurrentUsername() );
 
         if ( event.getStatus() == EventStatus.ACTIVE )
         {
@@ -519,7 +544,7 @@ public abstract class AbstractEventService
 
         for ( DataValue value : event.getDataValues() )
         {
-            DataElement dataElement = dataElementService.getDataElement( value.getDataElement() );
+            DataElement dataElement = getDataElement( value.getDataElement() );
 
             TrackedEntityDataValue dataValue = dataValueService.getTrackedEntityDataValue( programStageInstance, dataElement );
 
@@ -547,7 +572,6 @@ public abstract class AbstractEventService
                 dataValueService.deleteTrackedEntityDataValue( value );
             }
         }
-
     }
 
     @Override
@@ -561,7 +585,7 @@ public abstract class AbstractEventService
             return;
         }
 
-        saveTrackedEntityComment( programStageInstance, event, getStoredBy( event, null ) );
+        saveTrackedEntityComment( programStageInstance, event, getStoredBy( event, null, currentUserService.getCurrentUsername() ) );
     }
 
     @Override
@@ -732,10 +756,14 @@ public abstract class AbstractEventService
         return !assignedToOrganisationUnit;
     }
 
-    private boolean verifyProgramAccess( Program program )
+    private boolean verifyProgramAccess( Program program, User user )
     {
-        Collection<Program> programsByCurrentUser = programService.getProgramsByCurrentUser();
-        return !programsByCurrentUser.contains( program );
+        if ( accessiblePrograms.isEmpty() )
+        {
+            accessiblePrograms = new ArrayList<>( programService.getProgramsByUser( user ) );
+        }
+
+        return !accessiblePrograms.contains( program );
     }
 
     private boolean validateDataValue( DataElement dataElement, String value, ImportSummary importSummary )
@@ -752,13 +780,13 @@ public abstract class AbstractEventService
         return true;
     }
 
-    private String getStoredBy( Event event, ImportSummary importSummary )
+    private String getStoredBy( Event event, ImportSummary importSummary, String defaultUsername )
     {
         String storedBy = event.getStoredBy();
 
         if ( storedBy == null )
         {
-            storedBy = currentUserService.getCurrentUsername();
+            storedBy = defaultUsername;
         }
         else if ( storedBy.length() >= 31 )
         {
@@ -769,7 +797,7 @@ public abstract class AbstractEventService
                         + " is more than 31 characters, using current username instead" ) );
             }
 
-            storedBy = currentUserService.getCurrentUsername();
+            storedBy = defaultUsername;
         }
         return storedBy;
     }
@@ -859,7 +887,8 @@ public abstract class AbstractEventService
 
         if ( programStageInstance.getId() == 0 )
         {
-            programStageInstanceService.addProgramStageInstance( programStageInstance );
+            programStageInstance.setAutoFields();
+            sessionFactory.getCurrentSession().save( programStageInstance );
         }
 
         if ( programStageInstance.isCompleted() )
@@ -872,7 +901,7 @@ public abstract class AbstractEventService
     }
 
     private ImportSummary saveEvent( Program program, ProgramInstance programInstance, ProgramStage programStage,
-        ProgramStageInstance programStageInstance, OrganisationUnit organisationUnit, Event event,
+        ProgramStageInstance programStageInstance, OrganisationUnit organisationUnit, Event event, User user,
         ImportOptions importOptions )
     {
         Assert.notNull( program );
@@ -887,7 +916,7 @@ public abstract class AbstractEventService
 
         Date dueDate = DateUtils.parseDate( event.getDueDate() );
 
-        String storedBy = getStoredBy( event, importSummary );
+        String storedBy = getStoredBy( event, importSummary, user.getUsername() );
 
         if ( !dryRun )
         {
@@ -920,7 +949,7 @@ public abstract class AbstractEventService
             }
             else
             {
-                dataElement = dataElementService.getDataElement( dataValue.getDataElement() );
+                dataElement = getDataElement( dataValue.getDataElement() );
             }
 
             if ( dataElement != null )
@@ -982,6 +1011,16 @@ public abstract class AbstractEventService
     {
         OrganisationUnit organisationUnit = null;
 
+        if ( StringUtils.isEmpty( value ) )
+        {
+            return null;
+        }
+
+        if ( organisationUnitCache.containsKey( value ) )
+        {
+            return organisationUnitCache.get( value );
+        }
+
         if ( IdentifiableProperty.UUID.equals( scheme ) )
         {
             organisationUnit = organisationUnitService.getOrganisationUnitByUuid( value );
@@ -1004,6 +1043,26 @@ public abstract class AbstractEventService
             organisationUnit = organisationUnitService.getOrganisationUnit( value );
         }
 
+        if ( organisationUnit != null )
+        {
+            organisationUnitCache.put( value, organisationUnit );
+        }
+
         return organisationUnit;
+    }
+
+    private Program getProgram( String programId )
+    {
+        return programCache.get( programId, new IdentifiableObjectCallable<>( manager, Program.class, programId ) );
+    }
+
+    private ProgramStage getProgramStage( String programStageId )
+    {
+        return programStageCache.get( programStageId, new IdentifiableObjectCallable<>( manager, ProgramStage.class, programStageId ) );
+    }
+
+    private DataElement getDataElement( String dataElementId )
+    {
+        return dataElementCache.get( dataElementId, new IdentifiableObjectCallable<>( manager, DataElement.class, dataElementId ) );
     }
 }

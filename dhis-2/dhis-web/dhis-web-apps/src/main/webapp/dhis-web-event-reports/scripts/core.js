@@ -137,7 +137,7 @@ Ext.onReady( function() {
                 west_fill_accordion_indicator: 56,
                 west_fill_accordion_dataelement: 59,
                 west_fill_accordion_dataset: 31,
-                west_fill_accordion_period: 307,
+                west_fill_accordion_period: 300,
                 west_fill_accordion_organisationunit: 58,
                 west_maxheight_accordion_indicator: 450,
                 west_maxheight_accordion_dataset: 350,
@@ -169,7 +169,7 @@ Ext.onReady( function() {
 			conf.report = {
 				digitGroupSeparator: {
 					'comma': ',',
-					'space': ' '
+					'space': '&nbsp;'
 				},
 				displayDensity: {
 					'compact': '3px',
@@ -188,9 +188,9 @@ Ext.onReady( function() {
                     '*',
                     'program[id,name]',
                     'programStage[id,name]',
-                    'columns[dimension,filter,items[id,' + init.namePropertyUrl + ']]',
-                    'rows[dimension,filter,items[id,' + init.namePropertyUrl + ']]',
-                    'filters[dimension,filter,items[id,' + init.namePropertyUrl + ']]',
+                    'columns[dimension,filter,legendSet[id,name],items[id,' + init.namePropertyUrl + ']]',
+                    'rows[dimension,filter,legendSet[id,name],items[id,' + init.namePropertyUrl + ']]',
+                    'filters[dimension,filter,legendSet[id,name],items[id,' + init.namePropertyUrl + ']]',
                     '!lastUpdated',
                     '!href',
                     '!created',
@@ -266,7 +266,7 @@ Ext.onReady( function() {
 					}
 
 					if (config.dimension !== conf.finals.dimension.category.objectName) {
-						var records = [];
+						//var records = [];
 
 						//if (!Ext.isArray(config.items)) {
 							//console.log('Dimension: items is not an array: ' + config);
@@ -620,7 +620,7 @@ Ext.onReady( function() {
 				return array.length;
 			};
 
-			support.prototype.array.sort = function(array, direction, key) {
+			support.prototype.array.sort = function(array, direction, key, emptyFirst) {
 				// supports [number], [string], [{key: number}], [{key: string}], [[string]], [[number]]
 
 				if (!support.prototype.array.getLength(array)) {
@@ -660,6 +660,14 @@ Ext.onReady( function() {
 					else if (Ext.isNumber(a) && Ext.isNumber(b)) {
 						return direction === 'DESC' ? b - a : a - b;
 					}
+
+                    else if (a === undefined || a === null) {
+                        return emptyFirst ? -1 : 1;
+                    }
+
+                    else if (b === undefined || b === null) {
+                        return emptyFirst ? 1 : -1;
+                    }
 
 					return -1;
 				});
@@ -758,6 +766,29 @@ Ext.onReady( function() {
                 }
 
                 return o;
+            };
+
+            support.prototype.array.getObjectDataById = function(array, sourceArray, properties, idProperty) {
+                array = Ext.Array.from(array);
+                sourceArray = Ext.Array.from(sourceArray);
+                properties = Ext.Array.from(properties);
+                idProperty = idProperty || 'id';
+
+                for (var i = 0, obj; i < array.length; i++) {
+                    obj = array[i];
+
+                    for (var j = 0, sourceObj; j < sourceArray.length; j++) {
+                        sourceObj = sourceArray[j];
+
+                        if (Ext.isString(obj[idProperty]) && sourceObj[idProperty] && obj[idProperty].indexOf(sourceObj.id) !== -1) {
+                            for (var k = 0, property; k < properties.length; k++) {
+                                property = properties[k];
+
+                                obj[property] = sourceObj[property];
+                            }
+                        }
+                    }
+                }
             };
 
                 // object
@@ -1052,6 +1083,10 @@ Ext.onReady( function() {
 						xDim.objectName = dim.dimension;
 						xDim.dimensionName = dimConf.objectNameMap.hasOwnProperty(dim.dimension) ? dimConf.objectNameMap[dim.dimension].dimensionName || dim.dimension : dim.dimension;
 
+                        if (dim.legendSet) {
+                            xDim.legendSet = dim.legendSet;
+                        }
+
 						xDim.items = [];
 						xDim.ids = [];
 
@@ -1089,6 +1124,10 @@ Ext.onReady( function() {
 						xDim.dimension = dim.dimension;
 						xDim.objectName = dim.dimension;
 						xDim.dimensionName = dimConf.objectNameMap.hasOwnProperty(dim.dimension) ? dimConf.objectNameMap[dim.dimension].dimensionName || dim.dimension : dim.dimension;
+
+                        if (dim.legendSet) {
+                            xDim.legendSet = dim.legendSet;
+                        }
 
 						xDim.items = [];
 						xDim.ids = [];
@@ -1128,6 +1167,10 @@ Ext.onReady( function() {
 						xDim.objectName = dim.dimension;
 						xDim.dimensionName = dimConf.objectNameMap.hasOwnProperty(dim.dimension) ? dimConf.objectNameMap[dim.dimension].dimensionName || dim.dimension : dim.dimension;
 
+                        if (dim.legendSet) {
+                            xDim.legendSet = dim.legendSet;
+                        }
+
 						xDim.items = [];
 						xDim.ids = [];
 
@@ -1154,9 +1197,9 @@ Ext.onReady( function() {
 				// legend set
 				xLayout.legendSet = layout.legendSet ? init.idLegendSetMap[layout.legendSet.id] : null;
 
-				if (layout.legendSet && layout.legendSet.mapLegends) {
+				if (layout.legendSet && layout.legendSet.legends) {
 					xLayout.legendSet = init.idLegendSetMap[layout.legendSet.id];
-					support.prototype.array.sort(xLayout.legendSet.mapLegends, 'ASC', 'startValue');
+					support.prototype.array.sort(xLayout.legendSet.legends, 'ASC', 'startValue');
 				}
 
 				// unique dimension names
@@ -1273,7 +1316,7 @@ Ext.onReady( function() {
                     }
                 }
 
-                // restore order for options
+                // restore item order
                 for (var i = 0, orgDim; i < originalDimensions.length; i++) {
                     orgDim = originalDimensions[i];
 
@@ -1282,6 +1325,7 @@ Ext.onReady( function() {
                         continue;
                     }
 
+                    // user specified options/legends
                     if (Ext.isString(orgDim.filter)) {
                         var a = orgDim.filter.split(':');
 
@@ -1307,6 +1351,21 @@ Ext.onReady( function() {
 
                                     dim.items = items;
                                 }
+                            }
+                        }
+                    }
+                    // no specified legends -> sort by start value
+                    else if (orgDim.legendSet && orgDim.legendSet.id) {
+                        for (var j = 0, dim, items; j < dimensions.length; j++) {
+                            dim = dimensions[j];
+
+                            if (dim.dimension === orgDim.dimension && dim.items && dim.items.length) {
+
+                                // get start/end value
+                                support.prototype.array.getObjectDataById(dim.items, init.idLegendSetMap[orgDim.legendSet.id].legends, ['startValue', 'endValue']);
+
+                                // sort by start value
+                                support.prototype.array.sort(dim.items, 'ASC', 'startValue');
                             }
                         }
                     }
@@ -1793,7 +1852,8 @@ Ext.onReady( function() {
                                 displayId = Ext.isNumber(parsedId) ? parsedId : (names[id] || id);
 
 								// update names
-                                names[fullId] = (isMeta ? '' : header.column + ' ') + displayId;
+                                //names[fullId] = (isMeta ? '' : header.column + ' ') + displayId;
+                                names[fullId] = displayId;
 
 								// update rows
                                 response.rows[j][i] = fullId;
@@ -1900,6 +1960,9 @@ Ext.onReady( function() {
                     nameMap = {},
                     ouIndex;
 
+                metaData.optionNames = {};
+                metaData.booleanNames = {};
+
                 nameMap['pe'] = 'eventdate';
                 nameMap['ou'] = 'ouname';
 
@@ -1953,7 +2016,7 @@ Ext.onReady( function() {
 
 				return xResponse;
 			};
-		}());
+        }());
 
 		// web
 		(function() {
@@ -2043,6 +2106,13 @@ Ext.onReady( function() {
 								paramString += encodeURIComponent(item.id) + ((j < (dim.items.length - 1)) ? ';' : '');
 							}
 						}
+                        else if (Ext.isObject(dim.legendSet) && dim.legendSet.id) {
+                            paramString += '-' + dim.legendSet.id;
+
+                            if (dim.filter) {
+                                paramString += ':' + encodeURIComponent(dim.filter);
+                            }
+                        }
 						else {
 							paramString += dim.filter ? ':' + encodeURIComponent(dim.filter) : '';
 						}
@@ -2062,6 +2132,13 @@ Ext.onReady( function() {
                             for (var j = 0; j < dim.items.length; j++) {
                                 paramString += encodeURIComponent(dim.items[j].id);
                                 paramString += j < dim.items.length - 1 ? ';' : '';
+                            }
+                        }
+                        else if (Ext.isObject(dim.legendSet) && dim.legendSet.id) {
+                            paramString += '-' + dim.legendSet.id;
+
+                            if (dim.filter) {
+                                paramString += ':' + encodeURIComponent(dim.filter);
                             }
                         }
                         else {
@@ -2221,7 +2298,7 @@ Ext.onReady( function() {
 					valueObjects = [],
 					totalColObjects = [],
 					uuidDimUuidsMap = {},
-					isLegendSet = Ext.isObject(xLayout.legendSet) && Ext.isArray(xLayout.legendSet.mapLegends) && xLayout.legendSet.mapLegends.length,
+					isLegendSet = Ext.isObject(xLayout.legendSet) && Ext.isArray(xLayout.legendSet.legends) && xLayout.legendSet.legends.length,
                     tdCount = 0,
 					htmlArray;
 
@@ -2234,7 +2311,7 @@ Ext.onReady( function() {
 
 				getTdHtml = function(config, metaDataId) {
 					var bgColor,
-						mapLegends,
+						legends,
 						colSpan,
 						rowSpan,
 						htmlValue,
@@ -2259,11 +2336,11 @@ Ext.onReady( function() {
 					// background color from legend set
 					if (isNumeric && xLayout.legendSet) {
 						var value = parseFloat(config.value);
-						mapLegends = xLayout.legendSet.mapLegends;
+						legends = xLayout.legendSet.legends;
 
-						for (var i = 0; i < mapLegends.length; i++) {
-							if (Ext.Number.constrain(value, mapLegends[i].startValue, mapLegends[i].endValue) === value) {
-								bgColor = mapLegends[i].color;
+						for (var i = 0; i < legends.length; i++) {
+							if (Ext.Number.constrain(value, legends[i].startValue, legends[i].endValue) === value) {
+								bgColor = legends[i].color;
 							}
 						}
 					}
@@ -2272,8 +2349,6 @@ Ext.onReady( function() {
 					rowSpan = config.rowSpan ? 'rowspan="' + config.rowSpan + '" ' : '';
 					htmlValue = config.collapsed ? '' : config.htmlValue || config.value || '';
 					htmlValue = config.type !== 'dimension' ? support.prototype.number.prettyPrint(htmlValue, xLayout.digitGroupSeparator) : htmlValue;
-					displayDensity = conf.report.displayDensity[config.displayDensity] || conf.report.displayDensity[xLayout.displayDensity];
-					fontSize = conf.report.fontSize[config.fontSize] || conf.report.fontSize[xLayout.fontSize];
 
 					cls += config.hidden ? ' td-hidden' : '';
 					cls += config.collapsed ? ' td-collapsed' : '';
@@ -2317,7 +2392,7 @@ Ext.onReady( function() {
 					//}
 					//else {
 						//html += 'style="padding:' + displayDensity + '; font-size:' + fontSize + ';"' + '>' + htmlValue + '</td>';
-                        html += 'style="' + (bgColor && isValue ? 'color:' + bgColor + '; ' : '') + 'padding:' + displayDensity + '; font-size:' + fontSize + ';"' + '>' + htmlValue + '</td>';
+                        html += 'style="' + (bgColor && isValue ? 'color:' + bgColor + '; ' : '') + '">' + htmlValue + '</td>';
 					//}
 
 					return html;
@@ -2977,13 +3052,19 @@ Ext.onReady( function() {
 				};
 
 				getHtml = function() {
-					var s = '<table id="' + xLayout.tableUuid + '" class="pivot">';
+                    var cls = 'pivot',
+                        table;
+
+                    cls += xLayout.displayDensity && xLayout.displayDensity !== 'normal' ? ' displaydensity-' + xLayout.displayDensity : '';
+                    cls += xLayout.fontSize && xLayout.fontSize !== 'normal' ? ' fontsize-' + xLayout.fontSize : '';
+
+					table = '<table id="' + xLayout.tableUuid + '" class="' + cls + '">';
 
 					for (var i = 0; i < htmlArray.length; i++) {
-						s += '<tr>' + htmlArray[i].join('') + '</tr>';
+						table += '<tr>' + htmlArray[i].join('') + '</tr>';
 					}
 
-					return s += '</table>';
+					return table += '</table>';
 				};
 
 				// get html
@@ -3121,12 +3202,12 @@ Ext.onReady( function() {
 			}
 
 			// legend set map
-			//init.idLegendSetMap = {};
+			init.idLegendSetMap = {};
 
-			//for (var i = 0, set; i < init.legendSets.length; i++) {
-				//set = init.legendSets[i];
-				//init.idLegendSetMap[set.id] = set;
-			//}
+			for (var i = 0, set; i < init.legendSets.length; i++) {
+				set = init.legendSets[i];
+				init.idLegendSetMap[set.id] = set;
+			}
 		}());
 
 		// instance

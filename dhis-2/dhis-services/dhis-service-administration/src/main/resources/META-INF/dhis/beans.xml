@@ -17,6 +17,7 @@
     <property name="dataElementService" ref="org.hisp.dhis.dataelement.DataElementService" />
     <property name="indicatorService" ref="org.hisp.dhis.indicator.IndicatorService" />
     <property name="periodService" ref="org.hisp.dhis.period.PeriodService" />
+    <property name="sqlViewService" ref="org.hisp.dhis.sqlview.SqlViewService" />
   </bean>
   
   <!-- Data integrity -->
@@ -100,8 +101,8 @@
   
   <!-- Scheduled tasks -->
   
-  <bean id="resourceTableTask" class="org.hisp.dhis.resourcetable.scheduling.ResourceTableTask" />
+  <bean id="resourceTableTask" class="org.hisp.dhis.resourcetable.scheduling.ResourceTableTask" scope="prototype" />
 
-  <bean id="resourceTable15MinTask" class="org.hisp.dhis.resourcetable.scheduling.ResourceTableTask" />
+  <bean id="resourceTable15MinTask" class="org.hisp.dhis.resourcetable.scheduling.ResourceTableTask" scope="prototype" />
 
 </beans>

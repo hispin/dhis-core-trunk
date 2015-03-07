@@ -171,7 +171,7 @@ Ext.onReady( function() {
                 west_fill_accordion_indicator: 56,
                 west_fill_accordion_dataelement: 59,
                 west_fill_accordion_dataset: 31,
-                west_fill_accordion_period: 307,
+                west_fill_accordion_period: 300,
                 west_fill_accordion_organisationunit: 58,
                 west_maxheight_accordion_indicator: 450,
                 west_maxheight_accordion_dataset: 350,
@@ -1184,9 +1184,9 @@ Ext.onReady( function() {
 				// legend set
 				xLayout.legendSet = layout.legendSet ? init.idLegendSetMap[layout.legendSet.id] : null;
 
-				if (layout.legendSet && layout.legendSet.mapLegends) {
+				if (layout.legendSet && layout.legendSet.legends) {
 					xLayout.legendSet = init.idLegendSetMap[layout.legendSet.id];
-					support.prototype.array.sort(xLayout.legendSet.mapLegends, 'ASC', 'startValue');
+					support.prototype.array.sort(xLayout.legendSet.legends, 'ASC', 'startValue');
 				}
 
 				// unique dimension names

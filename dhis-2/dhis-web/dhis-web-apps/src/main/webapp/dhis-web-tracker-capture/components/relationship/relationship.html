@@ -1,10 +1,14 @@
 <div class="panel panel-info" ng-controller="RelationshipController">
     <div class="panel-heading handle bold">
         {{relationshipWidget.title| translate}}
-        <span class="nav-pills" ng-if="selectedTei">
-            | <a href ng-click="showAddRelationship()" title="{{'add_relationship'| translate}}"><span ng-class="{true: 'widget-link-active', false: 'widget-link'} [showAddRelationshipDiv]">{{addRelationshipLabel}}</span></a>
+        <span class="nav-pills" ng-if="selectedTei && selectedProgram.relationshipText">
+            | <a href ng-click="showAddRelationship(true)" title="{{'add_relationship'| translate}}"><span ng-class="{true: 'widget-link-active', false: 'widget-link'} [showAddRelationshipDiv]">{{selectedProgram.relationshipText}}</span></a>
         </span>        
-
+        
+        <span class="nav-pills" ng-if="selectedTei">
+            | <a href ng-click="showAddRelationship(false)" title="{{'add_relationship'| translate}}"><span ng-class="{true: 'widget-link-active', false: 'widget-link'} [showAddRelationshipDiv]">{{'add' | translate}}</span></a>
+        </span>
+        
         <span class="pull-right widget-link">
             <a class="small-horizonal-spacing" href ng-click="expandCollapse(relationshipWidget)">
                 <span ng-show="relationshipWidget.expand"><i class="fa fa-chevron-up" title="{{'collapse'| translate}}"></i></span>
@@ -17,12 +21,23 @@
         <div ng-show="selectedTei && !selectedTei.relationships || selectedTei.relationships.length < 1" class="alert alert-warning">{{'no_relationship'| translate}}</div> 
         <div ng-show="!selectedTei" class="alert alert-danger">{{'relationship_not_possible'| translate}}</div> 
 
-        <div ng-show="selectedTei" class="remove-default-padding">
-            <table class="table table-striped dhis2-table-hover">
+        <div ng-if="relatedTeis">            
+            <table class="table table-striped dhis2-table-hover table-bordered">
+                <tr>
+                    <th>
+                        {{'relationship' | translate}}
+                    </th>
+                    <th ng-repeat="att in attributes" ng-if="att.displayInListNoProgram">
+                        {{att.name}}
+                    </th>
+                </tr>
                 <tr ng-click="showDashboard(rel.trackedEntityInstance, rel.relId)" ng-repeat="rel in relatedTeis" title="{{'go_to_dashboard'| translate}}">
                     <td>{{rel.relName}}</td> 
+                    <td ng-repeat="att in attributes" ng-if="att.displayInListNoProgram">
+                        {{rel.attributes[att.id]}}
+                    </td>
                 </tr>
-            </table>            
+            </table>           
         </div>
     </div>
 </div>

@@ -1,4 +1,4 @@
-package org.hisp.dhis.mapping;
+package org.hisp.dhis.legend;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -30,84 +30,103 @@ package org.hisp.dhis.mapping;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import org.hisp.dhis.common.BaseIdentifiableObject;
 import org.hisp.dhis.common.DxfNamespaces;
 import org.hisp.dhis.common.IdentifiableObject;
 import org.hisp.dhis.common.MergeStrategy;
-import org.hisp.dhis.common.annotation.Scanned;
 import org.hisp.dhis.common.view.DetailedView;
 import org.hisp.dhis.common.view.ExportView;
-import org.hisp.dhis.dataelement.DataElement;
-import org.hisp.dhis.indicator.Indicator;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @author Jan Henrik Overland
  */
-@JacksonXmlRootElement( localName = "mapLegendSet", namespace = DxfNamespaces.DXF_2_0 )
-public class MapLegendSet
+@JacksonXmlRootElement( localName = "legend", namespace = DxfNamespaces.DXF_2_0 )
+public class Legend
     extends BaseIdentifiableObject
 {
-    private String symbolizer;
+    private Double startValue;
 
-    @Scanned
-    private Set<MapLegend> mapLegends = new HashSet<>();
+    private Double endValue;
 
-    public MapLegendSet()
+    private String color;
+
+    private String image;
+
+    public Legend()
     {
     }
 
-    public MapLegendSet( String name, String type, String symbolizer, Set<MapLegend> mapLegends,
-        Set<Indicator> indicators, Set<DataElement> dataElements )
+    public Legend( String name, Double startValue, Double endValue, String color, String image )
     {
         this.name = name;
-        this.symbolizer = symbolizer;
-        this.mapLegends = mapLegends;
-    }
-
-    // -------------------------------------------------------------------------
-    // Logic
-    // -------------------------------------------------------------------------
-
-    public void removeAllMapLegends()
-    {
-        mapLegends.clear();
+        this.startValue = startValue;
+        this.endValue = endValue;
+        this.color = color;
+        this.image = image;
     }
 
     // -------------------------------------------------------------------------
     // Getters and setters
     // -------------------------------------------------------------------------
 
+    @Override
+    public boolean haveUniqueNames()
+    {
+        return false;
+    }
+
     @JsonProperty
     @JsonView( { DetailedView.class, ExportView.class } )
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
-    public String getSymbolizer()
+    public Double getStartValue()
     {
-        return symbolizer;
+        return startValue;
     }
 
-    public void setSymbolizer( String symbolizer )
+    public void setStartValue( Double startValue )
     {
-        this.symbolizer = symbolizer;
+        this.startValue = startValue;
     }
 
     @JsonProperty
     @JsonView( { DetailedView.class, ExportView.class } )
-    @JacksonXmlElementWrapper( localName = "mapLegends", namespace = DxfNamespaces.DXF_2_0 )
-    @JacksonXmlProperty( localName = "mapLegend", namespace = DxfNamespaces.DXF_2_0 )
-    public Set<MapLegend> getMapLegends()
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public Double getEndValue()
     {
-        return mapLegends;
+        return endValue;
     }
 
-    public void setMapLegends( Set<MapLegend> mapLegends )
+    public void setEndValue( Double endValue )
     {
-        this.mapLegends = mapLegends;
+        this.endValue = endValue;
+    }
+
+    @JsonProperty
+    @JsonView( { DetailedView.class, ExportView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public String getColor()
+    {
+        return color;
+    }
+
+    public void setColor( String color )
+    {
+        this.color = color;
+    }
+
+    @JsonProperty
+    @JsonView( { DetailedView.class, ExportView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public String getImage()
+    {
+        return image;
+    }
+
+    public void setImage( String image )
+    {
+        this.image = image;
     }
 
     @Override
@@ -117,19 +136,22 @@ public class MapLegendSet
 
         if ( other.getClass().isInstance( this ) )
         {
-            MapLegendSet mapLegendSet = (MapLegendSet) other;
+            Legend legend = (Legend) other;
 
-            if ( MergeStrategy.MERGE_ALWAYS.equals( strategy ) )
+            if ( strategy.isReplace() )
             {
-                symbolizer = mapLegendSet.getSymbolizer();
+                startValue = legend.getStartValue();
+                endValue = legend.getEndValue();
+                color = legend.getColor();
+                image = legend.getImage();
             }
-            else if ( MergeStrategy.MERGE_IF_NOT_NULL.equals( strategy ) )
+            else if ( strategy.isMerge() )
             {
-                symbolizer = mapLegendSet.getSymbolizer() == null ? symbolizer : mapLegendSet.getSymbolizer();
+                startValue = legend.getStartValue() == null ? startValue : legend.getStartValue();
+                endValue = legend.getEndValue() == null ? endValue : legend.getEndValue();
+                color = legend.getColor() == null ? color : legend.getColor();
+                image = legend.getImage() == null ? image : legend.getImage();
             }
-
-            removeAllMapLegends();
-            mapLegends.addAll( mapLegendSet.getMapLegends() );
         }
     }
 }

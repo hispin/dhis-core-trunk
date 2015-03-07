@@ -28,11 +28,6 @@ package org.hisp.dhis.trackedentity;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import org.hisp.dhis.common.BaseDimensionalObject;
 import org.hisp.dhis.common.BaseIdentifiableObject;
 import org.hisp.dhis.common.DxfNamespaces;
@@ -44,6 +39,12 @@ import org.hisp.dhis.common.view.WithoutOrganisationUnitsView;
 import org.hisp.dhis.option.Option;
 import org.hisp.dhis.option.OptionSet;
 import org.hisp.dhis.schema.annotation.PropertyRange;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 /**
  * @author Abyot Asalefew
@@ -73,7 +74,7 @@ public class TrackedEntityAttribute
     private TrackedEntityAttributeGroup attributeGroup;
 
     private OptionSet optionSet;
-
+    
     private String expression;
 
     private Boolean displayOnVisitSchedule = false;
@@ -135,6 +136,11 @@ public class TrackedEntityAttribute
         return optionSet != null;
     }
 
+    public boolean hasLegendSet()
+    {
+        return legendSet != null;
+    }
+    
     /**
      * Checks whether the given value is present among the options in the option
      * set of this attribute, matching on code.
@@ -352,7 +358,7 @@ public class TrackedEntityAttribute
         {
             TrackedEntityAttribute trackedEntityAttribute = (TrackedEntityAttribute) other;
 
-            if ( MergeStrategy.MERGE_ALWAYS.equals( strategy ) )
+            if ( strategy.isReplace() )
             {
                 description = trackedEntityAttribute.getDescription();
                 valueType = trackedEntityAttribute.getValueType();
@@ -368,7 +374,7 @@ public class TrackedEntityAttribute
                 programScope = trackedEntityAttribute.getProgramScope();
                 confidential = trackedEntityAttribute.getConfidential();
             }
-            else if ( MergeStrategy.MERGE_IF_NOT_NULL.equals( strategy ) )
+            else if ( strategy.isMerge() )
             {
                 description = trackedEntityAttribute.getDescription() == null ? description : trackedEntityAttribute.getDescription();
                 valueType = trackedEntityAttribute.getValueType() == null ? valueType : trackedEntityAttribute.getValueType();

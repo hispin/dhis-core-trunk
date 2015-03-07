@@ -155,7 +155,7 @@ public class JdbcEventAnalyticsTableManager
 
         sqlCreate += statementBuilder.getTableOptions( false );
 
-        log.info( "Creating table: " + tableName );
+        log.info( "Creating table: " + tableName + ", columns: " + columns.size() );
         
         log.debug( "Create SQL: " + sqlCreate );
         
@@ -181,14 +181,18 @@ public class JdbcEventAnalyticsTableManager
 
             String sql = "insert into " + table.getTempTableName() + " (";
 
-            for ( String[] col : getDimensionColumns( table ) )
+            List<String[]> columns = getDimensionColumns( table );
+            
+            validateDimensionColumns( columns );
+
+            for ( String[] col : columns )
             {
                 sql += col[0] + ",";
             }
 
             sql = removeLast( sql, 1 ) + ") select ";
 
-            for ( String[] col : getDimensionColumns( table ) )
+            for ( String[] col : columns )
             {
                 sql += col[2] + ",";
             }
@@ -196,13 +200,13 @@ public class JdbcEventAnalyticsTableManager
             sql = removeLast( sql, 1 ) + " ";
 
             sql += "from programstageinstance psi " +
-                "left join _organisationunitgroupsetstructure ougs on psi.organisationunitid=ougs.organisationunitid " +
-                "left join programinstance pi on psi.programinstanceid=pi.programinstanceid " +
-                "left join programstage ps on psi.programstageid=ps.programstageid " +
-                "left join program pr on pi.programid=pr.programid " +
+                "inner join programinstance pi on psi.programinstanceid=pi.programinstanceid " +
+                "inner join programstage ps on psi.programstageid=ps.programstageid " +
+                "inner join program pr on pi.programid=pr.programid " +
                 "left join trackedentityinstance tei on pi.trackedentityinstanceid=tei.trackedentityinstanceid " +
-                "left join organisationunit ou on psi.organisationunitid=ou.organisationunitid " +
+                "inner join organisationunit ou on psi.organisationunitid=ou.organisationunitid " +
                 "left join _orgunitstructure ous on psi.organisationunitid=ous.organisationunitid " +
+                "left join _organisationunitgroupsetstructure ougs on psi.organisationunitid=ougs.organisationunitid " +
                 "left join _dateperiodstructure dps on psi.executiondate=dps.dateperiod " +
                 "where psi.executiondate >= '" + start + "' " + 
                 "and psi.executiondate <= '" + end + "' " +
@@ -261,11 +265,23 @@ public class JdbcEventAnalyticsTableManager
             String dataClause = dataElement.isNumericType() ? numericClause : "";
             String select = dataElement.isNumericType() ? doubleSelect : "value";
 
-            String sql = "(select " + select + " from trackedentitydatavalue where programstageinstanceid="
-                + "psi.programstageinstanceid and dataelementid=" + dataElement.getId() + dataClause + ") as "
-                + quote( dataElement.getUid() );
+            String sql = "(select " + select + " from trackedentitydatavalue where programstageinstanceid=psi.programstageinstanceid " + 
+                "and dataelementid=" + dataElement.getId() + dataClause + ") as " + quote( dataElement.getUid() );
 
             String[] col = { quote( dataElement.getUid() ), dataType, sql };
+            columns.add( col );
+        }
+
+        for ( DataElement dataElement : table.getProgram().getDataElementsWithLegendSet() )
+        {
+            String column = quote( dataElement.getUid() + PartitionUtils.SEP + dataElement.getLegendSet().getUid() );
+            
+            String sql = "(select l.uid from maplegend l inner join maplegendsetmaplegend lsl on l.maplegendid=lsl.maplegendid " +
+                "inner join trackedentitydatavalue dv on l.startvalue <= " + doubleSelect + " and l.endvalue > " + doubleSelect + " " +
+                "and lsl.legendsetid=" + dataElement.getLegendSet().getId() + " and dv.programstageinstanceid=psi.programstageinstanceid " + 
+                "and dv.dataelementid=" + dataElement.getId() + numericClause + ") as " + column;
+                
+            String[] col = { column, "character(11)", sql };
             columns.add( col );
         }
 
@@ -275,10 +291,23 @@ public class JdbcEventAnalyticsTableManager
             String dataClause = attribute.isNumericType() ? numericClause : "";
             String select = attribute.isNumericType() ? doubleSelect : "value";
 
-            String sql = "(select " + select + " from trackedentityattributevalue where trackedentityinstanceid=pi.trackedentityinstanceid and "
-                + "trackedentityattributeid=" + attribute.getId() + dataClause + ") as " + quote( attribute.getUid() );
+            String sql = "(select " + select + " from trackedentityattributevalue where trackedentityinstanceid=pi.trackedentityinstanceid " + 
+                "and trackedentityattributeid=" + attribute.getId() + dataClause + ") as " + quote( attribute.getUid() );
 
             String[] col = { quote( attribute.getUid() ), dataType, sql };
+            columns.add( col );
+        }
+        
+        for ( TrackedEntityAttribute attribute : table.getProgram().getTrackedEntityAttributesWithLegendSet() )
+        {
+            String column = quote( attribute.getUid() + PartitionUtils.SEP + attribute.getLegendSet().getUid() );
+            
+            String sql = "(select l.uid from maplegend l inner join maplegendsetmaplegend lsl on l.maplegendid=lsl.maplegendid " +
+                "inner join trackedentityattributevalue av on l.startvalue <= " + doubleSelect + " and l.endvalue > " + doubleSelect + " " +
+                "and lsl.legendsetid=" + attribute.getLegendSet().getId() + " and av.trackedentityinstanceid=pi.trackedentityinstanceid " +
+                "and av.trackedentityattributeid=" + attribute.getId() + numericClause + ") as " + column;
+            
+            String[] col = { column, "character(11)", sql };
             columns.add( col );
         }
 
@@ -309,7 +338,7 @@ public class JdbcEventAnalyticsTableManager
         String sql = 
             "select distinct(extract(year from psi.executiondate)) " +
             "from programstageinstance psi " +
-            "where psi.executiondate is not null";
+            "where psi.executiondate is not null ";
 
         if ( earliest != null )
         {

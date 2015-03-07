@@ -121,7 +121,7 @@ public class JdbcAnalyticsTableManager
         List<String[]> columns = getDimensionColumns( table );
         
         validateDimensionColumns( columns );
-        
+
         for ( String[] col : columns )
         {
             sqlCreate += col[0] + " " + col[1] + ",";
@@ -131,7 +131,7 @@ public class JdbcAnalyticsTableManager
         
         sqlCreate += statementBuilder.getTableOptions( false );
         
-        log.info( "Creating table: " + tableName );
+        log.info( "Creating table: " + tableName + ", columns: " + columns.size() );
         
         log.debug( "Create SQL: " + sqlCreate );
         
@@ -187,17 +187,21 @@ public class JdbcAnalyticsTableManager
         final String start = DateUtils.getMediumDateString( table.getPeriod().getStartDate() );
         final String end = DateUtils.getMediumDateString( table.getPeriod().getEndDate() );
         final String tableName = table.getTempTableName();
-        
+
         String sql = "insert into " + table.getTempTableName() + " (";
+
+        List<String[]> columns = getDimensionColumns( table );
         
-        for ( String[] col : getDimensionColumns( table ) )
+        validateDimensionColumns( columns );
+
+        for ( String[] col : columns )
         {
             sql += col[0] + ",";
         }
         
         sql += "daysxvalue, daysno, value, textvalue) select ";
         
-        for ( String[] col : getDimensionColumns( table ) )
+        for ( String[] col : columns )
         {
             sql += col[2] + ",";
         }
@@ -213,12 +217,12 @@ public class JdbcAnalyticsTableManager
             "left join _categoryoptiongroupsetstructure cogs on dv.attributeoptioncomboid=cogs.categoryoptioncomboid " +
             "left join _categorystructure dcs on dv.categoryoptioncomboid=dcs.categoryoptioncomboid " +
             "left join _categorystructure acs on dv.attributeoptioncomboid=acs.categoryoptioncomboid " +
-            "left join _periodstructure ps on dv.periodid=ps.periodid " +
             "left join _orgunitstructure ous on dv.sourceid=ous.organisationunitid " +
             "left join _dataelementstructure des on dv.dataelementid = des.dataelementid " +
             "inner join dataelement de on dv.dataelementid=de.dataelementid " +
             "inner join categoryoptioncombo co on dv.categoryoptioncomboid=co.categoryoptioncomboid " +
             "inner join period pe on dv.periodid=pe.periodid " +
+            "inner join _periodstructure ps on dv.periodid=ps.periodid " +
             "inner join organisationunit ou on dv.sourceid=ou.organisationunitid " +
             "where de.valuetype = '" + valueType + "' " +
             "and de.domaintype = 'AGGREGATE' " +

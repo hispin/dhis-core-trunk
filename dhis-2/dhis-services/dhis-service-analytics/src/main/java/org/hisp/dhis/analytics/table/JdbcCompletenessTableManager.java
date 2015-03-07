@@ -75,13 +75,13 @@ public class JdbcCompletenessTableManager
         final String sqlDrop = "drop table " + tableName;
         
         executeSilently( sqlDrop );
-        
+
         String sqlCreate = "create table " + tableName + " (";
 
         List<String[]> columns = getDimensionColumns( table );
         
         validateDimensionColumns( columns );
-        
+
         for ( String[] col : columns )
         {
             sqlCreate += col[0] + " " + col[1] + ",";
@@ -91,7 +91,7 @@ public class JdbcCompletenessTableManager
         
         sqlCreate += statementBuilder.getTableOptions( false );
 
-        log.info( "Creating table: " + tableName );
+        log.info( "Creating table: " + tableName + ", columns: " + columns.size() );
         
         log.debug( "Create SQL: " + sqlCreate );
         
@@ -114,10 +114,14 @@ public class JdbcCompletenessTableManager
             final String start = DateUtils.getMediumDateString( table.getPeriod().getStartDate() );
             final String end = DateUtils.getMediumDateString( table.getPeriod().getEndDate() );
             final String tableName = table.getTempTableName();
-        
+
             String insert = "insert into " + table.getTempTableName() + " (";
+
+            List<String[]> columns = getDimensionColumns( table );
             
-            for ( String[] col : getDimensionColumns( table ) )
+            validateDimensionColumns( columns );
+
+            for ( String[] col : columns )
             {
                 insert += col[0] + ",";
             }
@@ -126,7 +130,7 @@ public class JdbcCompletenessTableManager
             
             String select = "select ";
             
-            for ( String[] col : getDimensionColumns( table ) )
+            for ( String[] col : columns )
             {
                 select += col[2] + ",";
             }
@@ -138,9 +142,9 @@ public class JdbcCompletenessTableManager
                 "from completedatasetregistration cdr " +
                 "left join _organisationunitgroupsetstructure ougs on cdr.sourceid=ougs.organisationunitid " +
                 "left join _orgunitstructure ous on cdr.sourceid=ous.organisationunitid " +
+                "inner join period pe on cdr.periodid=pe.periodid " +
                 "left join _periodstructure ps on cdr.periodid=ps.periodid " +
-                "left join period pe on cdr.periodid=pe.periodid " +
-                "left join dataset ds on cdr.datasetid=ds.datasetid " +
+                "inner join dataset ds on cdr.datasetid=ds.datasetid " +
                 "where pe.startdate >= '" + start + "' " +
                 "and pe.startdate <= '" + end + "'" +
                 "and cdr.date is not null";
@@ -198,7 +202,7 @@ public class JdbcCompletenessTableManager
             "select distinct(extract(year from pe.startdate)) " +
             "from completedatasetregistration cdr " +
             "inner join period pe on cdr.periodid=pe.periodid " +
-            "where pe.startdate is not null";
+            "where pe.startdate is not null ";
 
         if ( earliest != null )
         {

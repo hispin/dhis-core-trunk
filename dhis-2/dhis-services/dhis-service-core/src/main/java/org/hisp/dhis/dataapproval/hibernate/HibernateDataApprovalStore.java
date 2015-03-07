@@ -302,8 +302,6 @@ public class HibernateDataApprovalStore
             testAncestors += "or o" + i + ".organisationunitid is not null ";
         }
 
-        final String dsCategoryComboIdMatches = isDefaultCombo ? "" : "and ds.categorycomboid = a.categorycomboid "; // Default option combo matches any data set.
-
         String readyBelowSubquery = "true"; // Ready below if this is the lowest (highest number) approval orgUnit level.
 
         int orgUnitLevelAbove = 0;
@@ -322,19 +320,18 @@ public class HibernateDataApprovalStore
                 lowestApprovalLevelForOrgUnit = dal;
             }
 
-            if ( dal.getOrgUnitLevel() > orgUnitLevel ) // If there is a lower (higher number) approval orgUnit level:
+            if ( dal.getOrgUnitLevel() > orgUnitLevel ) // If there is a lower (higher number) approval orgUnit level.
             {
                 boolean acceptanceRequiredForApproval = (Boolean) systemSettingManager.getSystemSetting( KEY_ACCEPTANCE_REQUIRED_FOR_APPROVAL, false );
 
                 readyBelowSubquery = "not exists (select 1 from _orgunitstructure ous " +
-                        "join dataset ds on ds.datasetid in (" + dataSetIds + ") " + dsCategoryComboIdMatches +
-                        "left join dataapproval da on da.organisationunitid = ous.organisationunitid " +
-                        "and da.dataapprovallevelid = " + dal.getId() + " and da.periodid in (" + periodIds + ") " +
-                        "and da.datasetid = ds.datasetid " +
-                        "and da.attributeoptioncomboid = a.categoryoptioncomboid " +
-                        "where ous.idlevel" + orgUnitLevel + " = a.organisationunitid " +
-                        "and ous.level = " + dal.getOrgUnitLevel() + " " +
-                        "and ( da.dataapprovalid is null " + ( acceptanceRequiredForApproval ? "or not da.accepted " : "" ) + ") )";
+                    "left join dataapproval da on da.organisationunitid = ous.organisationunitid " +
+                    "and da.dataapprovallevelid = " + dal.getId() + " and da.periodid in (" + periodIds + ") " +
+                    "and da.datasetid in (" + dataSetIds + ") " +
+                    "and da.attributeoptioncomboid = a.categoryoptioncomboid " +
+                    "where ous.idlevel" + orgUnitLevel + " = a.organisationunitid " +
+                    "and ous.level = " + dal.getOrgUnitLevel() + " " +
+                    "and ( da.dataapprovalid is null " + ( acceptanceRequiredForApproval ? "or not da.accepted " : "" ) + ") )";
                 break;
             }
         }
@@ -344,48 +341,45 @@ public class HibernateDataApprovalStore
         if ( orgUnitLevelAbove > 0 )
         {
             approvedAboveSubquery = "exists(select 1 from dataapproval da " +
-                    "join dataapprovallevel dal on dal.dataapprovallevelid = da.dataapprovallevelid " +
-                    "join dataset ds on ds.datasetid = da.datasetid and ds.datasetid in (" + dataSetIds + ") " + dsCategoryComboIdMatches +
-                    "join _orgunitstructure ou on ou.organisationunitid = a.organisationunitid and ou.idlevel" + orgUnitLevelAbove + " = da.organisationunitid " +
-                    "where da.periodid in (" + periodIds + ") and da.attributeoptioncomboid = a.categoryoptioncomboid) ";
+                "join dataapprovallevel dal on dal.dataapprovallevelid = da.dataapprovallevelid " +
+                "join _orgunitstructure ou on ou.organisationunitid = a.organisationunitid and ou.idlevel" + orgUnitLevelAbove + " = da.organisationunitid " +
+                "where da.periodid in (" + periodIds + ") and da.datasetid in (" + dataSetIds + ") and da.attributeoptioncomboid = a.categoryoptioncomboid) ";
         }
 
         final String sql =
-                "select a.categoryoptioncomboid, a.organisationunitid, " +
-                "(select min(coalesce(dal.level, 0)) from period p " +
-                    "join dataset ds on ds.datasetid in (" + dataSetIds + ") " + dsCategoryComboIdMatches +
-                    "left join dataapproval da on da.datasetid = ds.datasetid and da.periodid = p.periodid " +
-                        "and da.attributeoptioncomboid = a.categoryoptioncomboid and da.organisationunitid = a.organisationunitid " +
-                    "left join dataapprovallevel dal on dal.dataapprovallevelid = da.dataapprovallevelid " +
-                    "where p.periodid in (" + periodIds + ") " +
-                ") as highest_approved_level, " +
-                "(select substring(min(concat(100000 + coalesce(dal.level, 0), coalesce(da.accepted, FALSE))) from 7) from period p " +
-                    "join dataset ds on ds.datasetid in (" + dataSetIds + ") " + dsCategoryComboIdMatches +
-                    "left join dataapproval da on da.datasetid = ds.datasetid and da.periodid = p.periodid " +
-                        "and da.attributeoptioncomboid = a.categoryoptioncomboid and da.organisationunitid = a.organisationunitid " +
-                    "left join dataapprovallevel dal on dal.dataapprovallevelid = da.dataapprovallevelid " +
-                    "where p.periodid in (" + periodIds + ") " +
-                ") as accepted_at_highest_level, " +
-                readyBelowSubquery + " as ready_below, " +
-                approvedAboveSubquery + " as approved_above " +
-                "from ( " + // subquery to get combinations of organisation unit and category option combo
-                    "select distinct cocco.categoryoptioncomboid, ccoc.categorycomboid, coalesce(coo.organisationunitid, o.organisationunitid) as organisationunitid " +
-                    "from categoryoptioncombos_categoryoptions cocco " +
-                    "join categorycombos_optioncombos ccoc on ccoc.categoryoptioncomboid = cocco.categoryoptioncomboid and ccoc.categorycomboid in (" + categoryComboIds + ") " +
-                    "join dataelementcategoryoption co on co.categoryoptionid = cocco.categoryoptionid " +
-                        "and (co.startdate is null or co.startdate <= '" + maxDate + "') and (co.enddate is null or co.enddate >= '" + minDate + "') " +
-                    "join _orgunitstructure o on " + orgUnitJoinOn + " " +
-                    "left join categoryoption_organisationunits coo on coo.categoryoptionid = co.categoryoptionid " +
-                    "left join _orgunitstructure ous on ous.idlevel" + orgUnitLevel + " = o.organisationunitid and ous.organisationunitid = coo.organisationunitid " +
-                    joinAncestors +
-                    "left join dataelementcategoryoptionusergroupaccesses couga on couga.categoryoptionid = cocco.categoryoptionid " +
-                    "left join usergroupaccess uga on uga.usergroupaccessid = couga.usergroupaccessid " +
-                    "left join usergroupmembers ugm on ugm.usergroupid = uga.usergroupid " +
-                    "where ( coo.categoryoptionid is null or ous.organisationunitid is not null " + testAncestors + ") " +
-                     ( isSuperUser || user == null ? "" : "and ( ugm.userid = " + user.getId() + " or co.userid = " + user.getId() + " " +
-                             "or co.publicaccess is null or left(co.publicaccess, 1) = 'r' ) " ) +
-                     ( attributeOptionCombo == null ? "" : "and cocco.categoryoptioncomboid = " + attributeOptionCombo.getId() + " " ) +
-                ") as a";
+            "select a.categoryoptioncomboid, a.organisationunitid, " +
+            "(select min(coalesce(dal.level, 0)) from period p " +
+            "left join dataapproval da on da.datasetid in (" + dataSetIds + ") and da.periodid = p.periodid " +
+                    "and da.attributeoptioncomboid = a.categoryoptioncomboid and da.organisationunitid = a.organisationunitid " +
+                "left join dataapprovallevel dal on dal.dataapprovallevelid = da.dataapprovallevelid " +
+                "where p.periodid in (" + periodIds + ") " +
+            ") as highest_approved_level, " +
+            "(select substring(min(concat(100000 + coalesce(dal.level, 0), coalesce(da.accepted, FALSE))) from 7) from period p " +
+                "left join dataapproval da on da.datasetid in (" + dataSetIds + ") and da.periodid = p.periodid " +
+                    "and da.attributeoptioncomboid = a.categoryoptioncomboid and da.organisationunitid = a.organisationunitid " +
+                "left join dataapprovallevel dal on dal.dataapprovallevelid = da.dataapprovallevelid " +
+                "where p.periodid in (" + periodIds + ") " +
+            ") as accepted_at_highest_level, " +
+            readyBelowSubquery + " as ready_below, " +
+            approvedAboveSubquery + " as approved_above " +
+            "from ( " + // subquery to get combinations of organisation unit and category option combo
+                "select distinct cocco.categoryoptioncomboid, ccoc.categorycomboid, coalesce(coo.organisationunitid, o.organisationunitid) as organisationunitid " +
+                "from categoryoptioncombos_categoryoptions cocco " +
+                "join categorycombos_optioncombos ccoc on ccoc.categoryoptioncomboid = cocco.categoryoptioncomboid and ccoc.categorycomboid in (" + categoryComboIds + ") " +
+                "join dataelementcategoryoption co on co.categoryoptionid = cocco.categoryoptionid " +
+                    "and (co.startdate is null or co.startdate <= '" + maxDate + "') and (co.enddate is null or co.enddate >= '" + minDate + "') " +
+                "join _orgunitstructure o on " + orgUnitJoinOn + " " +
+                "left join categoryoption_organisationunits coo on coo.categoryoptionid = co.categoryoptionid " +
+                "left join _orgunitstructure ous on ous.idlevel" + orgUnitLevel + " = o.organisationunitid and ous.organisationunitid = coo.organisationunitid " +
+                joinAncestors +
+                "left join dataelementcategoryoptionusergroupaccesses couga on couga.categoryoptionid = cocco.categoryoptionid " +
+                "left join usergroupaccess uga on uga.usergroupaccessid = couga.usergroupaccessid " +
+                "left join usergroupmembers ugm on ugm.usergroupid = uga.usergroupid " +
+                "where ( coo.categoryoptionid is null or ous.organisationunitid is not null " + testAncestors + ") " +
+                 ( isSuperUser || user == null ? "" : "and ( ugm.userid = " + user.getId() + " or co.userid = " + user.getId() + " " +
+                         "or co.publicaccess is null or left(co.publicaccess, 1) = 'r' ) " ) +
+                 ( attributeOptionCombo == null ? "" : "and cocco.categoryoptioncomboid = " + attributeOptionCombo.getId() + " " ) +
+            ") as a";
 
         log.debug( "Get approval SQL: " + sql );
 

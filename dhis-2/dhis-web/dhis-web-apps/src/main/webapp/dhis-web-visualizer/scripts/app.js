@@ -98,6 +98,78 @@ Ext.onReady( function() {
             }
         });
 
+        Ext.override(Ext.chart.axis.Axis, {
+            drawHorizontalLabels: function() {
+                var me = this,
+                    labelConf = me.label,
+                    floor = Math.floor,
+                    max = Math.max,
+                    axes = me.chart.axes,
+                    position = me.position,
+                    inflections = me.inflections,
+                    ln = inflections.length,
+                    labels = me.labels,
+                    labelGroup = me.labelGroup,
+                    maxHeight = 0,
+                    ratio,
+                    gutterY = me.chart.maxGutter[1],
+                    ubbox, bbox, point, prevX, prevLabel,
+                    projectedWidth = 0,
+                    textLabel, attr, textRight, text,
+                    label, last, x, y, i, firstLabel;
+
+                last = ln - 1;
+                // get a reference to the first text label dimensions
+                point = inflections[0];
+                firstLabel = me.getOrCreateLabel(0, me.label.renderer(labels[0]));
+                ratio = Math.floor(Math.abs(Math.sin(labelConf.rotate && (labelConf.rotate.degrees * Math.PI / 180) || 0)));
+
+                for (i = 0; i < ln; i++) {
+                    point = inflections[i];
+                    text = me.label.renderer(labels[i]) || '';
+                    textLabel = me.getOrCreateLabel(i, text);
+                    bbox = textLabel._bbox;
+                    maxHeight = max(maxHeight, bbox.height + me.dashSize + me.label.padding);
+                    x = floor(point[0] - (ratio? bbox.height : bbox.width) / 2);
+                    if (me.chart.maxGutter[0] == 0) {
+                        if (i == 0 && axes.findIndex('position', 'left') == -1) {
+                            x = point[0];
+                        }
+                        else if (i == last && axes.findIndex('position', 'right') == -1) {
+                            x = point[0] - bbox.width;
+                        }
+                    }
+                    if (position == 'top') {
+                        y = point[1] - (me.dashSize * 2) - me.label.padding - (bbox.height / 2);
+                    }
+                    else {
+                        y = point[1] + (me.dashSize * 2) + me.label.padding + (bbox.height / 2);
+                    }
+
+                    var moveLabels = labelConf.rotate && labelConf.rotate.degrees && !Ext.Array.contains([0,90,180,270,360], labelConf.rotate.degrees),
+                        adjust = Math.floor((textLabel.text.length - 12) * -1 * 0.75),
+                        newX = moveLabels ? point[0] - textLabel._bbox.width + adjust: x;
+
+                    textLabel.setAttributes({
+                        hidden: false,
+                        x: newX,
+                        y: y
+                    }, true);
+
+                    // skip label if there isn't available minimum space
+                    if (i != 0 && (me.intersect(textLabel, prevLabel)
+                        || me.intersect(textLabel, firstLabel))) {
+                        textLabel.hide(true);
+                        continue;
+                    }
+
+                    prevLabel = textLabel;
+                }
+
+                return maxHeight;
+            }
+        });
+
 		// right click handler
 		document.body.oncontextmenu = function() {
 			return false;
@@ -2460,7 +2532,7 @@ Ext.onReady( function() {
                 // legend set
                 if (xLayout.type === 'gauge' && Ext.Array.contains(xLayout.axisObjectNames, ind) && xLayout.objectNameIdsMap[ind].length) {
                     Ext.Ajax.request({
-                        url: ns.core.init.contextPath + '/api/indicators/' + xLayout.objectNameIdsMap[ind][0] + '.json?fields=legendSet[mapLegends[id,name,startValue,endValue,color]]',
+                        url: ns.core.init.contextPath + '/api/indicators/' + xLayout.objectNameIdsMap[ind][0] + '.json?fields=legendSet[legends[id,name,startValue,endValue,color]]',
                         disableCaching: false,
                         success: function(r) {
                             legendSet = Ext.decode(r.responseText).legendSet;
@@ -4080,6 +4152,7 @@ Ext.onReady( function() {
 
 		relativePeriod = {
 			xtype: 'panel',
+            layout: 'column',
 			hideCollapseTool: true,
 			autoScroll: true,
 			bodyStyle: 'border:0 none',
@@ -4087,12 +4160,12 @@ Ext.onReady( function() {
 			items: [
 				{
 					xtype: 'container',
-					layout: 'column',
+                    columnWidth: 0.34,
 					bodyStyle: 'border-style:none',
 					items: [
 						{
 							xtype: 'panel',
-							columnWidth: 0.34,
+							//columnWidth: 0.34,
 							bodyStyle: 'border-style:none; padding:0 0 0 8px',
 							defaults: relativePeriodDefaults,
 							items: [
@@ -4125,7 +4198,65 @@ Ext.onReady( function() {
 						},
 						{
 							xtype: 'panel',
-							columnWidth: 0.33,
+							//columnWidth: 0.34,
+							bodyStyle: 'border-style:none; padding:5px 0 0 8px',
+							defaults: relativePeriodDefaults,
+							items: [
+								{
+									xtype: 'label',
+									text: NS.i18n.quarters,
+									cls: 'ns-label-period-heading'
+								},
+								{
+									xtype: 'checkbox',
+									relativePeriodId: 'LAST_QUARTER',
+									boxLabel: NS.i18n.last_quarter
+								},
+								{
+									xtype: 'checkbox',
+									relativePeriodId: 'LAST_4_QUARTERS',
+									boxLabel: NS.i18n.last_4_quarters
+								}
+							]
+						},
+						{
+							xtype: 'panel',
+							//columnWidth: 0.35,
+							bodyStyle: 'border-style:none; padding:5px 0 0 8px',
+							defaults: relativePeriodDefaults,
+							items: [
+								{
+									xtype: 'label',
+									text: NS.i18n.years,
+									cls: 'ns-label-period-heading'
+								},
+								{
+									xtype: 'checkbox',
+									relativePeriodId: 'THIS_YEAR',
+									boxLabel: NS.i18n.this_year
+								},
+								{
+									xtype: 'checkbox',
+									relativePeriodId: 'LAST_YEAR',
+									boxLabel: NS.i18n.last_year
+								},
+								{
+									xtype: 'checkbox',
+									relativePeriodId: 'LAST_5_YEARS',
+									boxLabel: NS.i18n.last_5_years
+								}
+							]
+						}
+					]
+				},
+				{
+					xtype: 'container',
+                    columnWidth: 0.33,
+					bodyStyle: 'border-style:none',
+					items: [
+						{
+							xtype: 'panel',
+							//columnWidth: 0.33,
 							bodyStyle: 'border-style:none',
 							defaults: relativePeriodDefaults,
 							items: [
@@ -4158,60 +4289,7 @@ Ext.onReady( function() {
 						},
 						{
 							xtype: 'panel',
-							columnWidth: 0.33,
-							bodyStyle: 'border-style:none',
-							defaults: relativePeriodDefaults,
-							items: [
-								{
-									xtype: 'label',
-									text: NS.i18n.bimonths,
-									cls: 'ns-label-period-heading'
-								},
-								{
-									xtype: 'checkbox',
-									relativePeriodId: 'LAST_BIMONTH',
-									boxLabel: NS.i18n.last_bimonth
-								},
-								{
-									xtype: 'checkbox',
-									relativePeriodId: 'LAST_6_BIMONTHS',
-									boxLabel: NS.i18n.last_6_bimonths
-								}
-							]
-						}
-					]
-				},
-				{
-					xtype: 'container',
-					layout: 'column',
-					bodyStyle: 'border-style:none',
-					items: [
-						{
-							xtype: 'panel',
-							columnWidth: 0.34,
-							bodyStyle: 'border-style:none; padding:5px 0 0 8px',
-							defaults: relativePeriodDefaults,
-							items: [
-								{
-									xtype: 'label',
-									text: NS.i18n.quarters,
-									cls: 'ns-label-period-heading'
-								},
-								{
-									xtype: 'checkbox',
-									relativePeriodId: 'LAST_QUARTER',
-									boxLabel: NS.i18n.last_quarter
-								},
-								{
-									xtype: 'checkbox',
-									relativePeriodId: 'LAST_4_QUARTERS',
-									boxLabel: NS.i18n.last_4_quarters
-								}
-							]
-						},
-						{
-							xtype: 'panel',
-							columnWidth: 0.33,
+							//columnWidth: 0.33,
 							bodyStyle: 'border-style:none; padding:5px 0 0',
 							defaults: relativePeriodDefaults,
 							items: [
@@ -4231,10 +4309,41 @@ Ext.onReady( function() {
 									boxLabel: NS.i18n.last_2_sixmonths
 								}
 							]
+						}
+					]
+				},
+				{
+					xtype: 'container',
+                    columnWidth: 0.33,
+					bodyStyle: 'border-style:none',
+					items: [
+						{
+							xtype: 'panel',
+							//columnWidth: 0.33,
+							bodyStyle: 'border-style:none',
+                            style: 'margin-bottom: 32px',
+							defaults: relativePeriodDefaults,
+							items: [
+								{
+									xtype: 'label',
+									text: NS.i18n.bimonths,
+									cls: 'ns-label-period-heading'
+								},
+								{
+									xtype: 'checkbox',
+									relativePeriodId: 'LAST_BIMONTH',
+									boxLabel: NS.i18n.last_bimonth
+								},
+								{
+									xtype: 'checkbox',
+									relativePeriodId: 'LAST_6_BIMONTHS',
+									boxLabel: NS.i18n.last_6_bimonths
+								}
+							]
 						},
 						{
 							xtype: 'panel',
-							columnWidth: 0.33,
+							//columnWidth: 0.33,
 							bodyStyle: 'border-style:none; padding:5px 0 0',
 							defaults: relativePeriodDefaults,
 							items: [
@@ -4245,6 +4354,11 @@ Ext.onReady( function() {
 								},
 								{
 									xtype: 'checkbox',
+									relativePeriodId: 'THIS_FINANCIAL_YEAR',
+									boxLabel: NS.i18n.this_financial_year
+								},
+								{
+									xtype: 'checkbox',
 									relativePeriodId: 'LAST_FINANCIAL_YEAR',
 									boxLabel: NS.i18n.last_financial_year
 								},
@@ -4252,41 +4366,6 @@ Ext.onReady( function() {
 									xtype: 'checkbox',
 									relativePeriodId: 'LAST_5_FINANCIAL_YEARS',
 									boxLabel: NS.i18n.last_5_financial_years
-								}
-							]
-						}
-					]
-				},
-				{
-					xtype: 'container',
-					layout: 'column',
-					bodyStyle: 'border-style:none',
-					items: [
-						{
-							xtype: 'panel',
-							columnWidth: 0.35,
-							bodyStyle: 'border-style:none; padding:5px 0 0 8px',
-							defaults: relativePeriodDefaults,
-							items: [
-								{
-									xtype: 'label',
-									text: NS.i18n.years,
-									cls: 'ns-label-period-heading'
-								},
-								{
-									xtype: 'checkbox',
-									relativePeriodId: 'THIS_YEAR',
-									boxLabel: NS.i18n.this_year
-								},
-								{
-									xtype: 'checkbox',
-									relativePeriodId: 'LAST_YEAR',
-									boxLabel: NS.i18n.last_year
-								},
-								{
-									xtype: 'checkbox',
-									relativePeriodId: 'LAST_5_YEARS',
-									boxLabel: NS.i18n.last_5_years
 								}
 							]
 						}

@@ -17,17 +17,7 @@ trackerCapture.controller('EnrollmentController',
                 DialogService) {
     
     $scope.today = DateUtils.getToday();
-    $scope.selectedOrgUnit = storage.get('SELECTED_OU');    
-      
-    AttributesFactory.getAll().then(function(atts){
-        $scope.attributes = [];  
-        $scope.attributesById = [];
-        angular.forEach(atts, function(att){
-            $scope.attributesById[att.id] = att;
-        });
-        
-        CurrentSelection.setAttributesById($scope.attributesById);
-    });
+    $scope.selectedOrgUnit = storage.get('SELECTED_OU');  
     
     //listen for the selected items
     var selections = {};
@@ -49,7 +39,7 @@ trackerCapture.controller('EnrollmentController',
         $scope.optionSets = selections.optionSets;
         $scope.programs = selections.prs;
         var selectedEnrollment = selections.selectedEnrollment;
-        $scope.enrollments = selections.enrollments ? selections.enrollments : [];        
+        $scope.enrollments = selections.enrollments;
         $scope.programExists = args.programExists;
         $scope.programNames = selections.prNames;
         $scope.programStageNames = selections.prStNames;
@@ -98,11 +88,10 @@ trackerCapture.controller('EnrollmentController',
         if(!$scope.selectedEnrollment.enrollment){//prepare for possible enrollment
             AttributesFactory.getByProgram($scope.selectedProgram).then(function(atts){
                 $scope.attributes = atts;                
-                $scope.selectedProgram.hasCustomForm = false;               
+                $scope.customFormExists = false;               
                 TEFormService.getByProgram($scope.selectedProgram, atts).then(function(teForm){                    
                     if(angular.isObject(teForm)){                        
-                        $scope.selectedProgram.hasCustomForm = true;
-                        $scope.selectedProgram.displayCustomForm = $scope.selectedProgram.hasCustomForm ? true:false;
+                        $scope.customFormExists = true;
                         $scope.trackedEntityForm = teForm;
                         $scope.customForm = CustomFormService.getForTrackedEntity($scope.trackedEntityForm, 'ENROLLMENT');
                     }
@@ -133,14 +122,14 @@ trackerCapture.controller('EnrollmentController',
             $scope.loadEnrollmentDetails($scope.selectedEnrollment);
             
             //check custom form for enrollment
-            $scope.selectedProgram.hasCustomForm = false;
+            $scope.customFormExists = false;
             $scope.registrationForm = '';
             TEFormService.getByProgram($scope.selectedProgram, $scope.attributes).then(function(teForm){
                 if(angular.isObject(teForm)){
-                    $scope.selectedProgram.hasCustomForm = true;
+                    $scope.customFormExists = true;
                     $scope.registrationForm = teForm;
                 }                
-                $scope.selectedProgram.displayCustomForm = $scope.selectedProgram.hasCustomForm ? true:false;
+                $scope.customFormExists = $scope.customFormExists ? true:false;
                 $scope.broadCastSelections('dashboardWidgets');
             });            
         }
@@ -349,6 +338,6 @@ trackerCapture.controller('EnrollmentController',
     };
     
     $scope.switchRegistrationForm = function(){
-        $scope.selectedProgram.displayCustomForm = !$scope.selectedProgram.displayCustomForm;
+        $scope.customFormExists = !$scope.customFormExists;
     };
 });

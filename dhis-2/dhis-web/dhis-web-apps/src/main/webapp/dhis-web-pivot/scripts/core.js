@@ -142,7 +142,7 @@ Ext.onReady( function() {
 				west_fill_accordion_indicator: 56,
 				west_fill_accordion_dataelement: 59,
 				west_fill_accordion_dataset: 31,
-				west_fill_accordion_period: 284,
+				west_fill_accordion_period: 275,
 				west_fill_accordion_organisationunit: 58,
 				west_maxheight_accordion_indicator: 400,
 				west_maxheight_accordion_dataelement: 400,
@@ -179,7 +179,7 @@ Ext.onReady( function() {
 			conf.pivot = {
 				digitGroupSeparator: {
 					'comma': ',',
-					'space': ' '
+					'space': '&nbsp;'
 				},
 				displayDensity: {
                     'xcompact': '2px',
@@ -1038,7 +1038,7 @@ Ext.onReady( function() {
 
 				if (layout.legendSet) {
 					xLayout.legendSet = init.idLegendSetMap[layout.legendSet.id];
-					support.prototype.array.sort(xLayout.legendSet.mapLegends, 'ASC', 'startValue');
+					support.prototype.array.sort(xLayout.legendSet.legends, 'ASC', 'startValue');
 				}
 
 				// unique dimension names
@@ -2089,7 +2089,7 @@ Ext.onReady( function() {
 					valueObjects = [],
 					totalColObjects = [],
 					uuidDimUuidsMap = {},
-					isLegendSet = Ext.isObject(xLayout.legendSet) && Ext.isArray(xLayout.legendSet.mapLegends) && xLayout.legendSet.mapLegends.length,
+					isLegendSet = Ext.isObject(xLayout.legendSet) && Ext.isArray(xLayout.legendSet.legends) && xLayout.legendSet.legends.length,
                     tdCount = 0,
                     htmlArray;
 
@@ -2102,7 +2102,7 @@ Ext.onReady( function() {
 
 				getTdHtml = function(config, metaDataId) {
 					var bgColor,
-						mapLegends,
+						legends,
 						colSpan,
 						rowSpan,
 						htmlValue,
@@ -2152,11 +2152,11 @@ Ext.onReady( function() {
 					// background color from legend set
 					if (isValue && xLayout.legendSet) {
 						var value = parseFloat(config.value);
-						mapLegends = xLayout.legendSet.mapLegends;
+						legends = xLayout.legendSet.legends;
 
-						for (var i = 0; i < mapLegends.length; i++) {
-							if (Ext.Number.constrain(value, mapLegends[i].startValue, mapLegends[i].endValue) === value) {
-								bgColor = mapLegends[i].color;
+						for (var i = 0; i < legends.length; i++) {
+							if (Ext.Number.constrain(value, legends[i].startValue, legends[i].endValue) === value) {
+								bgColor = legends[i].color;
 							}
 						}
 					}

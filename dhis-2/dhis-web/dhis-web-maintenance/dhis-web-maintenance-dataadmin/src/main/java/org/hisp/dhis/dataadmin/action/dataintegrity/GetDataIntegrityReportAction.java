@@ -1,4 +1,4 @@
-package org.hisp.dhis.webapi.controller.mapping;
+package org.hisp.dhis.dataadmin.action.dataintegrity;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -28,18 +28,55 @@ package org.hisp.dhis.webapi.controller.mapping;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.hisp.dhis.mapping.MapLegend;
-import org.hisp.dhis.schema.descriptors.MapLegendSchemaDescriptor;
-import org.hisp.dhis.webapi.controller.AbstractCrudController;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
+import com.opensymphony.xwork2.Action;
+import org.hisp.dhis.dataintegrity.DataIntegrityReport;
+import org.hisp.dhis.scheduling.TaskCategory;
+import org.hisp.dhis.scheduling.TaskId;
+import org.hisp.dhis.system.notification.Notifier;
+import org.hisp.dhis.user.CurrentUserService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * @author Morten Olav Hansen <mortenoh@gmail.com>
+ * @author Halvdan Hoem Grelland
  */
-@Controller
-@RequestMapping( value = MapLegendSchemaDescriptor.API_ENDPOINT )
-public class MapLegendController
-    extends AbstractCrudController<MapLegend>
+public class GetDataIntegrityReportAction
+    implements Action
 {
+    @Autowired
+    private Notifier notifier;
+
+    @Autowired
+    private CurrentUserService currentUserService;
+
+    // -------------------------------------------------------------------------
+    // Input
+    // -------------------------------------------------------------------------
+
+    private TaskCategory category;
+
+    public void setCategory( TaskCategory category )
+    {
+        this.category = category;
+    }
+
+    // -------------------------------------------------------------------------
+    // Output
+    // -------------------------------------------------------------------------
+
+    private DataIntegrityReport dataIntegrityReport;
+
+    public DataIntegrityReport getDataIntegrityReport()
+    {
+        return dataIntegrityReport;
+    }
+
+    @Override
+    public String execute()
+    {
+        TaskId taskId = new TaskId( category, currentUserService.getCurrentUser() );
+
+        dataIntegrityReport = (DataIntegrityReport) notifier.getTaskSummary( taskId );
+
+        return SUCCESS;
+    }
 }

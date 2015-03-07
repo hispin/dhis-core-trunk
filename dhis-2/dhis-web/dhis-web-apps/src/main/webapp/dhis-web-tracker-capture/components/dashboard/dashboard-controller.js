@@ -6,6 +6,7 @@ trackerCapture.controller('DashboardController',
                 $modal,
                 $timeout,
                 $filter,
+                TCStorageService,
                 orderByFilter,
                 storage,
                 TEIService, 
@@ -14,6 +15,7 @@ trackerCapture.controller('DashboardController',
                 EnrollmentService,
                 ProgramFactory,
                 DashboardLayoutService,
+                AttributesFactory,
                 CurrentSelection) {
     //selections
     $scope.selectedTeiId = ($location.search()).tei; 
@@ -22,13 +24,21 @@ trackerCapture.controller('DashboardController',
     $scope.selectedProgram;    
     $scope.selectedTei;
     
+    //get ouLevels
+    TCStorageService.currentStore.open().done(function(){
+        TCStorageService.currentStore.getAll('ouLevels').done(function(response){
+            var ouLevels = angular.isObject(response) ? orderByFilter(response, '-level').reverse() : [];
+            CurrentSelection.setOuLevels(orderByFilter(ouLevels, '-level').reverse());
+        });
+    });
+    
     //dashboard items   
     var getDashboardLayout = function(){        
         $rootScope.dashboardWidgets = [];    
         $scope.widgetsChanged = [];
         $scope.dashboardStatus = [];
         $scope.dashboardWidgetsOrder = {biggerWidgets: [], smallerWidgets: []};
-        $scope.orderChanged = false;
+        $scope.orderChanged = false;        
         
         DashboardLayoutService.get().then(function(response){
             $scope.dashboardLayouts = response;
@@ -78,16 +88,49 @@ trackerCapture.controller('DashboardController',
                 }
             });
 
+            $scope.hasBigger = false;
             angular.forEach(orderByFilter($filter('filter')($scope.dashboardWidgets, {parent: "biggerWidget"}), 'order'), function(w){
+                if(w.show){
+                    $scope.hasBigger = true;
+                }
                 $scope.dashboardWidgetsOrder.biggerWidgets.push(w.title);
             });
 
+            $scope.hasSmaller = false;
             angular.forEach(orderByFilter($filter('filter')($scope.dashboardWidgets, {parent: "smallerWidget"}), 'order'), function(w){
+                if(w.show){
+                    $scope.hasSmaller = true;
+                }
                 $scope.dashboardWidgetsOrder.smallerWidgets.push(w.title);
             });
             
-            $scope.broadCastSelections();
+            setWidgetsSize();
+            
+            AttributesFactory.getAll().then(function(atts){
+                $scope.attributes = [];  
+                $scope.attributesById = [];
+                angular.forEach(atts, function(att){
+                    $scope.attributesById[att.id] = att;
+                });
+
+                CurrentSelection.setAttributesById($scope.attributesById);
+                $scope.broadCastSelections();
+            });            
         });        
+    };    
+    
+    
+    var setWidgetsSize = function(){        
+        
+        $scope.widgetSize = {smaller: "col-sm-6 col-md-4", bigger: "col-sm-6 col-md-8"};
+        
+        if(!$scope.hasSmaller){
+            $scope.widgetSize = {smaller: "col-sm-1", bigger: "col-sm-11"};
+        }
+
+        if(!$scope.hasBigger){
+            $scope.widgetSize = {smaller: "col-sm-11", bigger: "col-sm-1"};
+        }
     };
     
     if($scope.selectedTeiId){
@@ -110,10 +153,10 @@ trackerCapture.controller('DashboardController',
 
                     //get enrollments for the selected tei
                     EnrollmentService.getByEntity($scope.selectedTeiId).then(function(response){                    
-
+                        var enrollments = angular.isObject(response) && response.enrollments ? response.enrollments : [];
                         var selectedEnrollment = null;
-                        if(angular.isObject(response) && response.enrollments && response.enrollments.length === 1 && response.enrollments[0].status === 'ACTIVE'){
-                            selectedEnrollment = response.enrollments[0];
+                        if(enrollments.length === 1 && enrollments[0].status === 'ACTIVE'){
+                            selectedEnrollment = enrollments[0];
                         }
                         
                         ProgramFactory.getAll().then(function(programs){
@@ -139,7 +182,7 @@ trackerCapture.controller('DashboardController',
                             });
                             
                             //prepare selected items for broadcast
-                            CurrentSelection.set({tei: $scope.selectedTei, te: $scope.trackedEntity, prs: $scope.programs, pr: $scope.selectedProgram, prNames: $scope.programNames, prStNames: $scope.programStageNames, enrollments: response.enrollments, selectedEnrollment: selectedEnrollment, optionSets: $scope.optionSets});                            
+                            CurrentSelection.set({tei: $scope.selectedTei, te: $scope.trackedEntity, prs: $scope.programs, pr: $scope.selectedProgram, prNames: $scope.programNames, prStNames: $scope.programStageNames, enrollments: enrollments, selectedEnrollment: selectedEnrollment, optionSets: $scope.optionSets});                            
                             getDashboardLayout();                    
                         });
                     });
@@ -228,27 +271,36 @@ trackerCapture.controller('DashboardController',
     
     var saveDashboardLayout = function(){
         var widgets = [];
+        $scope.hasBigger = false;
+        $scope.hasSmaller = false;
         angular.forEach($rootScope.dashboardWidgets, function(widget){
             var w = angular.copy(widget);            
             if($scope.orderChanged){
                 if($scope.widgetsOrder.biggerWidgets.indexOf(w.title) !== -1){
+                    $scope.hasBigger = $scope.hasBigger || w.show;
                     w.parent = 'biggerWidget';
                     w.order = $scope.widgetsOrder.biggerWidgets.indexOf(w.title);
                 }
                 
                 if($scope.widgetsOrder.smallerWidgets.indexOf(w.title) !== -1){
+                    $scope.hasSmaller = $scope.hasSmaller || w.show;
                     w.parent = 'smallerWidget';
                     w.order = $scope.widgetsOrder.smallerWidgets.indexOf(w.title);
                 }
-            }            
+            }
             widgets.push(w);
         });
-            
+
         if($scope.selectedProgram && $scope.selectedProgram.id){
             $scope.dashboardLayouts[$scope.selectedProgram.id] = {widgets: widgets, program: $scope.selectedProgram.id};
         }
         
         DashboardLayoutService.saveLayout($scope.dashboardLayouts).then(function(){
+            if(!$scope.orderChanged){
+                $scope.hasSmaller = $filter('filter')($scope.dashboardWidgets, {parent: "smallerWidget", show: true}).length > 0;
+                $scope.hasBigger = $filter('filter')($scope.dashboardWidgets, {parent: "biggerWidget", show: true}).length > 0;                                
+            }                
+            setWidgetsSize();      
         });
     };
     

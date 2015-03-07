@@ -87,7 +87,7 @@ public class JdbcOrgUnitTargetTableManager
         List<String[]> columns = getDimensionColumns( table );
         
         validateDimensionColumns( columns );
-        
+
         for ( String[] col : columns )
         {
             sqlCreate += col[0] + " " + col[1] + ",";
@@ -97,7 +97,7 @@ public class JdbcOrgUnitTargetTableManager
         
         sqlCreate += statementBuilder.getTableOptions( false );
 
-        log.info( "Creating table: " + tableName );
+        log.info( "Creating table: " + tableName + ", columns: " + columns.size() );
         
         log.debug( "Create SQL: " + sqlCreate );
         
@@ -118,17 +118,21 @@ public class JdbcOrgUnitTargetTableManager
             }
 
             final String tableName = table.getTempTableName();
-            
+
             String sql = "insert into " + table.getTempTableName() + " (";
     
-            for ( String[] col : getDimensionColumns( table ) )
+            List<String[]> columns = getDimensionColumns( table );
+            
+            validateDimensionColumns( columns );
+            
+            for ( String[] col : columns )
             {
                 sql += col[0] + ",";
             }
     
             sql += "value) select ";
     
-            for ( String[] col : getDimensionColumns( table ) )
+            for ( String[] col : columns )
             {
                 sql += col[2] + ",";
             }
@@ -136,7 +140,7 @@ public class JdbcOrgUnitTargetTableManager
             sql +=
                 "1 as value " +
                 "from orgunitgroupmembers ougm " +
-                "left join orgunitgroup oug on ougm.orgunitgroupid=oug.orgunitgroupid " +
+                "inner join orgunitgroup oug on ougm.orgunitgroupid=oug.orgunitgroupid " +
                 "left join _orgunitstructure ous on ougm.organisationunitid=ous.organisationunitid " +
                 "left join _organisationunitgroupsetstructure ougs on ougm.organisationunitid=ougs.organisationunitid";            
 

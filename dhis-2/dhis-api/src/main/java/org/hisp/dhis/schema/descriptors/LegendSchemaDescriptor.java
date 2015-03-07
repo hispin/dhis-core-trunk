@@ -1,4 +1,4 @@
-package org.hisp.dhis.mapping.comparator;
+package org.hisp.dhis.schema.descriptors;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -28,21 +28,30 @@ package org.hisp.dhis.mapping.comparator;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.util.Comparator;
-
-import org.hisp.dhis.mapping.MapLegend;
+import org.hisp.dhis.legend.Legend;
+import org.hisp.dhis.schema.Schema;
+import org.hisp.dhis.schema.SchemaDescriptor;
+import org.springframework.stereotype.Component;
 
 /**
- * @author Tran Thanh Tri
- * @version $Id$
+ * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
-
-public class MapLegendComparator
-    implements Comparator<MapLegend>
+@Component
+public class LegendSchemaDescriptor implements SchemaDescriptor
 {
+    public static final String SINGULAR = "legend";
+
+    public static final String PLURAL = "legends";
+
+    public static final String API_ENDPOINT = "/" + PLURAL;
+
     @Override
-    public int compare( MapLegend o1, MapLegend o2 )
+    public Schema getSchema()
     {
-        return o1.getStartValue().compareTo( o2.getStartValue() );
+        Schema schema = new Schema( Legend.class, SINGULAR, PLURAL );
+        schema.setApiEndpoint( API_ENDPOINT );
+        schema.setOrder( 1070 );
+
+        return schema;
     }
 }

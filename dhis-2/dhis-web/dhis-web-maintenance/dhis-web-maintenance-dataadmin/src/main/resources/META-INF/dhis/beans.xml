@@ -14,7 +14,7 @@ http://www.springframework.org/schema/beans http://www.springframework.org/schem
     <property name="dataMartManager" ref="org.hisp.dhis.datamart.DataMartManager" />
     <property name="currentUserService" ref="org.hisp.dhis.user.CurrentUserService" />
     <property name="categoryService" ref="org.hisp.dhis.dataelement.DataElementCategoryService" />
-    <property name="sqlViewService" ref="org.hisp.dhis.sqlview.SqlViewService" />
+    <property name="resourceTableService" ref="org.hisp.dhis.resourcetable.ResourceTableService" />
   </bean>
 
   <!-- Cache -->
@@ -28,14 +28,6 @@ http://www.springframework.org/schema/beans http://www.springframework.org/schem
   <bean id="org.hisp.dhis.dataadmin.action.cache.ClearCacheAction"
     class="org.hisp.dhis.dataadmin.action.cache.ClearCacheAction"
     scope="prototype">
-  </bean>
-
-  <!-- Data integrity -->
-
-  <bean id="org.hisp.dhis.dataadmin.action.dataintegrity.GetDataIntegrityAction"
-    class="org.hisp.dhis.dataadmin.action.dataintegrity.GetDataIntegrityAction"
-    scope="prototype">
-    <property name="dataIntegrityService" ref="org.hisp.dhis.dataintegrity.DataIntegrityService" />
   </bean>
 
   <!-- Statistics -->

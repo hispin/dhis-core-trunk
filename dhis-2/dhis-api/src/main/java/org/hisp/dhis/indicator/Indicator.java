@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+
 import org.hisp.dhis.attribute.AttributeValue;
 import org.hisp.dhis.common.BaseIdentifiableObject;
 import org.hisp.dhis.common.BaseNameableObject;
@@ -44,7 +45,7 @@ import org.hisp.dhis.common.MergeStrategy;
 import org.hisp.dhis.common.view.DetailedView;
 import org.hisp.dhis.common.view.ExportView;
 import org.hisp.dhis.dataset.DataSet;
-import org.hisp.dhis.mapping.MapLegendSet;
+import org.hisp.dhis.legend.LegendSet;
 import org.hisp.dhis.schema.PropertyType;
 import org.hisp.dhis.schema.annotation.Property;
 
@@ -98,7 +99,7 @@ public class Indicator
     /**
      * The legend set for this indicator.
      */
-    private MapLegendSet legendSet;
+    private LegendSet legendSet;
 
     public Indicator()
     {
@@ -356,12 +357,12 @@ public class Indicator
     @JsonSerialize( as = BaseIdentifiableObject.class )
     @JsonView( { DetailedView.class, ExportView.class } )
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
-    public MapLegendSet getLegendSet()
+    public LegendSet getLegendSet()
     {
         return legendSet;
     }
 
-    public void setLegendSet( MapLegendSet legendSet )
+    public void setLegendSet( LegendSet legendSet )
     {
         this.legendSet = legendSet;
     }
@@ -377,7 +378,7 @@ public class Indicator
 
             annualized = indicator.isAnnualized();
 
-            if ( MergeStrategy.MERGE_ALWAYS.equals( strategy ) )
+            if ( strategy.isReplace() )
             {
                 denominator = indicator.getDenominator();
                 denominatorDescription = indicator.getDenominatorDescription();
@@ -388,7 +389,7 @@ public class Indicator
                 indicatorType = indicator.getIndicatorType();
                 legendSet = indicator.getLegendSet();
             }
-            else if ( MergeStrategy.MERGE_IF_NOT_NULL.equals( strategy ) )
+            else if ( strategy.isMerge() )
             {
                 denominator = indicator.getDenominator() == null ? denominator : indicator.getDenominator();
                 denominatorDescription = indicator.getDenominatorDescription() == null ? denominatorDescription : indicator.getDenominatorDescription();

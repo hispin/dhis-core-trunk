@@ -28,7 +28,7 @@ package org.hisp.dhis.schema.descriptors;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.hisp.dhis.mapping.MapLegend;
+import org.hisp.dhis.legend.LegendSet;
 import org.hisp.dhis.schema.Schema;
 import org.hisp.dhis.schema.SchemaDescriptor;
 import org.springframework.stereotype.Component;
@@ -37,20 +37,20 @@ import org.springframework.stereotype.Component;
  * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
 @Component
-public class MapLegendSchemaDescriptor implements SchemaDescriptor
+public class LegendSetSchemaDescriptor implements SchemaDescriptor
 {
-    public static final String SINGULAR = "mapLegend";
+    public static final String SINGULAR = "legendSet";
 
-    public static final String PLURAL = "mapLegends";
+    public static final String PLURAL = "legendSets";
 
     public static final String API_ENDPOINT = "/" + PLURAL;
 
     @Override
     public Schema getSchema()
     {
-        Schema schema = new Schema( MapLegend.class, SINGULAR, PLURAL );
+        Schema schema = new Schema( LegendSet.class, SINGULAR, PLURAL );
         schema.setApiEndpoint( API_ENDPOINT );
-        schema.setOrder( 1070 );
+        schema.setOrder( 1080 );
 
         return schema;
     }

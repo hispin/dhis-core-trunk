@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.hisp.dhis.legend.LegendSet;
+import org.hisp.dhis.option.OptionSet;
 import org.hisp.dhis.trackedentity.TrackedEntityAttribute;
 import org.hisp.dhis.util.ObjectUtils;
 
@@ -44,12 +46,14 @@ import org.hisp.dhis.util.ObjectUtils;
 public class QueryItem
 {
     private NameableObject item;
+    
+    private LegendSet legendSet;
 
     private List<QueryFilter> filters = new ArrayList<>();
     
     private String valueType;
     
-    private String optionSet;
+    private OptionSet optionSet;
 
     // -------------------------------------------------------------------------
     // Constructors
@@ -60,14 +64,15 @@ public class QueryItem
         this.item = item;
     }
 
-    public QueryItem( NameableObject item, String valueType, String optionSet )
+    public QueryItem( NameableObject item, LegendSet legendSet, String valueType, OptionSet optionSet )
     {
         this.item = item;
+        this.legendSet = legendSet;
         this.valueType = valueType;
         this.optionSet = optionSet;
     }
     
-    public QueryItem( NameableObject item, QueryOperator operator, String filter, String valueType, String optionSet )
+    public QueryItem( NameableObject item, QueryOperator operator, String filter, String valueType, OptionSet optionSet )
     {
         this.item = item;
         this.valueType = valueType;
@@ -78,15 +83,7 @@ public class QueryItem
             this.filters.add( new QueryFilter( operator, filter ) );
         }
     }
-    
-    public QueryItem( NameableObject item, List<QueryFilter> filters, String valueType, String optionSet )
-    {
-        this.item = item;
-        this.filters = filters;
-        this.valueType = valueType;
-        this.optionSet = optionSet;
-    }
-    
+        
     // -------------------------------------------------------------------------
     // Logic
     // -------------------------------------------------------------------------
@@ -96,6 +93,18 @@ public class QueryItem
         return item.getUid();
     }
     
+    public String getItemName()
+    {
+        String itemName = item.getUid();
+        
+        if ( legendSet != null )
+        {
+            itemName += "_" + legendSet.getUid();
+        }
+        
+        return itemName;
+    }
+    
     public String getTypeAsString()
     {
         return ObjectUtils.VALUE_TYPE_JAVA_CLASS_MAP.get( valueType ).getName();
@@ -103,7 +112,22 @@ public class QueryItem
     
     public boolean isNumeric()
     {
-        return Double.class.equals( getTypeAsString() );
+        return Double.class.equals( ObjectUtils.VALUE_TYPE_JAVA_CLASS_MAP.get( valueType ) );
+    }
+    
+    public boolean hasLegendSet()
+    {
+        return legendSet != null;
+    }
+    
+    public String getLegendSetUid()
+    {
+        return legendSet != null ? legendSet.getUid() : null;
+    }
+    
+    public String getOptionSetUid()
+    {
+        return optionSet != null ? optionSet.getUid() : null;
     }
     
     public boolean hasFilter()
@@ -117,7 +141,7 @@ public class QueryItem
         
         for ( TrackedEntityAttribute attribute : attributes )
         {
-            queryItems.add( new QueryItem( attribute, attribute.getValueType(), attribute.hasOptionSet() ? attribute.getOptionSet().getUid() : null ) );
+            queryItems.add( new QueryItem( attribute, attribute.getLegendSet(), attribute.getValueType(), attribute.hasOptionSet() ? attribute.getOptionSet() : null ) );
         }
         
         return queryItems;
@@ -159,7 +183,7 @@ public class QueryItem
     @Override
     public String toString()
     {
-        return "[Item: " + item + ", filters: " + filters + ", value type: " + valueType + ", optionSet: " + optionSet + "]";
+        return "[Item: " + item + ", legend set: " + legendSet + ", filters: " + filters + ", value type: " + valueType + ", optionSet: " + optionSet + "]";
     }
     
     // -------------------------------------------------------------------------
@@ -174,6 +198,16 @@ public class QueryItem
     public void setItem( NameableObject item )
     {
         this.item = item;
+    }
+
+    public LegendSet getLegendSet()
+    {
+        return legendSet;
+    }
+
+    public void setLegendSet( LegendSet legendSet )
+    {
+        this.legendSet = legendSet;
     }
 
     public List<QueryFilter> getFilters()
@@ -196,12 +230,12 @@ public class QueryItem
         this.valueType = valueType;
     }
 
-    public String getOptionSet()
+    public OptionSet getOptionSet()
     {
         return optionSet;
     }
 
-    public void setOptionSet( String optionSet )
+    public void setOptionSet( OptionSet optionSet )
     {
         this.optionSet = optionSet;
     }

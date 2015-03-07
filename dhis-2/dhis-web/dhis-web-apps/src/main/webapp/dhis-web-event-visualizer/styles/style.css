@@ -561,6 +561,10 @@ table.small td {
     background-image: url('../images/checkbox.gif');
 }
 
+.x-form-cb-wrap {
+    padding-top: 2px;
+}
+
 
 /*----------------------------------------------------------------------------
  * PT Checkbox
@@ -783,6 +787,7 @@ table.small td {
     background-image: url('../images/trigger.gif');
     background-position: 0 0;
     width: 17px;
+    border-top-right-radius: 2px;
 }
 .ns-button-combotrigger-disabled,
 .ns-button-combotrigger-disabled * {

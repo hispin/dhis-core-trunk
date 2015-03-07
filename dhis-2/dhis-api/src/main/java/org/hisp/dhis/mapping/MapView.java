@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+
 import org.hisp.dhis.common.BaseAnalyticalObject;
 import org.hisp.dhis.common.BaseIdentifiableObject;
 import org.hisp.dhis.common.DimensionalObject;
@@ -44,6 +45,7 @@ import org.hisp.dhis.common.view.DetailedView;
 import org.hisp.dhis.common.view.DimensionalView;
 import org.hisp.dhis.common.view.ExportView;
 import org.hisp.dhis.i18n.I18nFormat;
+import org.hisp.dhis.legend.LegendSet;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.organisationunit.OrganisationUnitGroupSet;
 import org.hisp.dhis.schema.PropertyType;
@@ -91,7 +93,7 @@ public class MapView
 
     private String colorHigh;
 
-    private MapLegendSet legendSet;
+    private LegendSet legendSet;
 
     private Integer radiusLow;
 
@@ -282,12 +284,12 @@ public class MapView
     @JsonSerialize( as = BaseIdentifiableObject.class )
     @JsonView( { DetailedView.class, ExportView.class, DimensionalView.class } )
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
-    public MapLegendSet getLegendSet()
+    public LegendSet getLegendSet()
     {
         return legendSet;
     }
 
-    public void setLegendSet( MapLegendSet legendSet )
+    public void setLegendSet( LegendSet legendSet )
     {
         this.legendSet = legendSet;
     }
@@ -471,7 +473,7 @@ public class MapView
         {
             MapView mapView = (MapView) other;
 
-            if ( MergeStrategy.MERGE_ALWAYS.equals( strategy ) )
+            if ( strategy.isReplace() )
             {
                 layer = mapView.getLayer();
                 method = mapView.getMethod();
@@ -491,7 +493,7 @@ public class MapView
                 labelFontStyle = mapView.getLabelFontStyle();
                 labelFontColor = mapView.getLabelFontColor();
             }
-            else if ( MergeStrategy.MERGE_IF_NOT_NULL.equals( strategy ) )
+            else if ( strategy.isMerge() )
             {
                 layer = mapView.getLayer() == null ? layer : mapView.getLayer();
                 method = mapView.getMethod() == null ? method : mapView.getMethod();

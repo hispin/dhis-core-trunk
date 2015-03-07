@@ -35,7 +35,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+
+import org.hisp.dhis.common.view.DetailedView;
 import org.hisp.dhis.common.view.DimensionalView;
+import org.hisp.dhis.common.view.ExportView;
+import org.hisp.dhis.legend.LegendSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,6 +66,11 @@ public class BaseDimensionalObject
      */
     private List<NameableObject> items = new ArrayList<>();
 
+    /**
+     * The legend set for this dimension.
+     */
+    protected LegendSet legendSet;
+    
     /**
      * Filter. Applicable for events. Contains operator and filter on this format:
      * <operator>:<filter>;<operator>:<filter>
@@ -98,12 +107,13 @@ public class BaseDimensionalObject
         this.items = new ArrayList<>( items );
     }
 
-    public BaseDimensionalObject( String dimension, DimensionType dimensionType, String dimensionName, String displayName, String filter )
+    public BaseDimensionalObject( String dimension, DimensionType dimensionType, String dimensionName, String displayName, LegendSet legendSet, String filter )
     {
         this.uid = dimension;
         this.dimensionType = dimensionType;
         this.dimensionName = dimensionName;
         this.displayName = displayName;
+        this.legendSet = legendSet;
         this.filter = filter;
     }
 
@@ -111,28 +121,24 @@ public class BaseDimensionalObject
     // Logic
     // -------------------------------------------------------------------------
 
-    /**
-     * Indicates whether this dimension should use all dimension items. All
-     * dimension options is represented as an option list of zero elements.
-     */
     @Override
     public boolean isAllItems()
     {
         return items != null && items.isEmpty();
     }
 
-    /**
-     * Indicates whether this dimension has any dimension items.
-     */
     @Override
     public boolean hasItems()
     {
         return items != null && !items.isEmpty();
     }
+    
+    @Override
+    public boolean hasLegendSet()
+    {
+        return legendSet != null;
+    }
 
-    /**
-     * Returns dimension name with fall back to dimension.
-     */
     @Override
     public String getDimensionName()
     {
@@ -219,6 +225,21 @@ public class BaseDimensionalObject
 
     @Override
     @JsonProperty
+    @JsonSerialize( as = BaseIdentifiableObject.class )
+    @JsonView( { DimensionalView.class, DetailedView.class, ExportView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public LegendSet getLegendSet()
+    {
+        return legendSet;
+    }
+
+    public void setLegendSet( LegendSet legendSet )
+    {
+        this.legendSet = legendSet;
+    }
+
+    @Override
+    @JsonProperty
     @JsonView( { DimensionalView.class } )
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
     public String getFilter()
@@ -244,16 +265,18 @@ public class BaseDimensionalObject
         {
             DimensionalObject dimensionalObject = (DimensionalObject) other;
 
-            if ( MergeStrategy.MERGE_ALWAYS.equals( strategy ) )
+            if ( strategy.isReplace() )
             {
                 dimensionType = dimensionalObject.getDimensionType();
                 dimensionName = dimensionalObject.getDimensionName();
+                legendSet = dimensionalObject.getLegendSet();
                 filter = dimensionalObject.getFilter();
             }
-            else if ( MergeStrategy.MERGE_IF_NOT_NULL.equals( strategy ) )
+            else if ( strategy.isMerge() )
             {
                 dimensionType = dimensionalObject.getDimensionType() == null ? dimensionType : dimensionalObject.getDimensionType();
                 dimensionName = dimensionalObject.getDimensionName() == null ? dimensionName : dimensionalObject.getDimensionName();
+                legendSet = dimensionalObject.getLegendSet() == null ? legendSet : dimensionalObject.getLegendSet();
                 filter = dimensionalObject.getFilter() == null ? filter : dimensionalObject.getFilter();
             }
 
@@ -265,6 +288,6 @@ public class BaseDimensionalObject
     @Override
     public String toString()
     {
-        return "[" + uid + ", type: " + dimensionType + ", items: " + items + ", filter: " + filter + "]";
+        return "[" + uid + ", type: " + dimensionType + ", items: " + items + ", legend set: " + legendSet + ", filter: " + filter + "]";
     }
 }
