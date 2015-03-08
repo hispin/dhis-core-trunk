@@ -52,6 +52,11 @@ trackerCapture.controller('DataEntryController',
         $scope.eventsByStage = [];
         $scope.programStages = [];        
         $scope.prStDes = [];
+        $scope.prStDeMasterList = [];
+        $scope.valuesToRemove = [];
+        
+        $scope.skipLogicParent = CurrentSelection.getRuleMetadata().skipLogic.parent;
+        $scope.skipLogicChild = CurrentSelection.getRuleMetadata().skipLogic.child;
         
         var selections = CurrentSelection.get();          
         $scope.selectedOrgUnit = storage.get('SELECTED_OU');
@@ -71,7 +76,16 @@ trackerCapture.controller('DataEntryController',
                     }                   
                     
                     angular.forEach(stage.programStageDataElements, function(prStDe){
-                        $scope.prStDes[prStDe.dataElement.id] = prStDe;
+                        prStDe.show = true;
+                        
+                        if($scope.skipLogicChild[prStDe.dataElement.code]){
+                            prStDe.show = false;
+                        }
+
+                        if(prStDe.dataElement.code){
+                            $scope.prStDeMasterList[prStDe.dataElement.code] = prStDe;
+                        }
+                        $scope.prStDes[prStDe.dataElement.id] = prStDe;                        
                     });
                     
                     $scope.selectedProgramWithStage[stage.id] = stage;
@@ -261,7 +275,11 @@ trackerCapture.controller('DataEntryController',
                     }
                 }
             }    
-            event[dataValue.dataElement] = val;
+            event[dataValue.dataElement] = val;            
+            if(de){                
+                $scope.applySkipLogic(event, $scope.prStDes[dataValue.dataElement]);
+            }
+            
             if(dataValue.providedElsewhere){
                 event.providedElsewhere[dataValue.dataElement] = dataValue.providedElsewhere;
             }
@@ -283,6 +301,91 @@ trackerCapture.controller('DataEntryController',
         return event;
     };
     
+    
+    $scope.applySkipLogic = function(dhis2Event, prStDe){
+        
+        var val = dhis2Event[prStDe.dataElement.id];
+        
+        var parent = $scope.skipLogicParent[prStDe.dataElement.code];
+
+        if(parent){
+            if(parent.actions){
+                var valueHasAction = false;
+                angular.forEach(parent.actions, function(action){
+                    if(action.value && angular.equals(action.value, val)){
+                        valueHasAction = true;
+                        angular.forEach(action.itemsToShow, function(de){
+                            if($scope.prStDeMasterList[de.code]){
+                                $scope.prStDeMasterList[de.code].show = true;
+                                $scope.applySkipLogic(dhis2Event, $scope.prStDeMasterList[de.code]);
+                            }
+                        });
+
+                        angular.forEach(action.itemsToHide, function(de){
+                            if($scope.prStDeMasterList[de.code]){                            
+                                $scope.prStDeMasterList[de.code].show = false;
+                                $scope.applySkipLogic(dhis2Event, $scope.prStDeMasterList[de.code]);
+                                var deId = $scope.prStDeMasterList[de.code].dataElement.id;                            
+                                if(dhis2Event[deId]){                                
+                                    $scope.valuesToRemove.push(deId);
+                                }
+                            }
+                        });
+                    }                        
+                });
+
+                if(!valueHasAction){//value has no action... default is hide
+                    angular.forEach(parent.actions, function(action){
+                        angular.forEach(action.itemsToHide, function(de){
+                            if($scope.prStDeMasterList[de.code]){                            
+                                $scope.prStDeMasterList[de.code].show = false;
+                                $scope.applySkipLogic(dhis2Event, $scope.prStDeMasterList[de.code]);
+                                var deId = $scope.prStDeMasterList[de.code].dataElement.id;                            
+                                if(dhis2Event[deId]){                                
+                                    $scope.valuesToRemove.push(deId);
+                                }
+                            }
+                        });
+
+                        angular.forEach(action.itemsToShow, function(de){
+                            if($scope.prStDeMasterList[de.code]){                            
+                                $scope.prStDeMasterList[de.code].show = false;
+                                $scope.applySkipLogic(dhis2Event, $scope.prStDeMasterList[de.code]);
+                                var deId = $scope.prStDeMasterList[de.code].dataElement.id;                            
+                                if(dhis2Event[deId]){                                
+                                    $scope.valuesToRemove.push(deId);
+                                }
+                            }
+                        });                            
+                    });                            
+                }
+            }
+            else{                
+                if(val && parent.value && angular.equals(val, parent.value)){// show them
+                    angular.forEach(parent.itemsToShow, function(de){
+                        if($scope.prStDeMasterList[de.code]){
+                            $scope.prStDeMasterList[de.code].show = true;
+                            $scope.applySkipLogic(dhis2Event, $scope.prStDeMasterList[de.code]);
+                        }                        
+                    });
+                }
+                else{// hide them
+                    angular.forEach(parent.itemsToShow, function(de){                        
+                        if($scope.prStDeMasterList[de.code]){
+                            $scope.prStDeMasterList[de.code].show = false;                            
+                            var deId = $scope.prStDeMasterList[de.code].dataElement.id;                            
+                            if(dhis2Event[deId]){
+                                dhis2Event[deId] = '';
+                                $scope.valuesToRemove.push(deId);
+                            }
+                            $scope.applySkipLogic(dhis2Event, $scope.prStDeMasterList[de.code]);
+                        }                        
+                    });
+                }
+            }
+        }
+    };
+    
     $scope.saveDatavalue = function(prStDe){
 
         //check for input validity
@@ -295,6 +398,9 @@ trackerCapture.controller('DataEntryController',
         var value = $scope.currentEvent[prStDe.dataElement.id];
         
         if($scope.currentEventOriginal[prStDe.dataElement.id] !== value){
+            
+            $scope.valuesToRemove = [];
+            $scope.applySkipLogic($scope.currentEvent, prStDe);
             
             if(value){
                 if(prStDe.dataElement.type === 'date'){                    
@@ -310,8 +416,52 @@ trackerCapture.controller('DataEntryController',
             $scope.updateSuccess = false;
 
             $scope.currentElement = {id: prStDe.dataElement.id, saved: false};
-
+            
             var ev = {  event: $scope.currentEvent.event,
+                        orgUnit: $scope.currentEvent.orgUnit,
+                        program: $scope.currentEvent.program,
+                        programStage: $scope.currentEvent.programStage,
+                        status: $scope.currentEvent.status,
+                        trackedEntityInstance: $scope.currentEvent.trackedEntityInstance,
+                        dataValues: []
+                    };
+
+
+            angular.forEach($scope.valuesToRemove, function(deId){                    
+                ev.dataValues.push({dataElement: deId, value: ''});
+                $scope.currentEvent[deId] = '';
+            });
+
+            angular.forEach($scope.currentStage.programStageDataElements, function(de){
+                if($scope.currentEvent[de.dataElement.id] && $scope.currentEvent[de.dataElement.id] !== ''){
+                    var val = $scope.currentEvent[de.dataElement.id];
+                    if(de.dataElement.type === 'date'){
+                        val = DateUtils.formatFromUserToApi(val);
+                    }
+                    if(de.dataElement.type === 'string' && val !== ''){                    
+                       if(de.dataElement.optionSet && $scope.optionSets[de.dataElement.optionSet.id]){                 
+                            val = OptionSetService.getCode($scope.optionSets[de.dataElement.optionSet.id].options, val);                        
+                        }
+                    }                        
+                    ev.dataValues.push({dataElement: de.dataElement.id, value: val});
+                }
+            });
+
+            DHIS2EventFactory.update(ev).then(function(){
+                var index = -1;
+                for(var i=0; i<$scope.eventsByStage[$scope.currentEvent.programStage].length && index === -1; i++){
+                    if($scope.eventsByStage[$scope.currentEvent.programStage][i].event === $scope.currentEvent.event){
+                        index = i;
+                    }
+                }
+                if(index !== -1){
+                    $scope.eventsByStage[$scope.currentEvent.programStage].splice(index,1,$scope.currentEvent);
+                }
+                $scope.currentElement.saved = true;
+                $scope.currentEventOriginal = angular.copy($scope.currentEvent)
+            });
+                
+            /*var ev = {  event: $scope.currentEvent.event,
                         orgUnit: $scope.currentEvent.orgUnit,
                         program: $scope.currentEvent.program,
                         programStage: $scope.currentEvent.programStage,
@@ -337,8 +487,7 @@ trackerCapture.controller('DataEntryController',
                 }
                 $scope.currentElement.saved = true;
                 $scope.currentEventOriginal = angular.copy($scope.currentEvent);
-            });
-            
+            });*/            
         }
     };
     

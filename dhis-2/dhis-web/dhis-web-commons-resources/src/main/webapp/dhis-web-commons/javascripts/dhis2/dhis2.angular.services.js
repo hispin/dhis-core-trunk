@@ -248,7 +248,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                                 ' ng-model="currentEvent.' + fieldId + '"' +
                                                 ' input-field-id="' + fieldId + '"' +
                                                 ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
-                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed"' +
+                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
                                                 ' ng-blur="saveDatavalue(prStDes.'+ fieldId + ')"' + 
                                                 ' ng-required="{{prStDes.' + fieldId + '.compulsory}}">';
                             }
@@ -260,7 +260,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                                 ' d2-validation ' +
                                                 ' ng-model="currentEvent.' + fieldId + '" ' +
                                                 ' input-field-id="' + fieldId + '"' +
-                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent[uid]==\'uid\' || currentEvent.editingNotAllowed"' +
+                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent[uid]==\'uid\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
                                                 ' ng-required="{{prStDes.' + fieldId + '.compulsory}}"' +
                                                 ' typeahead="option.name as option.name for option in optionSets.'+optionSetId+'.options | filter:$viewValue | limitTo:20"' +
                                                 ' typeahead-editable="false" ' +
@@ -277,7 +277,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                                 ' d2-validation ' +
                                                 ' ng-model="currentEvent.' + fieldId + '" ' +
                                                 ' input-field-id="' + fieldId + '"' +
-                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent[uid]==\'uid\' || currentEvent.editingNotAllowed"' +
+                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent[uid]==\'uid\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
                                                 ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
                                                 ' ng-blur="saveDatavalue(prStDes.'+ fieldId + ')"' +
                                                 ' ng-required="prStDes.' + fieldId + '.compulsory"> ';                                     
@@ -290,7 +290,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                                 ' ng-model="currentEvent.' + fieldId + '" ' +
                                                 ' input-field-id="' + fieldId + '"' +
                                                 ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
-                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed"' +
+                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
                                                 ' ng-change="saveDatavalue(prStDes.'+ fieldId + ')"' + 
                                                 ' ng-required="{{prStDes.' + fieldId + '.compulsory}}">' + 
                                                 '<option value="">{{\'please_select\'| translate}}</option>' +
@@ -309,7 +309,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                                 ' d2-date ' +
                                                 ' max-date="' + maxDate + '"' +
                                                 ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
-                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed"' +
+                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
                                                 ' blur-or-change="saveDatavalue(prStDes.'+ fieldId + ')"' + 
                                                 ' ng-required="{{prStDes.' + fieldId + '.compulsory}}"> '; 
                             }
@@ -320,7 +320,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                                 ' ng-model="currentEvent.' + fieldId + '"' +
                                                 ' input-field-id="' + fieldId + '"' +
                                                 ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
-                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed"' +
+                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
                                                 ' ng-change="saveDatavalue(prStDes.'+ fieldId + ')"' +
                                                 ' ng-required="{{prStDes.' + fieldId + '.compulsory}}"> ';
                             }                            
@@ -381,7 +381,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                             ' d2-number-validation ' +
                                             ' d2-focus-next-on-enter' + 
                                             ' ng-model="selectedTei.' + attId + '" ' +
-                                            ' ng-disabled="editingDisabled"' +
+                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
                                             ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
                                             ' ng-required=" ' + trackedEntityFormAttributes[attId].mandatory + '"> ';
                         }                                               
@@ -393,7 +393,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                             this.getAttributesAsString(attributes) +
                                             ' d2-focus-next-on-enter' + 
                                             ' ng-model="selectedTei.' + attId + '" ' +
-                                            ' ng-disabled="editingDisabled"' +
+                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
                                             ' d2-validation ' +
                                             ' d2-typeahead-validation ' +
                                             ' class="typeahead" ' +
@@ -411,7 +411,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                             this.getAttributesAsString(attributes) +
                                             ' d2-focus-next-on-enter' + 
                                             ' ng-model="selectedTei.' + attId + '" ' +
-                                            ' ng-disabled="editingDisabled"' +
+                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
                                             ' ng-change="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
                                             ' ng-required=" ' + trackedEntityFormAttributes[attId].mandatory + '"> ' +
                                             ' <option value="">{{\'please_select\'| translate}}</option>' +
@@ -427,7 +427,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                             ' d2-focus-next-on-enter' + 
                                             ' placeholder="{{dhis2CalendarFormat.keyDateFormat}}" ' +
                                             ' ng-model="selectedTei.' + attId + '" ' +
-                                            ' ng-disabled="editingDisabled"' +
+                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
                                             ' max-date="' + attMaxDate + '"' + '\'' +
                                             ' d2-date' +
                                             ' d2-validation ' +
@@ -442,7 +442,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                             ' d2-validation ' +
                                             ' d2-focus-next-on-enter' + 
                                             ' ng-model="selectedTei.' + attId + '" ' +
-                                            ' ng-disabled="editingDisabled"' +
+                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
                                             ' ng-change="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
                                             ' ng-required=" ' + trackedEntityFormAttributes[attId].mandatory + '"> ';
                         }
@@ -454,7 +454,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                             ' d2-validation ' +
                                             ' d2-focus-next-on-enter' + 
                                             ' ng-model="selectedTei.' + attId + '" ' +
-                                            ' ng-disabled="editingDisabled"' +
+                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
                                             ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
                                             ' ng-required=" ' + trackedEntityFormAttributes[attId].mandatory + '"> ';
                         }
@@ -466,7 +466,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                                             ' d2-validation ' +
                                             ' d2-focus-next-on-enter' + 
                                             ' ng-model="selectedTei.' + attId + '" ' +
-                                            ' ng-disabled="editingDisabled"' +
+                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
                                             ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
                                             ' ng-required=" ' + trackedEntityFormAttributes[attId].mandatory + '"> ';
                         } 

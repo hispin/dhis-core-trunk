@@ -23,12 +23,17 @@ trackerCapture.controller('RegistrationController',
     $scope.selectedTei = {};    
     
     $scope.attributesById = CurrentSelection.getAttributesById();
-    if(!$scope.attributesById){
+    $scope.attributeIdsByCode = CurrentSelection.getAttributeIdsByCode();
+    if(!$scope.attributesById || !$scope.attributeIdsByCode){
         AttributesFactory.getAll().then(function(atts){
             angular.forEach(atts, function(att){
                 $scope.attributesById[att.id] = att;
+                if(att.code){
+                    $scope.attributeIdsByCode[att.code] = att.id;
+                }
             });
             
+            CurrentSelection.setAttributeIdsByCode($scope.attributeIdsByCode);
             CurrentSelection.setAttributesById($scope.attributesById);
         });
     }    
@@ -44,6 +49,8 @@ trackerCapture.controller('RegistrationController',
             CurrentSelection.setOptionSets($scope.optionSets);
         });
     }
+    
+    
     
     $scope.selectedOrgUnit = storage.get('SELECTED_OU');
     $scope.selectedEnrollment = {dateOfEnrollment: '', dateOfIncident: ''};   

@@ -48,6 +48,19 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };
 })
 
+/* Factory for fetch remote*/
+.factory('RemoteDataService', function($http) {
+
+    return {        
+        get: function( url ) {
+            var promise = $http.get( url ).then(function(response){
+                return response.data;
+            });            
+            return promise;
+        }
+    };
+})
+
 /* Factory to fetch optionSets */
 .factory('OptionSetService', function($q, $rootScope, TCStorageService) { 
     return {
@@ -1018,6 +1031,9 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     this.relationshipInfo = '';
     this.optionSets = null;
     this.attributesById = null;
+    this.attributeIdsByCode = null;
+    this.dataElementIdsByCode = null;
+    this.ruleMetadata = null;
     this.ouLevels = null;
     
     this.set = function(currentSelection){  
@@ -1046,7 +1062,28 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };
     this.getAttributesById = function(){
         return this.attributesById;
-    }; 
+    };    
+    
+    this.setAttributeIdsByCode = function(attributeIdsByCode){
+        this.attributeIdsByCode = attributeIdsByCode;
+    };    
+    this.getAttributeIdsByCode = function(){
+        return this.attributeIdsByCode;
+    };    
+    
+    this.setDataElementIdsByCode = function(dataElementIdsByCode){
+        this.dataElementIdsByCode = dataElementIdsByCode;
+    };    
+    this.getDataElementIdsByCode = function(){
+        return this.dataElementIdsByCode;
+    };
+    
+    this.setRuleMetadata = function(ruleMetadata){
+        this.ruleMetadata = ruleMetadata;
+    };
+    this.getRuleMetadata = function(){
+        return this.ruleMetadata;
+    };
     
     this.setOuLevels = function(ouLevels){
         this.ouLevels = ouLevels;

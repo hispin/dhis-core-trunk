@@ -1,0 +1,302 @@
+{
+    "skipLogics": [
+        {
+            "code": "BankAccountofASHAopened ",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "NameofBankAccount"
+                },
+                {
+                    "code": "AccountNumber"
+                },
+                {
+                    "code": "Branchname"
+                },
+                {
+                    "code": "IFSCcode"
+                }
+            ]
+        },
+        {
+            "code": "isASHAmemberofanyotherorganization",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "Organisation"
+                }
+            ]
+        },
+        {
+            "code": "DrugKitGiventoASHA",
+            "value": "true",
+            "itemsToShow": [
+                {
+                    "code": "ReplenishmentStatusofDrugKit"
+                }
+            ]
+      },
+        {
+            "code": "ReplenishmentStatusofDrugKit",
+            "value": "true",
+            "itemsToShow": [
+                {
+                    "code": "DateofreplenishmentofDrugKit"
+                }
+            ]
+      },
+        {
+            "code": "HBNCKitGiventoASHA",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "DateofreplenishmentofHBNCKit"
+                }
+            ]
+      },
+        {
+            "code": "ReplenishmentStatusofHBNCKit",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "DateofreplenishmentofHBNCKit"
+                }
+            ]
+      },
+        {
+            "code": "IECMaterialGiventoASHA",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "ReplenishmentStatusofIECKit"
+                }
+            ]
+      },
+        {
+            "code": "ReplenishmentStatusofIECKit",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "DateofreplenishmentofIECKit"
+                }
+            ]
+        },
+        {
+            "code": "Digitalthermometerreceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "Workingstatus"
+                }
+            ]
+      },
+        {
+            "code": "Workingstatus",
+            "value": "Nonfunctional",
+            "itemsToShow": [
+                {
+                    "code": "Dateofreissue"
+                }
+            ]
+        },
+        {
+            "code": "Digitalthermometerreceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "Workingstatus"
+                }
+            ]
+      },
+        {
+            "code": "Working status",
+            "value": "Nonfunctional",
+            "itemsToShow": [
+                {
+                    "code": "DigitalThermometerDateofRe-Issue"
+                }
+            ]
+        },
+        {
+            "code": "Salterscalereceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "Workingstatus"
+                }
+            ]
+      },
+        {
+            "code": "Workingstatus",
+            "value": "Nonfunctional",
+            "itemsToShow": [
+                {
+                    "code": "SalterscaleDateofRe-Issue"
+                }
+            ]
+        },
+        {
+            "code": "Stopwatchreceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "Workingstatus"
+                }
+            ]
+        },
+        {
+            "code": "Workingstatus",
+            "value": "Nonfunctional",
+            "itemsToShow": [
+                {
+                    "code": "StopWatchDateofreissue"
+                }
+            ]
+        },
+        {
+            "code": "ParsvottarGhareluSamparkPustikaReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "ParsvottarGhareluSamparkPustikaQuantity"
+                },
+                {
+                    "code": "ParsvottarGhareluSamparkPustikaDateofIssue"
+                }
+            ]
+      },
+        {
+            "code": "FamilyPlanningRegisterReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "FamilyPlanningRegisterQuantity"
+                },
+                {
+                    "code": "FamilyPlanningRegisterDateofIssue"
+                }
+            ]
+        },
+        {
+            "code": "VillageHealthRegisterReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "VillageHealthRegisterQuantity"
+                },
+                {
+                    "code": "VillageHealthRegisterDateofIssue"
+                }
+            ]
+      },
+        {
+            "code": "DuelistofImmunizationRegisterReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "DuelistofImmunizationRegisterQuantity"
+                },
+                {
+                    "code": "DuelistofImmunizationRegisterDateofIssue"
+                }
+            ]
+      },
+        {
+            "code": "ANC&HRPRegisterReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "ANC&HRPRegisterReceivedQuantity"
+                },
+                {
+                    "code": "ANC&HRPRegisterDateofIssue"
+                }
+            ]
+        },
+        {
+            "code": "BalPoshanPustikaReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "BalPoshanPustikaReceivedQuantity"
+                },
+                {
+                    "code": "BalPoshanPustikaDateofIssue"
+                }
+            ]
+        },
+        {
+            "code": "PNCCardsReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "PNCCardsReceivedQuantity"
+                },
+                {
+                    "code": "PNCCardsDateofIssue"
+                }
+            ]
+      },
+        {
+            "code": "RefferalCardsReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "RefferalCardsQuantity"
+                },
+                {
+                    "code": "RefferalCardsDateofIssue"
+                }
+            ]
+        },
+        {
+            "code": "BookletforPW/Mother/FamilyMemberReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "BookletforPW/Mother/FamilyMemberQuantity"
+                },
+                {
+                    "code": "BookletforPW/Mother/FamilyMemberDateofIssue"
+                }
+            ]
+     },
+        {
+            "code": "ExpectedDateofDeliveryCalender(EDD)Received",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "ExpectedDateofDeliveryCalender(EDD)Quantity"
+                },
+                {
+                    "code": "ExpectedDateofDeliveryCalender(EDD)DateofIssue"
+                }
+            ]
+        },
+        {
+            "code": "ReachingtheUnreachedReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "ReachingtheUnreachedQuantity"
+                },
+                {
+                    "code": "ReachingtheUnreachedDateofIssue"
+                }
+            ]
+        },
+        {
+            "code": "AshaDiaryReceived",
+            "value": "Yes",
+            "itemsToShow": [
+                {
+                    "code": "AshaDiaryQuantity"
+                },
+                {
+                    "code": "AshaDiaryDateofIssue"
+                }
+            ]
+
+        }
+    ]
+}

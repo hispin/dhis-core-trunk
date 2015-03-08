@@ -10,6 +10,7 @@ trackerCapture.controller('ProfileController',
     
     $scope.editingDisabled = true;
     $scope.enrollmentEditing = false;
+    $scope.widget = 'PROFILE';
     
     //listen for the selected entity
     var selections = {};
@@ -42,7 +43,7 @@ trackerCapture.controller('ProfileController',
                     $scope.trackedEntityForm = teForm;
                     $scope.customForm = CustomFormService.getForTrackedEntity($scope.trackedEntityForm, 'PROFILE');
                 }                    
-            });            
+            });
         });
     });
     
