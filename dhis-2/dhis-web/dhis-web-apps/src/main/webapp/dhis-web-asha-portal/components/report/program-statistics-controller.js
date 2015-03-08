@@ -18,7 +18,8 @@ trackerCapture.controller('ProgramStatisticsController',
     $scope.pager = {pageSize: 50, page: 1, toolBarDisplay: 5};
     
     //watch for selection of org unit from tree
-    $scope.$watch('selectedOrgUnit', function() {        
+    $scope.$watch('selectedOrgUnit', function() {      
+        $scope.selectedProgram = null;
         if( angular.isObject($scope.selectedOrgUnit)){            
             storage.set('SELECTED_OU', $scope.selectedOrgUnit);            
             $scope.loadPrograms($scope.selectedOrgUnit);
@@ -26,14 +27,12 @@ trackerCapture.controller('ProgramStatisticsController',
     });
     
     //load programs associated with the selected org unit.
-    $scope.loadPrograms = function(orgUnit) {
+    $scope.loadPrograms = function(orgUnit) {        
         $scope.selectedOrgUnit = orgUnit;        
         if (angular.isObject($scope.selectedOrgUnit)){
-            ProgramFactory.getAll().then(function(programs){
-                $scope.programs = programs;                
-                if($scope.programs.length === 1){
-                    $scope.selectedProgram = $scope.programs[0];
-                } 
+            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram).then(function(response){
+                $scope.programs = response.programs;
+                $scope.selectedProgram = response.selectedProgram;
             });
         }        
     };    

@@ -19,16 +19,26 @@ trackerCapture.controller('RegistrationController',
     
     $scope.today = DateUtils.getToday();
     $scope.trackedEntityForm = null;
-    $scope.customForm = null;
-    $scope.optionSets = CurrentSelection.getOptionSets();
-    $scope.attributesById = [];
-    $scope.selectedTei = {};
-    AttributesFactory.getAll().then(function(atts){
-        angular.forEach(atts, function(att){
-            $scope.attributesById[att.id] = att;
-        });
-    });
+    $scope.customForm = null;    
+    $scope.selectedTei = {};    
+    
+    $scope.attributesById = CurrentSelection.getAttributesById();
+    $scope.attributeIdsByCode = CurrentSelection.getAttributeIdsByCode();
+    if(!$scope.attributesById || !$scope.attributeIdsByCode){
+        AttributesFactory.getAll().then(function(atts){
+            angular.forEach(atts, function(att){
+                $scope.attributesById[att.id] = att;
+                if(att.code){
+                    $scope.attributeIdsByCode[att.code] = att.id;
+                }
+            });
             
+            CurrentSelection.setAttributeIdsByCode($scope.attributeIdsByCode);
+            CurrentSelection.setAttributesById($scope.attributesById);
+        });
+    }    
+    
+    $scope.optionSets = CurrentSelection.getOptionSets();        
     if(!$scope.optionSets){
         $scope.optionSets = [];
         OptionSetService.getAll().then(function(optionSets){
@@ -39,6 +49,8 @@ trackerCapture.controller('RegistrationController',
             CurrentSelection.setOptionSets($scope.optionSets);
         });
     }
+    
+    
     
     $scope.selectedOrgUnit = storage.get('SELECTED_OU');
     $scope.selectedEnrollment = {dateOfEnrollment: '', dateOfIncident: ''};   
@@ -57,25 +69,17 @@ trackerCapture.controller('RegistrationController',
     });    
         
     $scope.getAttributes = function(){
-        if($scope.selectedProgram && $scope.selectedProgram.id){            
-            AttributesFactory.getByProgram($scope.selectedProgram).then(function(atts){
-                $scope.attributes = atts;
-                $scope.selectedProgram.hasCustomForm = false;               
-                TEFormService.getByProgram($scope.selectedProgram, $scope.attributes).then(function(teForm){                    
-                    if(angular.isObject(teForm)){                        
-                        $scope.selectedProgram.hasCustomForm = true;
-                        $scope.selectedProgram.displayCustomForm = $scope.selectedProgram.hasCustomForm ? true:false;                        
-                        $scope.trackedEntityForm = teForm;                      
-                        $scope.customForm = CustomFormService.getForTrackedEntity($scope.trackedEntityForm, 'ENROLLMENT');
-                    }                    
-                });  
-            });                
-        }
-        else{            
-            AttributesFactory.getWithoutProgram().then(function(atts){
-                $scope.attributes = atts;
-            });
-        }
+        AttributesFactory.getByProgram($scope.selectedProgram).then(function(atts){
+            $scope.attributes = atts;
+            $scope.customFormExists = false;               
+            TEFormService.getByProgram($scope.selectedProgram, $scope.attributes).then(function(teForm){
+                if(angular.isObject(teForm)){                        
+                    $scope.customFormExists = true;
+                    $scope.trackedEntityForm = teForm;                      
+                    $scope.customForm = CustomFormService.getForTrackedEntity($scope.trackedEntityForm, 'ENROLLMENT');
+                }                    
+            });  
+        });        
     };
     
     $scope.registerEntity = function(destination){        
@@ -110,7 +114,7 @@ trackerCapture.controller('RegistrationController',
         }
         
         var teiId = '';
-        TEIService.register($scope.tei, $scope.optionSets).then(function(response){
+        TEIService.register($scope.tei, $scope.optionSets, $scope.attributesById).then(function(response){
             
             if(response.status === 'SUCCESS'){
                 
@@ -229,6 +233,6 @@ trackerCapture.controller('RegistrationController',
     };
     
     $scope.switchRegistrationForm = function(){
-        $scope.selectedProgram.displayCustomForm = !$scope.selectedProgram.displayCustomForm;
+        $scope.customFormExists = !$scope.customFormExists;
     };
 });

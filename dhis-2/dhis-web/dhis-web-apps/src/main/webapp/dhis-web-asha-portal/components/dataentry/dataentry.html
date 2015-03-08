@@ -1,10 +1,7 @@
 <div class="panel panel-info" ng-controller="DataEntryController">
     <div class="panel-heading handle bold">
-        {{dataentryWidget.title| translate}}
-        <span class="nav-pills" ng-if="allowEventCreation">
-            | <a href ng-click="showEventCreation()"><span ng-class="{true: 'widget-link-active', false: 'widget-link'} [showEventCreationDiv]">{{'create_new_event'| translate}}</span></a>
-        </span>
-        
+        {{dataentryWidget.title| translate}}        
+
         <span class="pull-right widget-link">
             <a href ng-click="toggleLegend()" title="{{'event_color_legend'| translate}}"><i class="fa fa-info-circle vertical-center"></i></a>
             <a class="small-horizonal-spacing" href ng-click="expandCollapse(dataentryWidget)">
@@ -17,73 +14,59 @@
 
     <div ng-show="dataentryWidget.expand" class="panel-body dashboard-widget-container">
         <div ng-if="showEventColors">
-            <span class='bold'>{{'legend' | translate}}</span>
+            <span class='bold'>{{'legend'| translate}}</span>
             <table class="table table-bordered" style="width: 100%;">               
                 <tr>
                     <td ng-class="eventColor.color" ng-repeat="eventColor in eventColors">
-                        <span class="bold">{{eventColor.description | translate}}</span>
+                        <span class="bold">{{eventColor.description| translate}}</span>
                     </td>
                 </tr>                    
             </table>
         </div>
 
-        <div ng-if="dhis2Events && !showEventCreationDiv">            
-            <table class="table-borderless table-with-fixed-layout">
+        <div class="table-responsive" ng-if="selectedEnrollment">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th class="active" ng-class="getColumnWidth(eventsByStage[stage.id].length)" ng-repeat="stage in programStages| orderBy:'sortOrder':reverse">
+                            {{stage.name}}
+
+                            <!-- event add/filter icon begins -->
+                            <span class='pull-right'>
+                                <span ng-if="stageNeedsEvent(stage)">
+                                    <a href title="{{'create_new_event'| translate}}" ng-click="showCreateEvent(stage)"><i class="fa fa-plus"></i></a>
+                                </span>
+                                <span class="small-horizonal-spacing" ng-if="eventsByStage[stage.id].length > 1">
+                                    <a href title="{{'filter'| translate}}"><i class="fa fa-search"></i></a>
+                                </span>                                                    
+                            </span>
+                            <!-- event add/filter icon ends -->                           
+
+                        </th>
+                    </tr>
+                </thead>
                 <tbody>
                     <tr>
-                        <td class="inline-block" ng-repeat="dhis2Event in dhis2Events | orderBy:'sortingDate':reverse">
-                            <div class="stage-container" ng-class='getEventStyle(dhis2Event, false)' ng-click="showDataEntry(dhis2Event, false)">
-                                {{dhis2Event.name}}<br/>
-                                {{dhis2Event.orgUnitName}}<br/>
-                                {{dhis2Event.sortingDate}}         
+                        <td ng-repeat="stage in programStages| orderBy:'sortOrder':reverse">
+                            <div class="inline-block" ng-repeat="dhis2Event in eventsByStage[stage.id]">
+                                <div class="event-container" 
+                                     ng-class="getEventStyle(dhis2Event)" 
+                                     ng-click="showDataEntry(dhis2Event, false)">
+                                    {{dhis2Event.orgUnitName}}<br/>
+                                    {{dhis2Event.sortingDate}}<br>
+                                    <span ng-if="eventsByStage[stage.id].length > 1">[{{$index + 1}}]</span>
+                                </div>
+                                <!--<i class="fa fa-arrow-right" ng-if="$index < eventsByStage[stage.id].length - 1"></i>-->
                             </div>
-                            <i class="fa fa-arrow-right" ng-if="$index < dhis2Events.length - 1"></i>
                         </td>                        
                     </tr>
                 </tbody>                
             </table>
-        </div>     
-        <div ng-if="!dhis2Events && selectedEnrollment" class="alert alert-danger">{{'no_event_is_yet_created'| translate}}</div>
-        <div ng-if="dhis2Events && showEventCreationDiv" class="alert alert-warning">{{'event_creation'| translate}}</div>
-        <div ng-if="!selectedEnrollment" class="alert alert-danger">{{'not_yet_enrolled_data_entry'| translate}}</div> 
-        <div ng-show="dummyEvents && showEventCreationDiv">            
-            <table class="table-borderless">
-                <tbody>
-                    <tr>
-                        <td class="inline-block" ng-repeat="dummyEvent in dummyEvents| orderBy:'sortingDate':reverse">                                 
-                            <span class="stage-container" ng-class='getEventStyle(dummyEvent, true)' ng-click="showDummyEventCreation(dummyEvent)">
-                                {{dummyEvent.name}}<br/>
-                                {{dummyEvent.dueDate}}         
-                            </span>
-                            <i class="fa fa-arrow-right" ng-if="$index < dummyEvents.length - 1"></i>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <form name="eventCreationForm" novalidate ng-show="currentDummyEvent">
-                <div class="row">
-                    <div class="col-md-6">
-                        {{currentDummyEvent.reportDateDescription}}
-                        <input type="text" placeholder="{{dhis2CalendarFormat.keyDateFormat}}" name="eventDate" class="form-control" d2-date ng-model="currentDummyEvent.eventDate" ng-required="false"/>
-                        <span ng-if="eventCreationForm.submitted && eventCreationForm.eventDate.$invalid" class="error">{{'required'| translate}}</span>
-                    </div>
-                    <div class="col-md-6">
-                        {{'due_date'| translate}}
-                        <input type="text" placeholder="{{dhis2CalendarFormat.keyDateFormat}}" name="dueDate" class="form-control" d2-date ng-model="currentDummyEvent.dueDate" ng-required="true"/>
-                        <span ng-if="eventCreationForm.submitted && eventCreationForm.dueDate.$invalid" class="error">{{'required'| translate}}</span>
-                    </div>                        
-                </div>
-                <div class="row vertical-spacing">   
-                    <div class="col-md-6">
-                        <button type="button" class="btn btn-primary" ng-click="createEvent()">{{'create'| translate}}</button>
-                        <button type="button" class="btn btn-default small-horizonal-spacing" ng-click="closeEventCreation()">{{'cancel'| translate}}</button>
-                    </div>                        
-                </div>
-            </form>
-        </div>        
+        </div>
+        <div ng-if="!selectedEnrollment" class="alert alert-danger">{{'not_yet_enrolled_data_entry'| translate}}</div>
 
         <form name="outerForm" novalidate>
-            <div ng-if="currentEvent && !showEventCreationDiv">
+            <div ng-if="currentEvent">
                 <!-- event dates begin -->
                 <div class="row">
                     <div class="col-md-6">
@@ -122,7 +105,7 @@
                 <!-- coordinates begin -->
                 <div class="row" ng-if="currentStage.captureCoordinates && currentEvent.eventDate">
                     <div class="col-md-6">
-                        {{'latitude'| translate}}
+                        {{'latitude'| translate}}<span><a href ng-click="showMap(currentEvent)" title="{{'get_from_map'| translate}}"><i class="fa fa-map-marker fa-2x"></i></a></span>
                         <input type="number"
                                ng-model="currentEvent.coordinate.latitude"     
                                class="form-control" 
@@ -136,7 +119,7 @@
                         <span ng-show="outerForm.latitude.$invalid" class="required">{{'value_must_be_between'| translate}} [-90 ... 90]</span>
                     </div>
                     <div class="col-md-6">
-                        {{'longitude'| translate}}                    
+                        {{'longitude'| translate}}<span><a href ng-click="showMap(currentEvent)" title="{{'get_from_map'| translate}}"><i class="fa fa-map-marker fa-2x"></i></a></span>                    
                         <input type="number"  
                                ng-model="currentEvent.coordinate.longitude"     
                                class="form-control" 
@@ -148,7 +131,7 @@
                                ng-disabled="currentEvent.enrollmentStatus !== 'ACTIVE' || currentEvent.editingNotAllowed" 
                                ng-required="false"/>
                         <span ng-show="outerForm.longitude.$invalid" class="required">{{'value_must_be_between'| translate}}[-180 ... 180]</span>
-                    </div>                        
+                    </div>
                 </div>
                 <!-- coordinates begin -->
 
@@ -162,7 +145,7 @@
                     <a href ng-click="completeIncompleteEvent()" 
                        class="btn btn-warning" 
                        ng-disabled="currentEvent.enrollmentStatus !== 'ACTIVE' || currentEvent.editingNotAllowed"
-                       ng-if="currentEvent.eventDate && ( currentEvent.status === 'SCHEDULE' || currentEvent.status === 'ACTIVE' || currentEvent.status === 'VISITED')">{{'complete'| translate}}</a>
+                       ng-if="currentEvent.eventDate && (currentEvent.status === 'SCHEDULE' || currentEvent.status === 'ACTIVE' || currentEvent.status === 'VISITED')">{{'complete'| translate}}</a>
                     <a href ng-click="completeIncompleteEvent()" 
                        class="btn btn-warning"
                        ng-disabled="currentEvent.enrollmentStatus !== 'ACTIVE' || currentEvent.editingNotAllowed"
@@ -182,7 +165,7 @@
             </div>
         </form>
 
-        <div ng-show="currentEvent && !showEventCreationDiv" class='remove-default-padding overflow-ellipsis'>
+        <div ng-show="currentEvent" class='remove-default-padding overflow-ellipsis'>
             <div class='row'><hr></div>
             <textarea class="form-control" rows="3" ng-model="note" placeholder="{{'add_new_note_here'| translate}}"></textarea> 
             <div class="vertical-spacing">
@@ -201,16 +184,16 @@
             <table class="table table-striped dhis2-table-hover">
                 <tr ng-repeat="note in currentEvent.notes">
                     <td class="overflow-ellipsis">
-                        <d2-pop-over content="note" template="popover.html" details="{{'details'| translate}}">
-                            <div>{{note.value}}</div>
-                        </d2-pop-over>
-                        <script type="text/ng-template" id="popover.html">
-                            <p>{{content.value}}</p>
-                            <hr>
-                            <p><strong>{{'created_by' | translate}}: </strong>{{content.storedBy}}</p>
-                            <p><strong>{{'date' | translate}}: </strong>{{content.storedDate}}</p>                           
-                        </script>
-                    </td> 
+                <d2-pop-over content="note" template="popover.html" details="{{'details'| translate}}">
+                    <div>{{note.value}}</div>
+                </d2-pop-over>
+                <script type="text/ng-template" id="popover.html">
+                    <p>{{content.value}}</p>
+                    <hr>
+                    <p><strong>{{'created_by' | translate}}: </strong>{{content.storedBy}}</p>
+                    <p><strong>{{'date' | translate}}: </strong>{{content.storedDate}}</p>                           
+                </script>
+                </td> 
                 </tr>
             </table>
         </div>

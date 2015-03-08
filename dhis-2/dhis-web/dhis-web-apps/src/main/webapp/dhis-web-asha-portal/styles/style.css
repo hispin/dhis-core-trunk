@@ -107,6 +107,9 @@ textarea {
     padding-top: 5px;
     text-align: center;
     border: 2px dotted;
+    margin: 2px;
+    padding: 5px;
+    border-radius: 4px;
 }
 
 .stage-container:hover {
@@ -117,9 +120,11 @@ textarea {
 .event-container {
     cursor: pointer;
     opacity: 1.0;
-    white-space: normal;
-    padding-top: 5px;
+    text-align: center;
+    margin: 2px;
+    padding: 5px;
     border: 2px dotted;
+    border-radius: 4px;    
 }
 
 .event-container:hover {
@@ -148,15 +153,6 @@ textarea {
     font-weight: bold;
 }
 
-.current-stage-color {
-    color: #b94a48;
-}
-
-.stages-color {
-    display: block;
-}
-
-
 /*----------------------------------------------------------------------------*/
 /* App - specific
 /*----------------------------------------------------------------------------*/
@@ -181,9 +177,9 @@ div.paging a.active
 }
 
 .alert-default {
-	color: #55514d;
-	background-color: #D5CBC1;
-	border-color: #aaa29a;
+    color: #55514d;
+    background-color: #D5CBC1;
+    border-color: #aaa29a;
 }
 
 .red {
@@ -509,13 +505,6 @@ div#searchOuTree h4{
     margin-top: 5px;
 }
 
-.trimmed-alert {
-	padding: 10px;
-	margin-bottom: 20px;
-	border: 1px solid transparent;
-	border-radius: 4px
-}
-
 .remove-default-padding {
     margin: -15px !important;    
 }
@@ -828,12 +817,12 @@ a:active {
 }
 
 .ui-datepicker-group .ui-datepicker-header {
-	//height: 1.5em; 
+    //height: 1.5em; 
     height: inherit;  //this is to make it play nice with bootstrap
 }
 
 #ui-datepicker-div, .calendars-popup {
-	z-index: 2000; //has to be greater than bootsrap's modal z-index
+    z-index: 2000; //has to be greater than bootsrap's modal z-index
 }
 
 //Necessary to override the .panel-group .panel { overflow: hidden; } in bootstrap.
@@ -869,7 +858,6 @@ input.typeahead::-ms-input-placeholder {
         display: none;
     }
 }
-
 
 .org-unit-tree {
     margin-left: -5px;
@@ -941,4 +929,48 @@ ul.tree ul li:last-child:before {
 .selected-org-unit {
     font-weight: bold;
     color: #FF8000;
+}
+
+#map-container { 
+    height: 800px;
+    width: 100%;
+}
+
+#polygon-label {
+    text-align: center;
+    padding: 5px;
+    font-size: 15px;
+}
+
+.polygon-name {
+    padding: 5px;
+    font-size: 15px;
+    position: absolute;
+}
+
+.map_context_menu{
+	background-color:white;
+	border:1px solid gray;
+    z-index: 1000;
+}
+.map_context_menu_item{
+	padding:3px 6px;
+}
+.map_context_menu_item:hover{
+	background-color:#CCCCCC;
+}
+.map_context_menu_separator{
+	background-color:gray;
+	height:1px;
+	margin:0;
+	padding:0;
+}
+
+.disabled-context-menu-item {    
+    pointer-events: none;
+    color: #dddddd;
+    cursor: none;
+}
+.enable-context-menu-item {    
+    cursor:pointer; 
 }

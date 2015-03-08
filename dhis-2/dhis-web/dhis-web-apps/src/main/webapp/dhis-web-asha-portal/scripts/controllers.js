@@ -49,9 +49,6 @@ var trackerCaptureControllers = angular.module('trackerCaptureControllers', [])
     //Registration
     $scope.showRegistrationDiv = false;
     
-    //Reporting
-    $scope.showReportDiv = false;
-    
     //watch for selection of org unit from tree
     $scope.$watch('selectedOrgUnit', function() {           
 
@@ -103,54 +100,32 @@ var trackerCaptureControllers = angular.module('trackerCaptureControllers', [])
         $scope.selectedOrgUnit = orgUnit;
         
         if (angular.isObject($scope.selectedOrgUnit)) {   
-
-            ProgramFactory.getAll().then(function(programs){
-                $scope.programs = [];
-                angular.forEach(programs, function(program){                            
-                    if(program.organisationUnits.hasOwnProperty($scope.selectedOrgUnit.id)){                                
-                        $scope.programs.push(program);
-                    }
-                });
-
-                if($scope.programs.length === 0){
-                    $scope.selectedProgram = null;
-                }
-                else{
-                    if($scope.selectedProgram){
-                        angular.forEach($scope.programs, function(program){                            
-                            if(program.id === $scope.selectedProgram.id){                                
-                                $scope.selectedProgram = program;
-                            }
-                        });
-                    }
-                    else{                        
-                        if($scope.programs.length === 1){
-                            $scope.selectedProgram = $scope.programs[0];
-                        }                        
-                    }
-                }                
-                $scope.processAttributes();
+            
+            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram).then(function(response){
+                $scope.programs = response.programs;
+                $scope.selectedProgram = response.selectedProgram;
                 
+                $scope.processAttributes();                
                 $scope.search($scope.searchMode.listAll);
             });
         }        
     };
     
     $scope.getProgramAttributes = function(program){ 
+        $scope.selectedProgram = program;
         
         if($scope.selectedProgram){
-            $location.path('/').search({program: $scope.selectedProgramId});
+            $location.path('/').search({program: $scope.selectedProgram.id});
         }
         else{
             $location.path('/').search({});
         }
 
-        $scope.trackedEntityList = null; 
-        $scope.selectedProgram = program;
+        $scope.trackedEntityList = null;        
         
         $scope.processAttributes();
         
-        if($scope.showRegistrationDiv || $scope.showReportDiv){
+        if($scope.showRegistrationDiv){
             $scope.doSearch = false;
         }
         
@@ -174,7 +149,6 @@ var trackerCaptureControllers = angular.module('trackerCaptureControllers', [])
         $scope.emptySearchText = false;
         $scope.emptySearchAttribute = false;
         $scope.showRegistrationDiv = false;  
-        $scope.showReportDiv = false;
         $scope.showTrackedEntityDiv = false;
         $scope.trackedEntityList = null; 
         $scope.teiCount = null;
@@ -305,20 +279,7 @@ var trackerCaptureControllers = angular.module('trackerCaptureControllers', [])
             $scope.doSearch = true;
             $scope.getProgramAttributes($scope.selectedProgram);
         }
-    };  
-    
-    $scope.showReport = function(){
-        $scope.showReportDiv = !$scope.showReportDiv;
-        $scope.showTrackedEntityDiv = false;
-        $scope.showSearchDiv = false;
-        $scope.searchState = false;
-        
-        if(!$scope.showReportDiv){
-            $scope.searchState = true;
-            $scope.doSearch = true;
-            $scope.getProgramAttributes($scope.selectedProgram);
-        }
-    };
+    };    
     
     $scope.showHideColumns = function(){
         $scope.hiddenGridColumns = 0;

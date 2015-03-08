@@ -17,17 +17,9 @@ trackerCapture.controller('EnrollmentController',
                 DialogService) {
     
     $scope.today = DateUtils.getToday();
-    $scope.selectedOrgUnit = storage.get('SELECTED_OU');    
-      
-    AttributesFactory.getAll().then(function(atts){
-        $scope.attributes = [];  
-        $scope.attributesById = [];
-        angular.forEach(atts, function(att){
-            $scope.attributesById[att.id] = att;
-        });
-        
-        CurrentSelection.setAttributesById($scope.attributesById);
-    });
+    $scope.selectedOrgUnit = storage.get('SELECTED_OU');
+    
+    
     
     //listen for the selected items
     var selections = {};
@@ -42,17 +34,18 @@ trackerCapture.controller('EnrollmentController',
         $scope.newEnrollment = {};
         
         selections = CurrentSelection.get();        
-        processSelectedTei();
+        processSelectedTei();       
         
         $scope.selectedEntity = selections.te;
         $scope.selectedProgram = selections.pr;
         $scope.optionSets = selections.optionSets;
         $scope.programs = selections.prs;
         var selectedEnrollment = selections.selectedEnrollment;
-        $scope.enrollments = selections.enrollments ? selections.enrollments : [];        
+        $scope.enrollments = selections.enrollments;
         $scope.programExists = args.programExists;
         $scope.programNames = selections.prNames;
         $scope.programStageNames = selections.prStNames;
+        $scope.attributesById = CurrentSelection.getAttributesById();
         
         if($scope.selectedProgram){
             
@@ -98,11 +91,10 @@ trackerCapture.controller('EnrollmentController',
         if(!$scope.selectedEnrollment.enrollment){//prepare for possible enrollment
             AttributesFactory.getByProgram($scope.selectedProgram).then(function(atts){
                 $scope.attributes = atts;                
-                $scope.selectedProgram.hasCustomForm = false;               
+                $scope.customFormExists = false;               
                 TEFormService.getByProgram($scope.selectedProgram, atts).then(function(teForm){                    
                     if(angular.isObject(teForm)){                        
-                        $scope.selectedProgram.hasCustomForm = true;
-                        $scope.selectedProgram.displayCustomForm = $scope.selectedProgram.hasCustomForm ? true:false;
+                        $scope.customFormExists = true;
                         $scope.trackedEntityForm = teForm;
                         $scope.customForm = CustomFormService.getForTrackedEntity($scope.trackedEntityForm, 'ENROLLMENT');
                     }
@@ -121,7 +113,9 @@ trackerCapture.controller('EnrollmentController',
         }
        
         $scope.showEnrollmentDiv = !$scope.showEnrollmentDiv;
-        $rootScope.$broadcast('enrollmentEditing', {enrollmentEditing: $scope.showEnrollmentDiv});
+        $timeout(function() { 
+            $rootScope.$broadcast('enrollmentEditing', {enrollmentEditing: $scope.showEnrollmentDiv});
+        }, 100);        
         
         if($scope.showEnrollmentDiv){            
             $scope.showEnrollmentHistoryDiv = false;
@@ -131,14 +125,14 @@ trackerCapture.controller('EnrollmentController',
             $scope.loadEnrollmentDetails($scope.selectedEnrollment);
             
             //check custom form for enrollment
-            $scope.selectedProgram.hasCustomForm = false;
+            $scope.customFormExists = false;
             $scope.registrationForm = '';
             TEFormService.getByProgram($scope.selectedProgram, $scope.attributes).then(function(teForm){
                 if(angular.isObject(teForm)){
-                    $scope.selectedProgram.hasCustomForm = true;
+                    $scope.customFormExists = true;
                     $scope.registrationForm = teForm;
                 }                
-                $scope.selectedProgram.displayCustomForm = $scope.selectedProgram.hasCustomForm ? true:false;
+                $scope.customFormExists = $scope.customFormExists ? true:false;
                 $scope.broadCastSelections('dashboardWidgets');
             });            
         }
@@ -180,7 +174,7 @@ trackerCapture.controller('EnrollmentController',
                             dateOfIncident: $scope.selectedEnrollment.dateOfIncident ? $scope.selectedEnrollment.dateOfIncident : $scope.selectedEnrollment.dateOfEnrollment
                         };
                         
-        TEIService.update(tei, $scope.optionSets).then(function(updateResponse){            
+        TEIService.update(tei, $scope.optionSets, $scope.attributesById).then(function(updateResponse){            
             
             if(updateResponse.status === 'SUCCESS'){
                 //registration is successful, continue for enrollment               
@@ -229,7 +223,6 @@ trackerCapture.controller('EnrollmentController',
     };    
     
     var getProcessedForm = function(){        
-        $scope.attributesById = CurrentSelection.getAttributesById();
         var tei = angular.copy(selections.tei);
         tei.attributes = [];
         var formEmpty = true;
@@ -308,7 +301,7 @@ trackerCapture.controller('EnrollmentController',
                             program: program.id,
                             programStage: stage.id,
                             orgUnit: orgUnit.id,                        
-                            dueDate: DateUtils.formatFromUserToApi( EventUtils.getEventDueDate(dhis2Events.events, stage, enrollment) ),
+                            dueDate: DateUtils.formatFromUserToApi( EventUtils.getEventDueDate(null, stage, enrollment) ),
                             status: 'SCHEDULE'
                         };
                     
@@ -347,6 +340,6 @@ trackerCapture.controller('EnrollmentController',
     };
     
     $scope.switchRegistrationForm = function(){
-        $scope.selectedProgram.displayCustomForm = !$scope.selectedProgram.displayCustomForm;
+        $scope.customFormExists = !$scope.customFormExists;
     };
 });
