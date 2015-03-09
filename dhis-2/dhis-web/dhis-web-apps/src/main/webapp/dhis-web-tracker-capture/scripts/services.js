@@ -587,7 +587,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 att.value = AttributesFactory.formatAttributeValue(att, attributesById, optionSets, 'API');                                                                
             });
             
-            var promise = $http.put( '../api/trackedEntityInstances' , formattedTei ).then(function(response){                    
+            var promise = $http.post( '../api/trackedEntityInstances' , formattedTei ).then(function(response){                    
                 return response.data;
             });            
             return promise;            

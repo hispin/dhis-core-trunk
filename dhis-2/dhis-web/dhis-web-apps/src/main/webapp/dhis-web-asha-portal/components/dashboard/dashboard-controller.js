@@ -135,7 +135,7 @@ trackerCapture.controller('DashboardController',
             AttributesFactory.getAll().then(function(atts){
                 
                 $scope.attributesById = [];
-                $scope.attributesByCode = [];
+                $scope.attributeIdsByCode = [];
                 angular.forEach(atts, function(att){
                     $scope.attributesById[att.id] = att;
                     if(att.code){
