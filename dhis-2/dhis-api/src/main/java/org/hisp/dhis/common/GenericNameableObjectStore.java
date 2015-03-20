@@ -45,15 +45,36 @@ public interface GenericNameableObjectStore<T>
     T getByShortName( String shortName );
 
     /**
+     * Gets the count of objects which shortName is equal the given shortName.
+     *
+     * @param shortName the shortName which result object shortNames must be like.
+     * @return the count of objects.
+     */
+    int getCountEqShortName( String shortName );
+
+    /**
+     * Gets the count of objects which shortName is like the given shortName.
+     *
+     * @param shortName the shortName which result object shortNames must be like.
+     * @return the count of objects.
+     */
+    int getCountLikeShortName( String shortName );
+
+    /**
      * Return the number of objects where the name is equal the given name.
-     * <p/>
-     * This count is _unfiltered_ (no ACL!), so this is not the same as
-     * getAllEqShortName().size().
      *
      * @param shortName the name.
      * @return Count of objects.
      */
     int getCountEqShortNameNoAcl( String shortName );
+
+    /**
+     * Retrieves a List of objects where the shortName is like the given shortName.
+     *
+     * @param shortName the shortName.
+     * @return a List of objects.
+     */
+    List<T> getAllLikeShortName( String shortName );
 
     /**
      * Retrieves a List of objects where the name is like the given name.
@@ -70,13 +91,4 @@ public interface GenericNameableObjectStore<T>
      * @return a List of objects.
      */
     List<T> getAllEqShortNameIgnoreCase( String shortName );
-    
-    /**
-     * Retrieves a List of dimensional objects. TODO move to new 
-     * GenericDimensionObjectStore.
-     * 
-     * @param dataDimension indicates whether to fetch objects defined as dimensional.
-     * @return a List of objects.
-     */
-    List<T> getByDataDimension( boolean dataDimension );
 }

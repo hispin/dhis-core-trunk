@@ -31,10 +31,8 @@ package org.hisp.dhis.webapi.controller.event;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -52,6 +50,7 @@ import org.hisp.dhis.dxf2.common.IdSchemes;
 import org.hisp.dhis.dxf2.common.ImportOptions;
 import org.hisp.dhis.dxf2.common.JacksonUtils;
 import org.hisp.dhis.dxf2.events.event.Event;
+import org.hisp.dhis.dxf2.events.event.EventSearchParams;
 import org.hisp.dhis.dxf2.events.event.EventService;
 import org.hisp.dhis.dxf2.events.event.Events;
 import org.hisp.dhis.dxf2.events.event.ImportEventTask;
@@ -59,17 +58,14 @@ import org.hisp.dhis.dxf2.events.event.ImportEventsTask;
 import org.hisp.dhis.dxf2.events.event.csv.CsvEventService;
 import org.hisp.dhis.dxf2.events.report.EventRowService;
 import org.hisp.dhis.dxf2.events.report.EventRows;
-import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstanceService;
 import org.hisp.dhis.dxf2.importsummary.ImportStatus;
 import org.hisp.dhis.dxf2.importsummary.ImportSummaries;
 import org.hisp.dhis.dxf2.importsummary.ImportSummary;
 import org.hisp.dhis.event.EventStatus;
 import org.hisp.dhis.importexport.ImportStrategy;
-import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.organisationunit.OrganisationUnitService;
 import org.hisp.dhis.program.Program;
-import org.hisp.dhis.program.ProgramStage;
 import org.hisp.dhis.program.ProgramStatus;
 import org.hisp.dhis.scheduling.TaskCategory;
 import org.hisp.dhis.scheduling.TaskId;
@@ -148,6 +144,9 @@ public class EventController
         @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date startDate,
         @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date endDate,
         @RequestParam( required = false ) EventStatus status,
+        @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date lastUpdated,
+        @RequestParam( required = false ) Integer page,
+        @RequestParam( required = false ) Integer pageSize,
         @RequestParam( required = false ) String attachment,
         @RequestParam( required = false, defaultValue = "false" ) boolean skipHeader,
         @RequestParam Map<String, String> parameters,
@@ -155,52 +154,10 @@ public class EventController
     {
         WebOptions options = new WebOptions( parameters );
 
-        Program pr = manager.get( Program.class, program );
-        ProgramStage prs = manager.get( ProgramStage.class, programStage );
-        List<OrganisationUnit> organisationUnits = new ArrayList<>();
-        TrackedEntityInstance tei = null;
-        OrganisationUnit rootOrganisationUnit = null;
-
-        if ( trackedEntityInstance != null )
-        {
-            tei = trackedEntityInstanceService.getTrackedEntityInstance( trackedEntityInstance );
-
-            if ( tei == null )
-            {
-                ContextUtils.conflictResponse( response, "Invalid trackedEntityInstance ID." );
-                return;
-            }
-        }
-
-        if ( orgUnit != null )
-        {
-            rootOrganisationUnit = manager.get( OrganisationUnit.class, orgUnit );
-
-            if ( rootOrganisationUnit == null )
-            {
-                ContextUtils.conflictResponse( response, "Invalid orgUnit ID." );
-                return;
-            }
-        }
-
-        if ( rootOrganisationUnit != null )
-        {
-            if ( OrganisationUnitSelectionMode.DESCENDANTS.equals( ouMode ) )
-            {
-                organisationUnits.addAll( organisationUnitService.getOrganisationUnitWithChildren( rootOrganisationUnit.getUid() ) );
-            }
-            else if ( OrganisationUnitSelectionMode.CHILDREN.equals( ouMode ) )
-            {
-                organisationUnits.add( rootOrganisationUnit );
-                organisationUnits.addAll( rootOrganisationUnit.getChildren() );
-            }
-            else // SELECTED
-            {
-                organisationUnits.add( rootOrganisationUnit );
-            }
-        }
-
-        Events events = eventService.getEvents( pr, prs, programStatus, followUp, organisationUnits, tei, startDate, endDate, status, idSchemes );
+        EventSearchParams params = eventService.getFromUrl( program, programStage, programStatus, followUp, orgUnit, ouMode, 
+            trackedEntityInstance, startDate, endDate, status, lastUpdated, idSchemes, page, pageSize );
+        
+        Events events = eventService.getEvents( params );
 
         if ( options.hasPaging() )
         {
@@ -242,58 +199,19 @@ public class EventController
         @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date startDate,
         @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date endDate,
         @RequestParam( required = false ) EventStatus status,
+        @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date lastUpdated,
+        @RequestParam( required = false ) Integer page,
+        @RequestParam( required = false ) Integer pageSize,
         @RequestParam( required = false ) boolean skipMeta,
         @RequestParam( required = false ) String attachment,
         @RequestParam Map<String, String> parameters, IdSchemes idSchemes, Model model, HttpServletResponse response, HttpServletRequest request )
     {
         WebOptions options = new WebOptions( parameters );
 
-        Program pr = manager.get( Program.class, program );
-        ProgramStage prs = manager.get( ProgramStage.class, programStage );
-        List<OrganisationUnit> organisationUnits = new ArrayList<>();
-        TrackedEntityInstance tei = null;
-        OrganisationUnit rootOrganisationUnit = null;
-
-        if ( trackedEntityInstance != null )
-        {
-            tei = trackedEntityInstanceService.getTrackedEntityInstance( trackedEntityInstance );
-
-            if ( tei == null )
-            {
-                ContextUtils.conflictResponse( response, "Invalid trackedEntityInstance ID." );
-                return null;
-            }
-        }
-
-        if ( orgUnit != null )
-        {
-            rootOrganisationUnit = manager.get( OrganisationUnit.class, orgUnit );
-
-            if ( rootOrganisationUnit == null )
-            {
-                ContextUtils.conflictResponse( response, "Invalid orgUnit ID." );
-                return null;
-            }
-        }
-
-        if ( rootOrganisationUnit != null )
-        {
-            if ( OrganisationUnitSelectionMode.DESCENDANTS.equals( ouMode ) )
-            {
-                organisationUnits.addAll( organisationUnitService.getOrganisationUnitWithChildren( rootOrganisationUnit.getUid() ) );
-            }
-            else if ( OrganisationUnitSelectionMode.CHILDREN.equals( ouMode ) )
-            {
-                organisationUnits.add( rootOrganisationUnit );
-                organisationUnits.addAll( rootOrganisationUnit.getChildren() );
-            }
-            else // SELECTED
-            {
-                organisationUnits.add( rootOrganisationUnit );
-            }
-        }
-
-        Events events = eventService.getEvents( pr, prs, programStatus, followUp, organisationUnits, tei, startDate, endDate, status, idSchemes );
+        EventSearchParams params = eventService.getFromUrl( program, programStage, programStatus, followUp, orgUnit, ouMode, 
+            trackedEntityInstance, startDate, endDate, status, lastUpdated, idSchemes, page, pageSize );
+        
+        Events events = eventService.getEvents( params );
 
         if ( options.hasLinks() )
         {
@@ -310,9 +228,9 @@ public class EventController
             events.setEvents( PagerUtils.pageCollection( events.getEvents(), pager ) );
         }
 
-        if ( !skipMeta && pr != null )
+        if ( !skipMeta && params.getProgram() != null )
         {
-            events.setMetaData( getMetaData( pr ) );
+            events.setMetaData( getMetaData( params.getProgram() ) );
         }
 
         model.addAttribute( "model", events );
@@ -340,33 +258,10 @@ public class EventController
     {
         WebOptions options = new WebOptions( parameters );
 
-        Program pr = manager.get( Program.class, program );
-        List<OrganisationUnit> organisationUnits = new ArrayList<>();
-        OrganisationUnit rootOrganisationUnit = null;
-
-        if ( orgUnit != null )
-        {
-            rootOrganisationUnit = manager.get( OrganisationUnit.class, orgUnit );
-        }
-
-        if ( rootOrganisationUnit != null )
-        {
-            if ( OrganisationUnitSelectionMode.DESCENDANTS.equals( ouMode ) )
-            {
-                organisationUnits.addAll( organisationUnitService.getOrganisationUnitWithChildren( rootOrganisationUnit.getUid() ) );
-            }
-            else if ( OrganisationUnitSelectionMode.CHILDREN.equals( ouMode ) )
-            {
-                organisationUnits.add( rootOrganisationUnit );
-                organisationUnits.addAll( rootOrganisationUnit.getChildren() );
-            }
-            else // SELECTED
-            {
-                organisationUnits.add( rootOrganisationUnit );
-            }
-        }
-
-        EventRows eventRows = eventRowService.getEventRows( pr, organisationUnits, programStatus, eventStatus, startDate, endDate );
+        EventSearchParams params = eventService.getFromUrl( program, null, programStatus, false, 
+            orgUnit, ouMode, null, startDate, endDate, null, null, null, null, null );
+        
+        EventRows eventRows = eventRowService.getEventRows( params );
 
         if ( options.hasPaging() )
         {

@@ -34,7 +34,7 @@ import org.hisp.dhis.attribute.AttributeService;
 import com.opensymphony.xwork2.Action;
 
 /**
- * @author mortenoh
+ * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
 public class GetAttributeAction
     implements Action

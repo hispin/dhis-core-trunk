@@ -707,8 +707,10 @@ public class TableAlteror
         executeSql( "alter table validationrulegroup rename column validationgroupid to validationrulegroupid" );
         executeSql( "update sqlview set sqlviewid=viweid" );
         executeSql( "alter table sqlview drop column viewid" );
-        executeSql( "update sqlview set query = false where query is null" );
-
+        executeSql( "update sqlview set type = 'QUERY' where query is true" );
+        executeSql( "update sqlview set type = 'VIEW' where type is null" );
+        executeSql( "alter table sqlview drop column query" );
+        
         executeSql( "UPDATE dashboard SET publicaccess='--------' WHERE publicaccess is null" );
 
         executeSql( "UPDATE optionset SET version=0 WHERE version IS NULL" );
@@ -754,6 +756,9 @@ public class TableAlteror
         executeSql( "UPDATE attribute SET usergroupattribute=false WHERE usergroupattribute IS NULL" );
         executeSql( "UPDATE attribute SET datasetattribute=false WHERE datasetattribute IS NULL" );
         executeSql( "UPDATE attribute SET programattribute=false WHERE programattribute IS NULL" );
+        executeSql( "UPDATE attribute SET programstageattribute=false WHERE programstageattribute IS NULL" );
+        executeSql( "UPDATE attribute SET trackedentityattribute=false WHERE trackedentityattribute IS NULL" );
+        executeSql( "UPDATE attribute SET trackedentityattributeattribute=false WHERE trackedentityattributeattribute IS NULL" );
 
         executeSql( "ALTER TABLE trackedentityattributedimension DROP COLUMN operator" );
         executeSql( "ALTER TABLE trackedentitydataelementdimension DROP COLUMN operator" );

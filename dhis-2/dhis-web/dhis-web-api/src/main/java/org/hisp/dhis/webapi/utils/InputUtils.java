@@ -33,7 +33,7 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.hisp.dhis.dataelement.CategoryOptionGroup;
+import org.hisp.dhis.common.IdentifiableObjectManager;
 import org.hisp.dhis.dataelement.DataElementCategoryCombo;
 import org.hisp.dhis.dataelement.DataElementCategoryOption;
 import org.hisp.dhis.dataelement.DataElementCategoryOptionCombo;
@@ -47,6 +47,9 @@ public class InputUtils
 {
     @Autowired
     private DataElementCategoryService categoryService;
+    
+    @Autowired
+    private IdentifiableObjectManager idObjectManager;
     
     /**
      * Validates and retrieves the attribute option combo. 409 conflict as status
@@ -75,7 +78,7 @@ public class InputUtils
 
         DataElementCategoryCombo categoryCombo = null;
         
-        if ( cc != null && ( categoryCombo = categoryService.getDataElementCategoryCombo( cc ) ) == null )
+        if ( cc != null && ( categoryCombo = idObjectManager.get( DataElementCategoryCombo.class, cc ) ) == null )
         {
             ContextUtils.conflictResponse( response, "Illegal category combo identifier: " + cc );
             return null;
@@ -91,13 +94,13 @@ public class InputUtils
         {
             Set<DataElementCategoryOption> categoryOptions = new HashSet<>();
 
-            for ( String id : opts )
+            for ( String uid : opts )
             {
-                DataElementCategoryOption categoryOption = categoryService.getDataElementCategoryOption( id );
+                DataElementCategoryOption categoryOption = idObjectManager.get( DataElementCategoryOption.class, uid );
                 
                 if ( categoryOption == null )
                 {
-                    ContextUtils.conflictResponse( response, "Illegal category option identifier: " + id );
+                    ContextUtils.conflictResponse( response, "Illegal category option identifier: " + uid );
                     return null;
                 }
                 
@@ -125,99 +128,5 @@ public class InputUtils
         }
         
         return attributeOptionCombo;
-    }
-
-    /**
-     * Validates and retrieves a single category option group. 409 conflict as
-     * status code along with a textual message will be set on the response in
-     * case of invalid input.
-     *
-     * @param response the servlet response.
-     * @param cog the category option group query string.
-     * @return the set of category option groups, null if the input was
-     *         missing or an empty set if the input was invalid.
-     */
-    public Set<CategoryOptionGroup> getAttributeOptionGroup( HttpServletResponse response, String cog )
-    {
-        Set<String> groups = new HashSet<>();
-
-        groups.add(cog);
-
-        return getAttributeOptionGroups( response, groups );
-    }
-
-    /**
-     * Validates and retrieves a set of category option groups. 409 conflict as
-     * status code along with a textual message will be set on the response in
-     * case of invalid input.
-     *
-     * @param response the servlet response.
-     * @param cog the category option group query string set.
-     * @return the set of category option groups, null if the input was
-     *         missing or an empty set if the input was invalid.
-     */
-    public Set<CategoryOptionGroup> getAttributeOptionGroups( HttpServletResponse response, Set<String> cog )
-    {
-        Set<CategoryOptionGroup> groups = null;
-
-        if ( cog != null )
-        {
-            groups = new HashSet<>();
-
-            for ( String id : cog )
-            {
-                if ( "undefined".compareTo( id ) != 0 )
-                {
-                    CategoryOptionGroup categoryOptionGroup = categoryService.getCategoryOptionGroup( id );
-
-                    if ( categoryOptionGroup == null )
-                    {
-                        ContextUtils.conflictResponse( response, "Illegal category option group identifier: " + cog );
-                        return null;
-                    }
-
-                    groups.add( categoryOptionGroup );
-                }
-            }
-        }
-
-        return groups;
-    }
-
-    /**
-     * Validates and retrieves a set of category options. 409 conflict as
-     * status code along with a textual message will be set on the response in
-     * case of invalid input.
-     *
-     * @param response the servlet response.
-     * @param cp the category option query string.
-     * @return the set of category option groups, null if the input was
-     *         missing or an empty set if the input was invalid.
-     */
-    public Set<DataElementCategoryOption> getAttributeOptions( HttpServletResponse response, String cp )
-    {
-        Set<DataElementCategoryOption> options = null;
-
-        if ( cp != null )
-        {
-            Set<String> opts = ContextUtils.getQueryParamValues( cp );
-
-            options = new HashSet<>();
-
-            for ( String id : opts )
-            {
-                DataElementCategoryOption categoryOption = categoryService.getDataElementCategoryOption( id );
-
-                if ( categoryOption == null )
-                {
-                    ContextUtils.conflictResponse( response, "Illegal category option identifier: " + id );
-                    return null;
-                }
-
-                options.add( categoryOption );
-            }
-        }
-
-        return options;
     }
 }

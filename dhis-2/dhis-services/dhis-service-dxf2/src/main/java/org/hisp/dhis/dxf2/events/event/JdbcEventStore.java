@@ -28,35 +28,32 @@ package org.hisp.dhis.dxf2.events.event;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstance;
-import org.hisp.dhis.dxf2.common.IdSchemes;
-import org.hisp.dhis.event.EventStatus;
-import org.hisp.dhis.organisationunit.OrganisationUnit;
-import org.hisp.dhis.program.Program;
-import org.hisp.dhis.program.ProgramStage;
-import org.hisp.dhis.program.ProgramStatus;
-import org.hisp.dhis.system.util.DateUtils;
-import org.hisp.dhis.system.util.SqlHelper;
-import org.hisp.dhis.trackedentity.TrackedEntityInstanceService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.support.rowset.SqlRowSet;
+import static org.hisp.dhis.common.IdentifiableObjectUtils.getIdList;
+import static org.hisp.dhis.system.util.DateUtils.getMediumDateString;
+import static org.hisp.dhis.system.util.TextUtils.getCommaDelimitedString;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.hisp.dhis.common.IdentifiableObjectUtils.getIdList;
-import static org.hisp.dhis.system.util.DateUtils.getMediumDateString;
-import static org.hisp.dhis.system.util.TextUtils.getCommaDelimitedString;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.hisp.dhis.dxf2.common.IdSchemes;
+import org.hisp.dhis.event.EventStatus;
+import org.hisp.dhis.organisationunit.OrganisationUnit;
+import org.hisp.dhis.program.Program;
+import org.hisp.dhis.system.util.DateUtils;
+import org.hisp.dhis.system.util.SqlHelper;
+import org.hisp.dhis.trackedentity.TrackedEntityInstanceService;
+import org.hisp.dhis.util.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.rowset.SqlRowSet;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -75,35 +72,12 @@ public class JdbcEventStore
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public List<Event> getAll( Program program, ProgramStage programStage, ProgramStatus programStatus, Boolean followUp,
-        List<OrganisationUnit> organisationUnits, TrackedEntityInstance trackedEntityInstance, Date startDate, Date endDate, EventStatus status )
-    {
-        return getAll( program, programStage, programStatus, followUp, organisationUnits, trackedEntityInstance,
-            startDate, endDate, status, new IdSchemes() );
-    }
-
-    @Override
-    public List<Event> getAll( Program program, ProgramStage programStage, ProgramStatus programStatus, Boolean followUp,
-        List<OrganisationUnit> organisationUnits, TrackedEntityInstance trackedEntityInstance, Date startDate, Date endDate, EventStatus status, IdSchemes idSchemes )
+    public List<Event> getEvents( EventSearchParams params, List<OrganisationUnit> organisationUnits )
     {
         List<Event> events = new ArrayList<>();
 
-        Integer trackedEntityInstanceId = null;
-
-        if ( trackedEntityInstance != null )
-        {
-            org.hisp.dhis.trackedentity.TrackedEntityInstance entityInstance = entityInstanceService
-                .getTrackedEntityInstance( trackedEntityInstance.getTrackedEntityInstance() );
-
-            if ( entityInstance != null )
-            {
-                trackedEntityInstanceId = entityInstance.getId();
-            }
-        }
-
-        String sql = buildSql( program, programStage, programStatus, followUp, getIdList( organisationUnits ),
-            trackedEntityInstanceId, startDate, endDate, status );
-
+        String sql = buildSql( params, organisationUnits );
+        
         SqlRowSet rowSet = jdbcTemplate.queryForRowSet( sql );
 
         log.debug( "Event query SQL: " + sql );
@@ -112,6 +86,8 @@ public class JdbcEventStore
         event.setEvent( "not_valid" );
 
         Set<String> notes = new HashSet<>();
+        
+        IdSchemes idSchemes = ObjectUtils.firstNonNull( params.getIdSchemes(), new IdSchemes() );
 
         while ( rowSet.next() )
         {
@@ -143,14 +119,10 @@ public class JdbcEventStore
 
                 event.setStoredBy( rowSet.getString( "psi_completeduser" ) );
                 event.setOrgUnitName( rowSet.getString( "ou_name" ) );
-
-                event.setDueDate( StringUtils.defaultIfEmpty(
-                    DateUtils.getLongDateString( rowSet.getDate( "psi_duedate" ) ), DateUtils.getLongDateString( rowSet.getDate(
-                        "psi_duedate" ) ) ) );
-
-                event.setEventDate( StringUtils.defaultIfEmpty(
-                    DateUtils.getLongDateString( rowSet.getDate( "psi_executiondate" ) ), DateUtils.getLongDateString( rowSet.getDate(
-                        "psi_executiondate" ) ) ) );
+                event.setDueDate( DateUtils.getLongDateString( rowSet.getDate( "psi_duedate" ) ) );
+                event.setEventDate( DateUtils.getLongDateString( rowSet.getDate( "psi_executiondate" ) ) );
+                event.setCreated( DateUtils.getLongDateString( rowSet.getDate( "psi_created" ) ) );
+                event.setLastUpdated( DateUtils.getLongDateString( rowSet.getDate( "psi_lastupdated" ) ) );
 
                 if ( rowSet.getBoolean( "ps_capturecoordinates" ) )
                 {
@@ -201,22 +173,34 @@ public class JdbcEventStore
             {
                 Note note = new Note();
                 note.setValue( rowSet.getString( "psinote_value" ) );
-                note.setStoredDate( StringUtils.defaultIfEmpty(
-                    rowSet.getString( "psinote_soreddate" ), rowSet.getString( "psinote_soreddate" ) ) );
+                note.setStoredDate( rowSet.getString( "psinote_storeddate" ) );
                 note.setStoredBy( rowSet.getString( "psinote_storedby" ) );
 
                 event.getNotes().add( note );
                 notes.add( rowSet.getString( "psinote_id" ) );
             }
-
         }
 
         return events;
     }
 
-    private String buildSql( Program program, ProgramStage programStage, ProgramStatus programStatus, Boolean followUp,
-        List<Integer> orgUnitIds, Integer trackedEntityInstanceId, Date startDate, Date endDate, EventStatus status )
+    private String buildSql( EventSearchParams params, List<OrganisationUnit> organisationUnits )
     {
+        List<Integer> orgUnitIds = getIdList( organisationUnits );
+
+        Integer trackedEntityInstanceId = null;
+
+        if ( params.getTrackedEntityInstance() != null )
+        {
+            org.hisp.dhis.trackedentity.TrackedEntityInstance entityInstance = entityInstanceService
+                .getTrackedEntityInstance( params.getTrackedEntityInstance().getTrackedEntityInstance() );
+
+            if ( entityInstance != null )
+            {
+                trackedEntityInstanceId = entityInstance.getId();
+            }
+        }
+
         SqlHelper hlp = new SqlHelper();
 
         String sql =
@@ -224,9 +208,9 @@ public class JdbcEventStore
                 "p.type as p_type, ps.uid as ps_uid, ps.code as ps_code, ps.capturecoordinates as ps_capturecoordinates, pa.uid as pa_uid, " +
                 "psi.uid as psi_uid, psi.status as psi_status, ou.uid as ou_uid, ou.code as ou_code, ou.name as ou_name, " +
                 "psi.executiondate as psi_executiondate, psi.duedate as psi_duedate, psi.completeduser as psi_completeduser, " +
-                "psi.longitude as psi_longitude, psi.latitude as psi_latitude, " +
+                "psi.longitude as psi_longitude, psi.latitude as psi_latitude, psi.created as psi_created, psi.lastupdated as psi_lastupdated, " +
                 "psinote.trackedentitycommentid as psinote_id, psinote.commenttext as psinote_value, " +
-                "psinote.createddate as psinote_soreddate, psinote.creator as psinote_storedby, " +
+                "psinote.createddate as psinote_storeddate, psinote.creator as psinote_storedby, " +
                 "pdv.value as pdv_value, pdv.storedby as pdv_storedby, pdv.providedelsewhere as pdv_providedelsewhere, de.uid as de_uid, de.code as de_code " +
                 "from program p " +
                 "left join programstage ps on ps.programid=p.programid " +
@@ -235,7 +219,7 @@ public class JdbcEventStore
                 "left join programstageinstancecomments psic on psi.programstageinstanceid=psic.programstageinstanceid " +
                 "left join trackedentitycomment psinote on psic.trackedentitycommentid=psinote.trackedentitycommentid ";
 
-        if ( status == null || EventStatus.isExistingEvent( status ) )
+        if ( params.getEventStatus() == null || EventStatus.isExistingEvent( params.getEventStatus() ) )
         {
             sql += "left join organisationunit ou on (psi.organisationunitid=ou.organisationunitid) ";
         }
@@ -256,41 +240,46 @@ public class JdbcEventStore
             sql += hlp.whereAnd() + " pa.trackedentityinstanceid=" + trackedEntityInstanceId + " ";
         }
 
-        if ( program != null )
+        if ( params.getProgram() != null )
         {
-            sql += hlp.whereAnd() + " p.programid = " + program.getId() + " ";
+            sql += hlp.whereAnd() + " p.programid = " + params.getProgram().getId() + " ";
         }
 
-        if ( programStage != null )
+        if ( params.getProgramStage() != null )
         {
-            sql += hlp.whereAnd() + " ps.programstageid = " + programStage.getId() + " ";
+            sql += hlp.whereAnd() + " ps.programstageid = " + params.getProgramStage().getId() + " ";
         }
 
-        if ( programStatus != null )
+        if ( params.getProgramStatus() != null )
         {
-            sql += hlp.whereAnd() + " pi.status = " + programStatus.getValue() + " ";
+            sql += hlp.whereAnd() + " pi.status = " + params.getProgramStatus().getValue() + " ";
         }
 
-        if ( followUp != null )
+        if ( params.getFollowUp() != null )
         {
-            sql += hlp.whereAnd() + " pi.followup is " + (followUp ? "true" : "false") + " ";
+            sql += hlp.whereAnd() + " pi.followup is " + ( params.getFollowUp() ? "true" : "false" ) + " ";
+        }
+        
+        if ( params.getLastUpdated() != null )
+        {
+            sql += hlp.whereAnd() + " psi.lastupdated > '" + DateUtils.getLongDateString( params.getLastUpdated() ) + "' ";
         }
 
-        if ( status == null || EventStatus.isExistingEvent( status ) )
+        if ( params.getEventStatus() == null || EventStatus.isExistingEvent( params.getEventStatus() ) )
         {
             if ( orgUnitIds != null && !orgUnitIds.isEmpty() )
             {
                 sql += hlp.whereAnd() + " psi.organisationunitid in (" + getCommaDelimitedString( orgUnitIds ) + ") ";
             }
 
-            if ( startDate != null )
+            if ( params.getStartDate() != null )
             {
-                sql += hlp.whereAnd() + " psi.executiondate >= '" + getMediumDateString( startDate ) + "' ";
+                sql += hlp.whereAnd() + " psi.executiondate >= '" + getMediumDateString( params.getStartDate() ) + "' ";
             }
 
-            if ( endDate != null )
+            if ( params.getEndDate() != null )
             {
-                sql += hlp.whereAnd() + " psi.executiondate <= '" + getMediumDateString( endDate ) + "' ";
+                sql += hlp.whereAnd() + " psi.executiondate <= '" + getMediumDateString( params.getEndDate() ) + "' ";
             }
         }
         else
@@ -300,41 +289,50 @@ public class JdbcEventStore
                 sql += hlp.whereAnd() + " tei.organisationunitid in (" + getCommaDelimitedString( orgUnitIds ) + ") ";
             }
 
-            if ( startDate != null )
+            if ( params.getStartDate() != null )
             {
-                sql += hlp.whereAnd() + " psi.duedate >= '" + getMediumDateString( startDate ) + "' ";
+                sql += hlp.whereAnd() + " psi.duedate >= '" + getMediumDateString( params.getStartDate() ) + "' ";
             }
 
-            if ( endDate != null )
+            if ( params.getEndDate() != null )
             {
-                sql += hlp.whereAnd() + " psi.duedate <= '" + getMediumDateString( endDate ) + "' ";
+                sql += hlp.whereAnd() + " psi.duedate <= '" + getMediumDateString( params.getEndDate() ) + "' ";
             }
 
-            if ( status == EventStatus.VISITED )
+            if ( params.getEventStatus() == EventStatus.VISITED )
             {
                 sql = "and psi.status = '" + EventStatus.ACTIVE.name() + "' and psi.executiondate is not null ";
             }
-            else if ( status == EventStatus.COMPLETED )
+            else if ( params.getEventStatus() == EventStatus.COMPLETED )
             {
                 sql = "and psi.status = '" + EventStatus.COMPLETED.name() + "' ";
             }
-            else if ( status == EventStatus.SCHEDULE )
+            else if ( params.getEventStatus() == EventStatus.SCHEDULE )
             {
                 sql += "and psi.executiondate is null and date(now()) <= date(psi.duedate) and psi.status = '" + EventStatus.SCHEDULE
                     .name() + "' ";
             }
-            else if ( status == EventStatus.OVERDUE )
+            else if ( params.getEventStatus() == EventStatus.OVERDUE )
             {
                 sql += "and psi.executiondate is null and date(now()) > date(psi.duedate) and psi.status = '" + EventStatus.SCHEDULE.name
                     () + "' ";
             }
             else
             {
-                sql += "and psi.status = '" + status.name() + "' ";
+                sql += "and psi.status = '" + params.getEventStatus().name() + "' ";
             }
         }
 
-        sql += " order by psi_uid;";
+        sql += " order by psi.lastupdated desc ";
+
+        // ---------------------------------------------------------------------
+        // Paging
+        // ---------------------------------------------------------------------
+
+        if ( params.isPaging() )
+        {
+            sql += "limit " + params.getPageSizeWithDefault() + " offset " + params.getOffset();
+        }
 
         return sql;
     }

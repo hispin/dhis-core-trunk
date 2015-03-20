@@ -25,7 +25,7 @@ trackerCapture.controller('ProfileController',
         $scope.customForm = null;
         $scope.attributes = [];
         $scope.attributesById = CurrentSelection.getAttributesById();
-
+        
         //display only those attributes that belong to the selected program
         //if no program, display attributesInNoProgram        
         angular.forEach($scope.selectedTei.attributes, function(att){
@@ -35,15 +35,17 @@ trackerCapture.controller('ProfileController',
         delete $scope.selectedTei.attributes;
         
         AttributesFactory.getByProgram($scope.selectedProgram).then(function(atts){
-            $scope.attributes = atts;            
-            $scope.customFormExists = false;               
-            TEFormService.getByProgram($scope.selectedProgram, atts).then(function(teForm){                    
-                if(angular.isObject(teForm)){                        
-                    $scope.customFormExists = true;
-                    $scope.trackedEntityForm = teForm;
-                    $scope.customForm = CustomFormService.getForTrackedEntity($scope.trackedEntityForm, 'PROFILE');
-                }                    
-            });
+            $scope.attributes = atts;          
+            $scope.customFormExists = false;
+            if($scope.selectedProgram && $scope.selectedProgram.id){
+                TEFormService.getByProgram($scope.selectedProgram, atts).then(function(teForm){                    
+                    if(angular.isObject(teForm)){                        
+                        $scope.customFormExists = true;
+                        $scope.trackedEntityForm = teForm;
+                        $scope.customForm = CustomFormService.getForTrackedEntity($scope.trackedEntityForm, 'PROFILE');
+                    }                    
+                }); 
+            }
         });
     });
     
@@ -103,9 +105,5 @@ trackerCapture.controller('ProfileController',
     $scope.cancel = function(){
         $scope.selectedTei = $scope.teiOriginal;  
         $scope.editingDisabled = !$scope.editingDisabled;
-    };
-    
-    $scope.switchRegistrationForm = function(){
-        $scope.customFormExists = !$scope.customFormExists;
-    };    
+    };  
 });

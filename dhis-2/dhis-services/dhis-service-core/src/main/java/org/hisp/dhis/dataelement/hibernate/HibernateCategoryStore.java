@@ -29,6 +29,7 @@ package org.hisp.dhis.dataelement.hibernate;
  */
 
 import java.util.Collection;
+import java.util.List;
 
 import org.hibernate.criterion.Restrictions;
 import org.hisp.dhis.common.hibernate.HibernateIdentifiableObjectStore;
@@ -54,6 +55,15 @@ public class HibernateCategoryStore
     public Collection<DataElementCategory> getCategories( String dimensionType, boolean dataDimension )
     {
         return getSharingCriteria( 
+            Restrictions.eq( "dataDimensionType", dimensionType ),
+            Restrictions.eq( "dataDimension", dataDimension ) ).list();
+    }
+    
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<DataElementCategory> getCategoriesNoAcl( String dimensionType, boolean dataDimension )
+    {
+        return getCriteria( 
             Restrictions.eq( "dataDimensionType", dimensionType ),
             Restrictions.eq( "dataDimension", dataDimension ) ).list();
     }

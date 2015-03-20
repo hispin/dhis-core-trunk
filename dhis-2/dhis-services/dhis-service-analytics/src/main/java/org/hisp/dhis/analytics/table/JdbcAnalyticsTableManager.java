@@ -265,19 +265,19 @@ public class JdbcAnalyticsTableManager
         List<String[]> columns = new ArrayList<>();
 
         Collection<DataElementGroupSet> dataElementGroupSets =
-            dataElementService.getDataDimensionDataElementGroupSets();
+            idObjectManager.getDataDimensionsNoAcl( DataElementGroupSet.class );
         
         Collection<OrganisationUnitGroupSet> orgUnitGroupSets = 
-            organisationUnitGroupService.getDataDimensionOrganisationUnitGroupSets();
-
+            idObjectManager.getDataDimensionsNoAcl( OrganisationUnitGroupSet.class );
+        
         Collection<CategoryOptionGroupSet> categoryOptionGroupSets =
-            categoryService.getDataDimensionCategoryOptionGroupSets();
+            idObjectManager.getDataDimensionsNoAcl( CategoryOptionGroupSet.class );
         
         Collection<DataElementCategory> disaggregationCategories =
-            categoryService.getDisaggregationDataDimensionCategories();
+            categoryService.getDisaggregationDataDimensionCategoriesNoAcl();
         
         Collection<DataElementCategory> attributeCategories =
-            categoryService.getAttributeDataDimensionCategories();
+            categoryService.getAttributeDataDimensionCategoriesNoAcl();
 
         Collection<OrganisationUnitLevel> levels =
             organisationUnitService.getOrganisationUnitLevels();

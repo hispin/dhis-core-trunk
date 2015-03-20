@@ -32,12 +32,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import com.google.common.base.MoreObjects;
 import org.hisp.dhis.common.BaseIdentifiableObject;
 import org.hisp.dhis.common.DxfNamespaces;
 import org.hisp.dhis.common.IdentifiableObject;
 import org.hisp.dhis.common.MergeStrategy;
 import org.hisp.dhis.common.view.DetailedView;
 import org.hisp.dhis.common.view.ExportView;
+import org.hisp.dhis.option.OptionSet;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -78,9 +80,17 @@ public class Attribute
 
     private boolean programAttribute;
 
+    private boolean programStageAttribute;
+
+    private boolean trackedEntityAttribute;
+
+    private boolean trackedEntityAttributeAttribute;
+
     private boolean mandatory;
 
     private Integer sortOrder;
+
+    private OptionSet optionSet;
 
     private Set<AttributeValue> attributeValues = new HashSet<>();
 
@@ -264,14 +274,56 @@ public class Attribute
         this.programAttribute = programAttribute;
     }
 
-    public Set<AttributeValue> getAttributeValues()
+    @JsonProperty
+    @JsonView( { DetailedView.class, ExportView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public boolean isProgramStageAttribute()
     {
-        return attributeValues;
+        return programStageAttribute;
     }
 
-    public void setAttributeValues( Set<AttributeValue> attributeValues )
+    public void setProgramStageAttribute( boolean programStageAttribute )
     {
-        this.attributeValues = attributeValues;
+        this.programStageAttribute = programStageAttribute;
+    }
+
+    @JsonProperty
+    @JsonView( { DetailedView.class, ExportView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public boolean isTrackedEntityAttribute()
+    {
+        return trackedEntityAttribute;
+    }
+
+    public void setTrackedEntityAttribute( boolean trackedEntityAttribute )
+    {
+        this.trackedEntityAttribute = trackedEntityAttribute;
+    }
+
+    @JsonProperty
+    @JsonView( { DetailedView.class, ExportView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public boolean isTrackedEntityAttributeAttribute()
+    {
+        return trackedEntityAttributeAttribute;
+    }
+
+    public void setTrackedEntityAttributeAttribute( boolean trackedEntityAttributeAttribute )
+    {
+        this.trackedEntityAttributeAttribute = trackedEntityAttributeAttribute;
+    }
+
+    @JsonProperty
+    @JsonView( { DetailedView.class, ExportView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public OptionSet getOptionSet()
+    {
+        return optionSet;
+    }
+
+    public void setOptionSet( OptionSet optionSet )
+    {
+        this.optionSet = optionSet;
     }
 
     @JsonProperty
@@ -285,6 +337,16 @@ public class Attribute
     public void setSortOrder( Integer sortOrder )
     {
         this.sortOrder = sortOrder;
+    }
+
+    public Set<AttributeValue> getAttributeValues()
+    {
+        return attributeValues;
+    }
+
+    public void setAttributeValues( Set<AttributeValue> attributeValues )
+    {
+        this.attributeValues = attributeValues;
     }
 
     @Override
@@ -307,6 +369,9 @@ public class Attribute
             userAttribute = attribute.isUserAttribute();
             userGroupAttribute = attribute.isUserGroupAttribute();
             programAttribute = attribute.isProgramAttribute();
+            programStageAttribute = attribute.isProgramStageAttribute();
+            trackedEntityAttribute = attribute.isTrackedEntityAttribute();
+            trackedEntityAttributeAttribute = attribute.isTrackedEntityAttributeAttribute();
             mandatory = attribute.isMandatory();
 
             if ( strategy.isReplace() )
@@ -323,5 +388,30 @@ public class Attribute
             attributeValues.clear();
             attributeValues.addAll( attribute.getAttributeValues() );
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return MoreObjects.toStringHelper( this )
+            .add( "sortOrder", sortOrder )
+            .add( "valueType", valueType )
+            .add( "dataElementAttribute", dataElementAttribute )
+            .add( "dataElementGroupAttribute", dataElementGroupAttribute )
+            .add( "indicatorAttribute", indicatorAttribute )
+            .add( "indicatorGroupAttribute", indicatorGroupAttribute )
+            .add( "dataSetAttribute", dataSetAttribute )
+            .add( "organisationUnitAttribute", organisationUnitAttribute )
+            .add( "organisationUnitGroupAttribute", organisationUnitGroupAttribute )
+            .add( "organisationUnitGroupSetAttribute", organisationUnitGroupSetAttribute )
+            .add( "userAttribute", userAttribute )
+            .add( "userGroupAttribute", userGroupAttribute )
+            .add( "programAttribute", programAttribute )
+            .add( "programStageAttribute", programStageAttribute )
+            .add( "trackedEntityAttribute", trackedEntityAttribute )
+            .add( "trackedEntityAttributeAttribute", trackedEntityAttributeAttribute )
+            .add( "mandatory", mandatory )
+            .add( "attributeValues", attributeValues )
+            .toString();
     }
 }

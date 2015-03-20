@@ -28,6 +28,12 @@ package org.hisp.dhis.common.hibernate;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.Query;
@@ -37,22 +43,16 @@ import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hisp.dhis.common.AuditLogUtil;
 import org.hisp.dhis.common.BaseIdentifiableObject;
-import org.hisp.dhis.common.GenericNameableObjectStore;
+import org.hisp.dhis.common.GenericDimensionalObjectStore;
 import org.hisp.dhis.common.NameableObject;
 import org.hisp.dhis.hibernate.HibernateGenericStore;
 import org.hisp.dhis.hibernate.exception.ReadAccessDeniedException;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
 
 /**
  * @author bobj
  */
 public class HibernateIdentifiableObjectStore<T extends BaseIdentifiableObject>
-    extends HibernateGenericStore<T> implements GenericNameableObjectStore<T>
+    extends HibernateGenericStore<T> implements GenericDimensionalObjectStore<T>
 {
     private static final Log log = LogFactory.getLog( HibernateIdentifiableObjectStore.class );
 
@@ -101,15 +101,7 @@ public class HibernateIdentifiableObjectStore<T extends BaseIdentifiableObject>
             return null;
         }
 
-        T object = getObject( Restrictions.eq( "uid", uid ) );
-
-        if ( !isReadAllowed( object ) )
-        {
-            AuditLogUtil.infoWrapper( log, currentUserService.getCurrentUsername(), object, AuditLogUtil.ACTION_READ_DENIED );
-            throw new ReadAccessDeniedException( object.toString() );
-        }
-
-        return object;
+        return getSharingObject( Restrictions.eq( "uid", uid ) );
     }
 
     @Override
@@ -175,15 +167,7 @@ public class HibernateIdentifiableObjectStore<T extends BaseIdentifiableObject>
             return null;
         }
 
-        T object = getObject( Restrictions.eq( "code", code ) );
-
-        if ( !isReadAllowed( object ) )
-        {
-            AuditLogUtil.infoWrapper( log, currentUserService.getCurrentUsername(), object, AuditLogUtil.ACTION_READ_DENIED );
-            throw new ReadAccessDeniedException( object.toString() );
-        }
-
-        return object;
+        return getSharingObject( Restrictions.eq( "code", code ) );
     }
 
     @Override
@@ -428,6 +412,14 @@ public class HibernateIdentifiableObjectStore<T extends BaseIdentifiableObject>
     public List<T> getByDataDimension( boolean dataDimension )
     {
         return getSharingCriteria()
+            .add( Restrictions.eq( "dataDimension", dataDimension ) ).list();
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public List<T> getByDataDimensionNoAcl( boolean dataDimension )
+    {
+        return getCriteria()
             .add( Restrictions.eq( "dataDimension", dataDimension ) ).list();
     }
 

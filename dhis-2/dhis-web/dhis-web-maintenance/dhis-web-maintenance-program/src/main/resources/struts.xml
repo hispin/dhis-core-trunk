@@ -114,7 +114,7 @@
       <param name="anyAuthorities">F_TRACKED_ENTITY_ATTRIBUTE_PUBLIC_ADD, F_TRACKED_ENTITY_ATTRIBUTE_PRIVATE_ADD</param>
     </action>
 
-    <action name="showAddAttributeForm" class="org.hisp.dhis.trackedentity.action.trackedentityattribute.ShowAddAttributeFormAction">
+    <action name="showAddAttributeForm" class="org.hisp.dhis.trackedentity.action.trackedentityattribute.ShowAddUpdateAttributeAction">
       <result name="success" type="velocity">/main.vm</result>
       <param name="page">/dhis-web-maintenance-program/addAttributeForm.vm</param>
       <param name="javascripts">javascript/attribute.js</param>
@@ -123,7 +123,7 @@
     </action>
 
     <action name="showUpdateAttributeForm"
-      class="org.hisp.dhis.trackedentity.action.trackedentityattribute.ShowUpdateAttributeAction">
+      class="org.hisp.dhis.trackedentity.action.trackedentityattribute.ShowAddUpdateAttributeAction">
       <result name="success" type="velocity">/main.vm</result>
       <param name="page">/dhis-web-maintenance-program/updateAttibuteForm.vm</param>
       <param name="javascripts">javascript/attribute.js</param>
@@ -300,7 +300,7 @@
     </action>
 
     <action name="showAddProgramStageForm"
-      class="org.hisp.dhis.trackedentity.action.program.GetProgramAction">
+      class="org.hisp.dhis.trackedentity.action.programstage.ShowAddProgramStageAction">
       <result name="input" type="velocity-xml">
         /dhis-web-commons/ajax/xmlResponseInput.vm
       </result>
@@ -1071,7 +1071,7 @@
       <param name="onExceptionReturn">plainTextError</param>
     </action>
 
-    <action name="getProgramIndicatorDescripttion"
+    <action name="getProgramIndicatorDescription"
       class="org.hisp.dhis.trackedentity.action.programindicator.GetProgramIndicatorDescriptionAction">
       <result name="success" type="velocity-json">
         /dhis-web-commons/ajax/jsonResponseSuccess.vm
@@ -1215,7 +1215,7 @@
       <param name="requiredAuthorities">F_TRACKED_ENTITY_MANAGEMENT</param>
     </action>
 
-    <action name="showAddTrackedEntityForm" class="org.hisp.dhis.trackedentity.action.NoAction">
+    <action name="showAddTrackedEntityForm" class="org.hisp.dhis.trackedentity.action.trackedentity.ShowAddUpdateTrackedEntityAction">
       <result name="success" type="velocity">/main.vm</result>
       <param name="page">/dhis-web-maintenance-program/addTrackedEntity.vm</param>
       <param name="javascripts">javascript/trackedEntity.js</param>
@@ -1230,7 +1230,7 @@
     </action>
 
     <action name="showUpdateTrackedEntityForm"
-      class="org.hisp.dhis.trackedentity.action.trackedentity.GetTrackedEntityAction">
+      class="org.hisp.dhis.trackedentity.action.trackedentity.ShowAddUpdateTrackedEntityAction">
       <result name="success" type="velocity">/main.vm</result>
       <param name="page">/dhis-web-maintenance-program/updateTrackedEntity.vm</param>
       <param name="javascripts">javascript/trackedEntity.js</param>

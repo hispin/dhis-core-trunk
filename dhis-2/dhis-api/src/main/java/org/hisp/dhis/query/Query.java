@@ -169,8 +169,8 @@ public class Query
             return this;
         }
 
-        Optional<Property> name = Optional.fromNullable( schema.getProperty( "name" ) );
-        Optional<Property> created = Optional.fromNullable( schema.getProperty( "created" ) );
+        Optional<Property> name = Optional.fromNullable( schema.getPersistedProperty( "name" ) );
+        Optional<Property> created = Optional.fromNullable( schema.getPersistedProperty( "created" ) );
 
         if ( name.isPresent() )
         {

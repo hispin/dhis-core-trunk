@@ -46,14 +46,13 @@
     <property name="transientIdentifiableProperties" value="true" />
   </bean>
 
-  <bean id="org.hisp.dhis.dataelement.DataElementGroupStore" class="org.hisp.dhis.common.hibernate.HibernateIdentifiableObjectStore">
+  <bean id="org.hisp.dhis.dataelement.DataElementGroupStore" class="org.hisp.dhis.dataelement.hibernate.HibernateDataElementGroupStore">
     <property name="clazz" value="org.hisp.dhis.dataelement.DataElementGroup" />
     <property name="sessionFactory" ref="sessionFactory" />
     <property name="cacheable" value="true" />
   </bean>
 
-  <bean id="org.hisp.dhis.dataelement.DataElementGroupSetStore"
-    class="org.hisp.dhis.common.hibernate.HibernateIdentifiableObjectStore">
+  <bean id="org.hisp.dhis.dataelement.DataElementGroupSetStore" class="org.hisp.dhis.dataelement.hibernate.HibernateDataElementGroupSetStore">
     <property name="clazz" value="org.hisp.dhis.dataelement.DataElementGroupSet" />
     <property name="sessionFactory" ref="sessionFactory" />
     <property name="cacheable" value="true" />
@@ -197,7 +196,7 @@
     <property name="cacheable" value="true" />
   </bean>
 
-  <bean id="org.hisp.dhis.dataelement.CategoryOptionGroupSetStore" class="org.hisp.dhis.common.hibernate.HibernateIdentifiableObjectStore">
+  <bean id="org.hisp.dhis.dataelement.CategoryOptionGroupSetStore" class="org.hisp.dhis.dataelement.hibernate.HibernateCategoryOptionGroupSetStore">
     <property name="clazz" value="org.hisp.dhis.dataelement.CategoryOptionGroupSet" />
     <property name="sessionFactory" ref="sessionFactory" />
     <property name="cacheable" value="true" />
@@ -493,7 +492,7 @@
     <property name="dataEntryFormStore" ref="org.hisp.dhis.dataentryform.DataEntryFormStore" />
     <property name="dataElementService" ref="org.hisp.dhis.dataelement.DataElementService" />
     <property name="indicatorService" ref="org.hisp.dhis.indicator.IndicatorService" />
-    <property name="categoryService" ref="org.hisp.dhis.dataelement.DataElementCategoryService" />
+    <property name="idObjectManager" ref="org.hisp.dhis.common.IdentifiableObjectManager" />
   </bean>
 
   <bean id="org.hisp.dhis.expression.ExpressionService" class="org.hisp.dhis.expression.DefaultExpressionService">
@@ -536,6 +535,7 @@
     <property name="organisationUnitLevelStore" ref="org.hisp.dhis.organisationunit.OrganisationUnitLevelStore" />
     <property name="currentUserService" ref="org.hisp.dhis.user.CurrentUserService" />
     <property name="versionService" ref="org.hisp.dhis.version.VersionService" />
+    <property name="configurationService" ref="org.hisp.dhis.configuration.ConfigurationService" />
     <property name="i18nService" ref="org.hisp.dhis.i18n.I18nService" />
   </bean>
 
@@ -747,6 +747,7 @@
         <value>niger</value>
         <value>nigeria</value>
         <value>norway</value>
+        <value>palestine</value>
         <value>paraguay</value>
         <value>philippines</value>
         <value>pepfar</value>

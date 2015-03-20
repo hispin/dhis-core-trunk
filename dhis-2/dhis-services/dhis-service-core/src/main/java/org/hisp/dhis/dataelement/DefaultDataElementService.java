@@ -28,6 +28,7 @@ package org.hisp.dhis.dataelement;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import org.hisp.dhis.common.GenericDimensionalObjectStore;
 import org.hisp.dhis.common.GenericNameableObjectStore;
 import org.hisp.dhis.common.ListMap;
 import org.hisp.dhis.dataelement.comparator.DataElementCategoryComboSizeComparator;
@@ -75,9 +76,9 @@ public class DefaultDataElementService
         this.dataElementGroupStore = dataElementGroupStore;
     }
 
-    private GenericNameableObjectStore<DataElementGroupSet> dataElementGroupSetStore;
+    private GenericDimensionalObjectStore<DataElementGroupSet> dataElementGroupSetStore;
 
-    public void setDataElementGroupSetStore( GenericNameableObjectStore<DataElementGroupSet> dataElementGroupSetStore )
+    public void setDataElementGroupSetStore( GenericDimensionalObjectStore<DataElementGroupSet> dataElementGroupSetStore )
     {
         this.dataElementGroupSetStore = dataElementGroupSetStore;
     }
@@ -676,12 +677,6 @@ public class DefaultDataElementService
     public Collection<DataElementGroupSet> getAllDataElementGroupSets()
     {
         return i18n( i18nService, dataElementGroupSetStore.getAll() );
-    }
-
-    @Override
-    public Collection<DataElementGroupSet> getDataDimensionDataElementGroupSets()
-    {
-        return i18n( i18nService, dataElementGroupSetStore.getByDataDimension( true ) );
     }
 
     @Override

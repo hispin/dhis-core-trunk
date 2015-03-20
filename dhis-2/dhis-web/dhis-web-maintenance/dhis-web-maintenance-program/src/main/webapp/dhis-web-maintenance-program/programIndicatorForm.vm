@@ -1,8 +1,10 @@
 <div id="tabs">
 	<ul>
 		<li><a href="#tab-1">$i18n.getString("dataelements")</a></li>
-		<li><a href="#tab-2">$i18n.getString("program_variables")</a></li>
-		<li><a href="#tab-3">$i18n.getString("attributes")</a></li>
+		#if($program.type!='3')
+			<li><a href="#tab-2">$i18n.getString("program_variables")</a></li>
+			<li><a href="#tab-3">$i18n.getString("attributes")</a></li>
+		#end
 		<li><a href="#tab-4">$i18n.getString("constant")</a></li>
 	</ul>	
 	
@@ -25,6 +27,7 @@
       </table>
 	</div>
 	
+#if($program.type!='3')
 	<div id="tab-2">
 		<table>
 			<tr>
@@ -67,6 +70,8 @@
       </table>
 	</div>
 	
+#end
+
 	<div id="tab-4">
 		<table>
         <tr>
@@ -95,42 +100,32 @@
 <tr>
 	<td>
 		<br/>
-		<input type='button' class="small-button" alt="$i18n.getString( 'plus' )" onclick='insertOperator( "+" );' value="+" />
-		<input type='button' class="small-button" alt="$i18n.getString( 'minus' )" onclick='insertOperator( "-" );' value="-" />
-		<input type='button' class="small-button" alt="$i18n.getString( 'multiply' )" onclick='insertOperator( "*" );' value="*" />
-		<input type='button' class="small-button" alt="$i18n.getString( 'divide' )" onclick='insertOperator( "/" );' value="/" />
-		&nbsp;&nbsp;&nbsp;
-		<input type='button' class="small-button" alt="$i18n.getString( 'left_parent' )" onclick='insertOperator( "(" );' value="(" />
-		<input type='button' class="small-button" alt="$i18n.getString( 'right_parent' )" onclick='insertOperator( ")" );' value=")" />
+		<a href="javascript:insertOperator( '(' )"><img src="../images/left_parent.png" title="$i18n.getString( 'left_brackets' )"/></a>
+		<a href="javascript:insertOperator( ')' )"><img src="../images/right_parent.png" title="$i18n.getString( 'right_brackets' )"/></a>
+		<a href="javascript:insertOperator( '*' )"><img src="../images/multiply.png" title="$i18n.getString( 'multiply' )"/></a>
+		<a href="javascript:insertOperator( '/' )"><img src="../images/divide.png" title="$i18n.getString( 'divide' )"/></a>
+		<a href="javascript:insertOperator( '+' )"><img src="../images/plus.png" title="$i18n.getString( 'plus' )"/></a>
+		<a href="javascript:insertOperator( '-' )"><img src="../images/minus.png" title="$i18n.getString( 'minus' )"/></a>
 	</td>
 </tr>
 	
 <p></p>
 <table>
-	
+	<tr>
+        <th>$i18n.getString( "expression" )</th>
+      </tr>	
 	<tr>
 		<td>
-			<fieldset>
-				<legend>$i18n.getString( "expression" ) <em title="$i18n.getString( "required" )" class="required">*</em></legend>
-				<table>
-					<tr>
-						<td>
-							<textarea style="width:660px" id="expression" name="expression" onkeyup='getConditionDescription();' >$!encoder.htmlEncode($!programIndicator.expression)</textarea>
-						</td>
-					</tr>
-				</table>
-			</fieldset>
+			<textarea style="width:660px" id="expression" name="expression" onkeyup='getConditionDescription();' >$!encoder.htmlEncode($!programIndicator.expression)</textarea>
 		</td>
-	</tr>
-	
+	</tr>	
+	<tr>
+        <th>$i18n.getString( "description" )</th>
+      </tr>	
 	<tr>
 		<td>
-			<fieldset>
-				<legend>$i18n.getString( "description" )</legend>
-				<div id='aggregationDescription'>$!encoder.htmlEncode($!description)</div>
-				
-				<input type="hidden" id="checkExpression" name="checkExpression" title="$i18n.getString('expression_is_not_well_formed')" class="{validate:{required:true}}"  />
-			</fieldset>
+			<div id='aggregationDescription' style="padding: 5px 0 20px 0">$!encoder.htmlEncode($!description)</div>			
+			<input type="hidden" id="checkExpression" name="checkExpression" title="$i18n.getString('expression_is_not_well_formed')" class="{validate:{required:true}}"  />
 		</td>
 	</tr>
 </table>		

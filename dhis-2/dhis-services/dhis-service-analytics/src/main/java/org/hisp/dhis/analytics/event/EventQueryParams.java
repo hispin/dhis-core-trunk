@@ -76,7 +76,7 @@ public class EventQueryParams
     private List<String> desc = new ArrayList<>();
     
     private String organisationUnitMode;
-        
+    
     private Integer page;
     
     private Integer pageSize;
@@ -95,9 +95,7 @@ public class EventQueryParams
     // Transient properties
     // -------------------------------------------------------------------------
     
-    private String periodType;
-    
-    private boolean aggregate;
+    private transient boolean aggregate;
     
     // -------------------------------------------------------------------------
     // Constructors
@@ -510,18 +508,6 @@ public class EventQueryParams
     public void setCoordinatesOnly( boolean coordinatesOnly )
     {
         this.coordinatesOnly = coordinatesOnly;
-    }
-
-    @Override
-    public String getPeriodType()
-    {
-        return periodType;
-    }
-
-    @Override
-    public void setPeriodType( String periodType )
-    {
-        this.periodType = periodType;
     }
 
     public boolean isAggregate()

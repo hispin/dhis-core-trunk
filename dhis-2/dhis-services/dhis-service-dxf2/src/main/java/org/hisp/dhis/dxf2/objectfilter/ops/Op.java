@@ -28,8 +28,7 @@ package org.hisp.dhis.dxf2.objectfilter.ops;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import org.hisp.dhis.query.QueryUtils;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -37,18 +36,6 @@ import java.util.Date;
 public abstract class Op
 {
     private String value;
-
-    private static SimpleDateFormat[] simpleDateFormats = new SimpleDateFormat[]{
-        new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ssZ" ),
-        new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss" ),
-        new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm" ),
-        new SimpleDateFormat( "yyyy-MM-dd'T'HH" ),
-        new SimpleDateFormat( "yyyy-MM-dd" ),
-        new SimpleDateFormat( "yyyy-MM" ),
-        new SimpleDateFormat( "yyyyMMdd" ),
-        new SimpleDateFormat( "yyyyMM" ),
-        new SimpleDateFormat( "yyyy" )
-    };
 
     public boolean wantValue()
     {
@@ -65,69 +52,9 @@ public abstract class Op
         return value;
     }
 
-    @SuppressWarnings( "unchecked" )
     public <T> T getValue( Class<?> klass )
     {
-        if ( klass.isInstance( value ) )
-        {
-            return (T) value;
-        }
-
-        if ( Boolean.class.isAssignableFrom( klass ) )
-        {
-            try
-            {
-                return (T) Boolean.valueOf( value );
-            }
-            catch ( Exception ignored )
-            {
-            }
-        }
-        else if ( Integer.class.isAssignableFrom( klass ) )
-        {
-            try
-            {
-                return (T) Integer.valueOf( value );
-            }
-            catch ( Exception ignored )
-            {
-            }
-        }
-        else if ( Float.class.isAssignableFrom( klass ) )
-        {
-            try
-            {
-                return (T) Float.valueOf( value );
-            }
-            catch ( Exception ignored )
-            {
-            }
-        }
-        else if ( Double.class.isAssignableFrom( klass ) )
-        {
-            try
-            {
-                return (T) Double.valueOf( value );
-            }
-            catch ( Exception ignored )
-            {
-            }
-        }
-        else if ( Date.class.isAssignableFrom( klass ) )
-        {
-            for ( SimpleDateFormat simpleDateFormat : simpleDateFormats )
-            {
-                try
-                {
-                    return (T) simpleDateFormat.parse( value );
-                }
-                catch ( Exception ignored )
-                {
-                }
-            }
-        }
-
-        return null;
+        return QueryUtils.getValue( klass, value );
     }
 
     public abstract OpStatus evaluate( Object object );

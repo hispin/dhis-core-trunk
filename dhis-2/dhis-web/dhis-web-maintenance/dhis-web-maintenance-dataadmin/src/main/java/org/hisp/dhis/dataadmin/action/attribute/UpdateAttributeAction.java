@@ -28,10 +28,12 @@ package org.hisp.dhis.dataadmin.action.attribute;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import com.opensymphony.xwork2.Action;
 import org.hisp.dhis.attribute.Attribute;
 import org.hisp.dhis.attribute.AttributeService;
-
-import com.opensymphony.xwork2.Action;
+import org.hisp.dhis.option.OptionService;
+import org.hisp.dhis.option.OptionSet;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
 /**
@@ -44,12 +46,11 @@ public class UpdateAttributeAction
     // Dependencies
     // -------------------------------------------------------------------------
 
+    @Autowired
     private AttributeService attributeService;
 
-    public void setAttributeService( AttributeService attributeService )
-    {
-        this.attributeService = attributeService;
-    }
+    @Autowired
+    private OptionService optionService;
 
     // -------------------------------------------------------------------------
     // Input & Output
@@ -159,12 +160,40 @@ public class UpdateAttributeAction
     {
         this.userGroupAttribute = userGroupAttribute;
     }
-    
+
     private boolean programAttribute;
 
     public void setProgramAttribute( boolean programAttribute )
     {
         this.programAttribute = programAttribute;
+    }
+
+    private boolean programStageAttribute;
+
+    public void setProgramStageAttribute( boolean programStageAttribute )
+    {
+        this.programStageAttribute = programStageAttribute;
+    }
+
+    private boolean trackedEntityAttribute;
+
+    public void setTrackedEntityAttribute( boolean trackedEntityAttribute )
+    {
+        this.trackedEntityAttribute = trackedEntityAttribute;
+    }
+
+    private boolean trackedEntityAttributeAttribute;
+
+    public void setTrackedEntityAttributeAttribute( boolean trackedEntityAttributeAttribute )
+    {
+        this.trackedEntityAttributeAttribute = trackedEntityAttributeAttribute;
+    }
+
+    private String optionSetUid;
+
+    public void setOptionSetUid( String optionSetUid )
+    {
+        this.optionSetUid = optionSetUid;
     }
 
     // -------------------------------------------------------------------------
@@ -178,6 +207,18 @@ public class UpdateAttributeAction
 
         if ( attribute != null )
         {
+            if ( "option_set".equals( attribute.getValueType() ) )
+            {
+                OptionSet optionSet = optionService.getOptionSet( optionSetUid );
+
+                if ( optionSet == null )
+                {
+                    return INPUT;
+                }
+
+                attribute.setOptionSet( optionSet );
+            }
+
             attribute.setName( name );
             attribute.setCode( StringUtils.isEmpty( code.trim() ) ? null : code );
             attribute.setValueType( valueType );
@@ -193,6 +234,9 @@ public class UpdateAttributeAction
             attribute.setUserAttribute( userAttribute );
             attribute.setUserGroupAttribute( userGroupAttribute );
             attribute.setProgramAttribute( programAttribute );
+            attribute.setProgramStageAttribute( programStageAttribute );
+            attribute.setTrackedEntityAttribute( trackedEntityAttribute );
+            attribute.setTrackedEntityAttributeAttribute( trackedEntityAttributeAttribute );
 
             attributeService.updateAttribute( attribute );
 

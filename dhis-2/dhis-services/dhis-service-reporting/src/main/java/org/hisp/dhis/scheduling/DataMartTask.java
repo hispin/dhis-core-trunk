@@ -48,6 +48,7 @@ import org.hisp.dhis.setting.SystemSettingManager;
 import org.hisp.dhis.system.notification.Notifier;
 import org.hisp.dhis.system.util.ConversionUtils;
 import org.hisp.dhis.system.util.DebugUtils;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -116,8 +117,8 @@ public class DataMartTask
             notifier.notify( taskId, ERROR, "Process failed: " + ex.getMessage(), true );
             
             messageService.sendSystemNotification( 
-                "Data mart process failed", 
-                "Data mart process failed, please check the logs. " +
+                "Data mart process failed",
+                "Data mart process failed, please check the logs. Time: " + new DateTime().toString() + ". " +
                 "Message: " + ex.getMessage() + " " +
                 "Cause: " + DebugUtils.getStackTrace( ex.getCause() ) );
 

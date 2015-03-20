@@ -28,9 +28,13 @@ package org.hisp.dhis.commons.action;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.opensymphony.xwork2.Action;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
 import org.hisp.dhis.common.comparator.IdentifiableObjectNameComparator;
-import org.hisp.dhis.configuration.ConfigurationService;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.organisationunit.OrganisationUnitLevel;
 import org.hisp.dhis.organisationunit.OrganisationUnitService;
@@ -39,11 +43,7 @@ import org.hisp.dhis.user.User;
 import org.hisp.dhis.version.Version;
 import org.hisp.dhis.version.VersionService;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import com.opensymphony.xwork2.Action;
 
 /**
  * @author mortenoh
@@ -74,13 +74,6 @@ public class GetOrganisationUnitTreeAction
     public void setVersionService( VersionService versionService )
     {
         this.versionService = versionService;
-    }
-
-    private ConfigurationService configurationService;
-
-    public void setConfigurationService( ConfigurationService configurationService )
-    {
-        this.configurationService = configurationService;
     }
 
     // -------------------------------------------------------------------------
@@ -174,18 +167,14 @@ public class GetOrganisationUnitTreeAction
 
         username = currentUserService.getCurrentUsername();
 
-        Collection<OrganisationUnit> userOrganisationUnits = new ArrayList<>();
-
         User user = currentUserService.getCurrentUser();
 
         if ( user != null && user.hasOrganisationUnit() )
         {
-            userOrganisationUnits = new ArrayList<>( user.getOrganisationUnits() );
             rootOrganisationUnits = new ArrayList<>( user.getOrganisationUnits() );
         }
         else if ( currentUserService.currentUserIsSuper() || user == null )
         {
-            userOrganisationUnits = new ArrayList<>( organisationUnitService.getRootOrganisationUnits() );
             rootOrganisationUnits = new ArrayList<>( organisationUnitService.getRootOrganisationUnits() );
         }
 
@@ -246,16 +235,11 @@ public class GetOrganisationUnitTreeAction
 
         if ( !versionOnly && !rootOrganisationUnits.isEmpty() )
         {
-            OrganisationUnitLevel offlineOrgUnitLevel = offlineLevel != null ? new OrganisationUnitLevel( offlineLevel, "<no-name>" )
-                : configurationService.getConfiguration().getOfflineOrganisationUnitLevel();
-
-            List<OrganisationUnitLevel> orgUnitLevels = organisationUnitService.getOrganisationUnitLevels();
-
-            final Integer maxLevels = (offlineOrgUnitLevel != null && !orgUnitLevels.isEmpty()) ? offlineOrgUnitLevel.getLevel() : null;
-
-            for ( OrganisationUnit unit : userOrganisationUnits )
+            Integer offlineLevels = getOfflineOrganisationUnitLevels();
+            
+            for ( OrganisationUnit unit : rootOrganisationUnits )
             {
-                organisationUnits.addAll( organisationUnitService.getOrganisationUnitWithChildren( unit.getId(), maxLevels ) );
+                organisationUnits.addAll( organisationUnitService.getOrganisationUnitWithChildren( unit.getId(), offlineLevels ) );
             }
         }
 
@@ -286,5 +270,27 @@ public class GetOrganisationUnitTreeAction
         }
 
         return orgUnitVersion.getValue();
+    }
+
+    /**
+     * Returns the number of org unit levels to cache offline based on the given
+     * org unit level argument, next the org unit level from the user org unit,
+     * next the level from the configuration.
+     */
+    private Integer getOfflineOrganisationUnitLevels()
+    {
+        List<OrganisationUnitLevel> orgUnitLevels = organisationUnitService.getOrganisationUnitLevels();
+
+        if ( orgUnitLevels == null || orgUnitLevels.isEmpty() )
+        {
+            return null;
+        }
+        
+        if ( offlineLevel != null )
+        {
+            return offlineLevel;
+        }
+        
+        return organisationUnitService.getOfflineOrganisationUnitLevels();
     }
 }

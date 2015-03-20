@@ -30,18 +30,25 @@ package org.hisp.dhis.program;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+
+import org.hisp.dhis.attribute.AttributeValue;
 import org.hisp.dhis.common.BaseIdentifiableObject;
 import org.hisp.dhis.common.DxfNamespaces;
 import org.hisp.dhis.common.IdentifiableObject;
 import org.hisp.dhis.common.MergeStrategy;
+import org.hisp.dhis.common.adapter.JacksonPeriodTypeDeserializer;
+import org.hisp.dhis.common.adapter.JacksonPeriodTypeSerializer;
 import org.hisp.dhis.common.annotation.Scanned;
 import org.hisp.dhis.common.view.DetailedView;
 import org.hisp.dhis.common.view.ExportView;
+import org.hisp.dhis.common.view.WithoutOrganisationUnitsView;
 import org.hisp.dhis.dataentryform.DataEntryForm;
+import org.hisp.dhis.period.PeriodType;
 import org.hisp.dhis.schema.annotation.PropertyRange;
 import org.hisp.dhis.trackedentity.TrackedEntityInstanceReminder;
 
@@ -118,6 +125,13 @@ public class ProgramStage
     private String reportDateToUse;
 
     private Integer sortOrder;
+    
+    private PeriodType periodType;
+
+    /**
+     * Set of the dynamic attributes values that belong to this data element.
+     */
+    private Set<AttributeValue> attributeValues = new HashSet<>();
 
     // -------------------------------------------------------------------------
     // Constructors
@@ -471,6 +485,35 @@ public class ProgramStage
         this.sortOrder = sortOrder;
     }
 
+    @JsonProperty
+    @JsonSerialize( using = JacksonPeriodTypeSerializer.class )
+    @JsonDeserialize( using = JacksonPeriodTypeDeserializer.class )
+    @JsonView( { DetailedView.class, ExportView.class, WithoutOrganisationUnitsView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public PeriodType getPeriodType()
+    {
+        return periodType;
+    }
+
+    public void setPeriodType( PeriodType periodType )
+    {
+        this.periodType = periodType;
+    }
+
+    @JsonProperty( "attributeValues" )
+    @JsonView( { DetailedView.class, ExportView.class } )
+    @JacksonXmlElementWrapper( localName = "attributeValues", namespace = DxfNamespaces.DXF_2_0 )
+    @JacksonXmlProperty( localName = "attributeValue", namespace = DxfNamespaces.DXF_2_0 )
+    public Set<AttributeValue> getAttributeValues()
+    {
+        return attributeValues;
+    }
+
+    public void setAttributeValues( Set<AttributeValue> attributeValues )
+    {
+        this.attributeValues = attributeValues;
+    }
+
     @Override
     public void mergeWith( IdentifiableObject other, MergeStrategy strategy )
     {
@@ -530,6 +573,9 @@ public class ProgramStage
 
             reminders.clear();
             reminders.addAll( programStage.getReminders() );
+
+            attributeValues.clear();
+            attributeValues.addAll( programStage.getAttributeValues() );
         }
     }
 }

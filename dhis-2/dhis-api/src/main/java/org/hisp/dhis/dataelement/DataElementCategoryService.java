@@ -114,13 +114,6 @@ public interface DataElementCategoryService
     DataElementCategory getDataElementCategoryByName( String name );
 
     /**
-     * Returns DataElementCategories which are considered data dimensions.
-     * 
-     * @return DataElementCategories which are considered data dimensions.
-     */
-    Collection<DataElementCategory> getDataDimensionDataElementCategories();
-
-    /**
      * Returns all DataElementCategories.
      * 
      * @return a collection of all DataElementCategories.
@@ -136,11 +129,11 @@ public interface DataElementCategoryService
 
     /**
      * Retrieves all DataElementCategories of dimension type disaggregation and
-     * data dimensional.
+     * data dimensional. Ignores ACL / sharing.
      * 
      * @return a collection of DataElementCategoryCombos.
      */
-    Collection<DataElementCategory> getDisaggregationDataDimensionCategories();
+    Collection<DataElementCategory> getDisaggregationDataDimensionCategoriesNoAcl();
 
     /**
      * Retrieves all DataElementCategories of dimension type attribute.
@@ -151,11 +144,11 @@ public interface DataElementCategoryService
 
     /**
      * Retrieves all DataElementCategories of dimension type attribute and data
-     * dimensional.
+     * dimensional. Ignores ACL / sharing.
      * 
      * @return a collection of DataElementCategoryCombos.
      */
-    Collection<DataElementCategory> getAttributeDataDimensionCategories();
+    Collection<DataElementCategory> getAttributeDataDimensionCategoriesNoAcl();
 
     // -------------------------------------------------------------------------
     // CategoryOption
@@ -650,8 +643,6 @@ public interface DataElementCategoryService
     Collection<CategoryOptionGroupSet> getCategoryOptionGroupSetsBetweenByName( int first, int max, String name );
 
     Collection<CategoryOptionGroupSet> getAllCategoryOptionGroupSets();
-
-    Collection<CategoryOptionGroupSet> getDataDimensionCategoryOptionGroupSets();
 
     CategoryOptionGroupSet getCategoryOptionGroupSetByName( String name );
 

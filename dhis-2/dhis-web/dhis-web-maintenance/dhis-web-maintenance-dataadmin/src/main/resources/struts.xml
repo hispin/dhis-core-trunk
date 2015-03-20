@@ -118,18 +118,11 @@
 
     <!-- Data integrity -->
 
-    <action name="displayDataIntegrityForm" class="org.hisp.dhis.dataadmin.action.NoAction">
+    <action name="dataIntegrity" class="org.hisp.dhis.dataadmin.action.NoAction">
       <result name="success" type="velocity">/main.vm</result>
       <param name="menu">/dhis-web-maintenance-dataadmin/menu.vm</param>
       <param name="page">/dhis-web-maintenance-dataadmin/dataIntegrity.vm</param>
       <param name="javascripts">javascript/dataIntegrity.js</param>
-      <param name="requiredAuthorities">F_PERFORM_MAINTENANCE</param>
-    </action>
-
-    <action name="getDataIntegrityReport" class="org.hisp.dhis.dataadmin.action.dataintegrity.GetDataIntegrityReportAction">
-      <result name="success" type="velocity-json">/dhis-web-maintenance-dataadmin/responseDataIntegrity.vm</result>
-      <param name="category">DATAINTEGRITY</param>
-      <param name="onExceptionReturn">plainTextError</param>
       <param name="requiredAuthorities">F_PERFORM_MAINTENANCE</param>
     </action>
 
@@ -509,14 +502,14 @@
       <param name="javascripts">javascript/attribute.js</param>
     </action>
 
-    <action name="showAddAttributeForm" class="org.hisp.dhis.dataadmin.action.NoAction">
+    <action name="showAddAttributeForm" class="org.hisp.dhis.dataadmin.action.attribute.ShowAddUpdateAttributeAction">
       <result name="success" type="velocity">/main.vm</result>
       <param name="menu">/dhis-web-maintenance-dataadmin/menu.vm</param>
       <param name="page">/dhis-web-maintenance-dataadmin/addAttributeForm.vm</param>
       <param name="requiredAuthorities">F_ATTRIBUTE_ADD</param>
     </action>
 
-    <action name="showUpdateAttributeForm" class="org.hisp.dhis.dataadmin.action.attribute.GetAttributeAction">
+    <action name="showUpdateAttributeForm" class="org.hisp.dhis.dataadmin.action.attribute.ShowAddUpdateAttributeAction">
       <result name="success" type="velocity">/main.vm</result>
       <param name="menu">/dhis-web-maintenance-dataadmin/menu.vm</param>
       <param name="page">/dhis-web-maintenance-dataadmin/updateAttributeForm.vm</param>

@@ -266,15 +266,26 @@ function repeatableOnChange()
 	if( checked )
 	{
 		enable('standardInterval');
+		enable('periodTypeName');
 		enable('displayGenerateEventBox');
 	}
 	else
 	{
 		disable('standardInterval');
+		disable('periodTypeName');
 		disable('displayGenerateEventBox');
 	}
 }
 
+function periodTypeOnChange(){
+	var periodType = byId('periodTypeName').value;	
+	if( periodType != ''){
+		disable('standardInterval');
+	}
+	else{
+		enable('standardInterval');
+	}
+}
 // --------------------------------------------------------------------
 // Generate template message form
 // --------------------------------------------------------------------

@@ -28,23 +28,24 @@ package org.hisp.dhis.dxf2.events.event;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hisp.dhis.common.BaseLinkableObject;
 import org.hisp.dhis.common.DxfNamespaces;
 import org.hisp.dhis.event.EventStatus;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
 @JacksonXmlRootElement( localName = "event", namespace = DxfNamespaces.DXF_2_0 )
-public class Event extends BaseLinkableObject
+public class Event 
+    extends BaseLinkableObject
 {
     private String event;
 
@@ -77,6 +78,10 @@ public class Event extends BaseLinkableObject
     private List<Note> notes = new ArrayList<>();
     
     private Boolean followup;
+    
+    private String created;
+    
+    private String lastUpdated;
 
     public Event()
     {
@@ -275,6 +280,30 @@ public class Event extends BaseLinkableObject
     {
         this.followup = followup;
     }
+
+    @JsonProperty
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0)
+    public String getCreated()
+    {
+        return created;
+    }
+
+    public void setCreated( String created )
+    {
+        this.created = created;
+    }
+
+    @JsonProperty
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0)
+    public String getLastUpdated()
+    {
+        return lastUpdated;
+    }
+
+    public void setLastUpdated( String lastUpdated )
+    {
+        this.lastUpdated = lastUpdated;
+    }    
 
     @Override
     public boolean equals( Object o )

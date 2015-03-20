@@ -28,7 +28,7 @@ package org.hisp.dhis.attribute;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.hisp.dhis.common.GenericNameableObjectStore;
+import org.hisp.dhis.common.GenericIdentifiableObjectStore;
 
 import java.util.Set;
 
@@ -36,7 +36,7 @@ import java.util.Set;
  * @author mortenoh
  */
 public interface AttributeStore
-    extends GenericNameableObjectStore<Attribute>
+    extends GenericIdentifiableObjectStore<Attribute>
 {
     String ID = AttributeStore.class.getName();
 
@@ -116,4 +116,25 @@ public interface AttributeStore
      * @return All attributes with attribute.program = true
      */
     Set<Attribute> getProgramAttributes();
+
+    /**
+     * Gets attributes which are associated with program stages.
+     *
+     * @return a set of attributes which are associated with programs.
+     */
+    Set<Attribute> getProgramStageAttributes();
+
+    /**
+     * Gets attributes which are associated with tracked entities.
+     *
+     * @return a set of attributes which are associated with programs.
+     */
+    Set<Attribute> getTrackedEntityAttributes();
+
+    /**
+     * Gets attributes which are associated with programs.
+     *
+     * @return a set of attributes which are associated with programs.
+     */
+    Set<Attribute> getTrackedEntityAttributeAttributes();
 }

@@ -28,14 +28,27 @@ package org.hisp.dhis.dxf2.events.event;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.hisp.dhis.system.notification.NotificationLevel.ERROR;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.hibernate.SessionFactory;
 import org.hisp.dhis.common.CodeGenerator;
 import org.hisp.dhis.common.IdentifiableObjectManager;
 import org.hisp.dhis.common.IdentifiableProperty;
+import org.hisp.dhis.common.IllegalQueryException;
+import org.hisp.dhis.common.OrganisationUnitSelectionMode;
 import org.hisp.dhis.dataelement.DataElement;
 import org.hisp.dhis.dataelement.DataElementService;
 import org.hisp.dhis.dxf2.common.IdSchemes;
@@ -76,20 +89,9 @@ import org.hisp.dhis.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.hisp.dhis.system.notification.NotificationLevel.ERROR;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -130,6 +132,9 @@ public abstract class AbstractEventService
 
     @Autowired
     protected TrackedEntityInstanceService entityInstanceService;
+    
+    @Autowired
+    private org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstanceService trackedEntityInstanceService;
 
     @Autowired
     protected TrackedEntityCommentService commentService;
@@ -393,31 +398,91 @@ public abstract class AbstractEventService
     // -------------------------------------------------------------------------
 
     @Override
-    public Events getEvents( Program program, OrganisationUnit organisationUnit )
+    public Events getEvents( EventSearchParams params )
     {
-        return getEvents( program, null, null, null, Arrays.asList( organisationUnit ), null, null, null, null );
-    }
+        List<OrganisationUnit> organisationUnits = new ArrayList<>();
+        
+        OrganisationUnit orgUnit = params.getOrgUnit();
+        OrganisationUnitSelectionMode orgUnitSelectionMode = params.getOrgUnitSelectionMode();
+        
+        if ( params.getOrgUnit() != null )
+        {
+            if ( OrganisationUnitSelectionMode.DESCENDANTS.equals( orgUnitSelectionMode ) )
+            {
+                organisationUnits.addAll( organisationUnitService.getOrganisationUnitWithChildren( orgUnit.getUid() ) );
+            }
+            else if ( OrganisationUnitSelectionMode.CHILDREN.equals( orgUnitSelectionMode ) )
+            {
+                organisationUnits.add( orgUnit );
+                organisationUnits.addAll( orgUnit.getChildren() );
+            }
+            else // SELECTED
+            {
+                organisationUnits.add( orgUnit );
+            }
+        }
 
-    @Override
-    public Events getEvents( Program program, ProgramStage programStage, ProgramStatus programStatus, Boolean followUp,
-        List<OrganisationUnit> organisationUnit, TrackedEntityInstance trackedEntityInstance, Date startDate, Date endDate, EventStatus status )
-    {
-        return getEvents( program, programStage, programStatus, followUp, organisationUnit, trackedEntityInstance, startDate, endDate, status, new IdSchemes() );
-    }
-
-    @Override
-    public Events getEvents( Program program, ProgramStage programStage, ProgramStatus programStatus, Boolean followUp,
-        List<OrganisationUnit> organisationUnits, TrackedEntityInstance trackedEntityInstance, Date startDate, Date endDate, EventStatus status, IdSchemes idSchemes )
-    {
-        List<Event> eventList = eventStore.getAll( program, programStage, programStatus, followUp, organisationUnits,
-            trackedEntityInstance, startDate, endDate, status, idSchemes );
+        List<Event> eventList = eventStore.getEvents( params, organisationUnits );
 
         Events events = new Events();
         events.setEvents( eventList );
 
         return events;
     }
+    
+    @Override
+    public EventSearchParams getFromUrl( String program, String programStage, ProgramStatus programStatus, Boolean followUp, String orgUnit,
+        OrganisationUnitSelectionMode orgUnitSelectionMode, String trackedEntityInstance, Date startDate, Date endDate, 
+        EventStatus status, Date lastUpdated, IdSchemes idSchemes, Integer page, Integer pageSize )
+    {
+        EventSearchParams params = new EventSearchParams();
 
+        Program pr = programService.getProgram( program );
+
+        if ( StringUtils.isNotEmpty( program ) && pr == null )
+        {
+            throw new IllegalQueryException( "Program is specified but does not exist: " + program );
+        }
+
+        ProgramStage ps = programStageService.getProgramStage( programStage );
+
+        if ( StringUtils.isNotEmpty( programStage ) && ps == null )
+        {
+            throw new IllegalQueryException( "Program stage is specified but does not exist: " + programStage );
+        }
+
+        OrganisationUnit ou = organisationUnitService.getOrganisationUnit( orgUnit );
+        
+        if ( StringUtils.isNotEmpty( orgUnit ) && ou == null )
+        {
+            throw new IllegalQueryException( "Org unit is specified but does not exist: " + orgUnit );
+        }
+        
+        TrackedEntityInstance tei = trackedEntityInstanceService.getTrackedEntityInstance( trackedEntityInstance );
+        
+        if ( StringUtils.isNotEmpty( trackedEntityInstance ) && tei == null )
+        {
+            throw new IllegalQueryException( "Tracked entity instance is specified but does not exist: " + trackedEntityInstance );
+        }
+        
+        params.setProgram( pr );
+        params.setProgramStage( ps );
+        params.setOrgUnit( ou );
+        params.setTrackedEntityInstance( tei );
+        params.setProgramStatus( programStatus );
+        params.setFollowUp( followUp );
+        params.setOrgUnitSelectionMode( orgUnitSelectionMode );
+        params.setStartDate( startDate );
+        params.setEndDate( endDate );
+        params.setEventStatus( status );
+        params.setLastUpdated( lastUpdated );
+        params.setIdSchemes( idSchemes );
+        params.setPage( page );
+        params.setPageSize( pageSize );
+        
+        return params;
+    }
+    
     @Override
     public Event getEvent( String uid )
     {

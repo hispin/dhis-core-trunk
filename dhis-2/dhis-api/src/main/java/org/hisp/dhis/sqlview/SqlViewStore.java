@@ -43,9 +43,9 @@ public interface SqlViewStore
 
     boolean viewTableExists( String viewTableName );
 
-    String createViewTable( SqlView sqlViewInstance );
+    String createViewTable( SqlView sqlView );
 
-    void dropViewTable( String sqlViewName );
+    void dropViewTable( SqlView sqlView );
 
     void setUpDataSqlViewTable( Grid sqlViewGrid, String viewTableName, Map<String, String> criteria );
     

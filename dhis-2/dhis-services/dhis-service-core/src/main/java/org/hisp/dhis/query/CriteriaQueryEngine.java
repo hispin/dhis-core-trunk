@@ -28,22 +28,24 @@ package org.hisp.dhis.query;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Criteria;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Disjunction;
+import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hisp.dhis.common.IdentifiableObject;
 import org.hisp.dhis.hibernate.HibernateGenericStore;
 import org.hisp.dhis.schema.Property;
 import org.hisp.dhis.schema.Schema;
+import org.hisp.dhis.system.util.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -81,6 +83,40 @@ public class CriteriaQueryEngine<T extends IdentifiableObject> implements QueryE
         }
 
         return criteria.list();
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public int count( Query query )
+    {
+        Schema schema = query.getSchema();
+
+        // create a copy of this query using only the restrictions
+        Query countQuery = Query.from( query.getSchema() );
+        countQuery.add( query.getRestrictions() );
+
+        if ( schema == null )
+        {
+            return 0;
+        }
+
+        HibernateGenericStore<?> store = getStore( (Class<? extends IdentifiableObject>) schema.getKlass() );
+
+        if ( store == null )
+        {
+            return 0;
+        }
+
+        Criteria criteria = buildCriteria( store.getSharingCriteria(), countQuery );
+
+        if ( criteria == null )
+        {
+            return 0;
+        }
+
+        return ((Number) criteria
+            .setProjection( Projections.countDistinct( "id" ) )
+            .uniqueResult()).intValue();
     }
 
     private Criteria buildCriteria( Criteria criteria, Query query )
@@ -150,6 +186,11 @@ public class CriteriaQueryEngine<T extends IdentifiableObject> implements QueryE
             parameters.add( getValue( property, parameter ) );
         }
 
+        if ( parameters.isEmpty() )
+        {
+            return null;
+        }
+
         switch ( restriction.getOperator() )
         {
             case EQ:
@@ -190,7 +231,12 @@ public class CriteriaQueryEngine<T extends IdentifiableObject> implements QueryE
             }
             case IN:
             {
-                return Restrictions.in( property.getFieldName(), parameters );
+                if ( !Collection.class.isInstance( parameters.get( 0 ) ) || ((Collection<?>) parameters.get( 0 )).isEmpty() )
+                {
+                    return null;
+                }
+
+                return Restrictions.in( property.getFieldName(), (Collection<?>) parameters.get( 0 ) );
             }
         }
 
@@ -300,22 +346,7 @@ public class CriteriaQueryEngine<T extends IdentifiableObject> implements QueryE
         }
         else if ( Date.class.isAssignableFrom( klass ) )
         {
-            try
-            {
-                return DateUtils.parseDate( value,
-                    "yyyy-MM-dd'T'HH:mm:ssZ",
-                    "yyyy-MM-dd'T'HH:mm:ss",
-                    "yyyy-MM-dd'T'HH:mm",
-                    "yyyy-MM-dd'T'HH",
-                    "yyyy-MM-dd",
-                    "yyyy-MM",
-                    "yyyyMMdd",
-                    "yyyyMM",
-                    "yyyy" );
-            }
-            catch ( Exception ignored )
-            {
-            }
+            return DateUtils.parseDate( value );
         }
 
         return null;

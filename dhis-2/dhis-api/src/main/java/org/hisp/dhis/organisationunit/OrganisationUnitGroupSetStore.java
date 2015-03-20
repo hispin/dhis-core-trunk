@@ -28,12 +28,12 @@ package org.hisp.dhis.organisationunit;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.hisp.dhis.common.GenericNameableObjectStore;
+import org.hisp.dhis.common.GenericDimensionalObjectStore;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
 public interface OrganisationUnitGroupSetStore
-    extends GenericNameableObjectStore<OrganisationUnitGroupSet>
+    extends GenericDimensionalObjectStore<OrganisationUnitGroupSet>
 {
 }
