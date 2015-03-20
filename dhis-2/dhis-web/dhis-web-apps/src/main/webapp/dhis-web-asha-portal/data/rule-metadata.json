@@ -332,7 +332,562 @@
         }
        ]
     },
-      
+	
+	    {
+      "code": "MH001CounselingofPregnantWomen",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationCounselingofPregnantWomen"
+        }
+       ]
+    },
+	
+	   {
+      "code": "MH002Completeantenatalcarethroughhomevisits",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationCompleteantenatalcarethro"
+        }
+       ]
+    },
+	
+	 {
+      "code": "MH003Makingthebirthplanandsupportforsafe",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationMakingthebirthplanandsu"
+        }
+       ]
+    },
+	
+	 {
+      "code": "MH004UndertakingPostpartumvisitsandCounselin",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationUndertakingPostpartumvisit"
+        }
+       ]
+    },
+	
+	 {
+      "code": "MobilizationofcommunityforRI",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "mobilizationofcommunityforridateofsession"
+        },
+        {
+          "code": "mobilizationofcommunityforriplaceofsession"
+        }
+       ]
+    },
+	
+		 {
+      "code": "1Otherkindofsession",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "otherkindofsession1date"
+        },
+        {
+          "code": "otherkindofsession1"
+        },
+        {
+          "code": "otherkindofsession1place"
+        }
+       ]
+    },
+	
+	{
+      "code": "2Otherkindofsession",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "otherkindofsession2date"
+        },
+        {
+          "code": "otherkindofsession2"
+        },
+        {
+          "code": "otherkindofsession2place"
+        }
+       ]
+    },
+	
+		{
+      "code": "3Otherkindofsession",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "otherkindofsession3date"
+        },
+        {
+          "code": "otherkindofsession3"
+        },
+        {
+          "code": "otherkindofsession3place"
+        }
+       ]
+    },
+	
+	{
+      "code": "4Otherkindofsession",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "otherkindofsession4date"
+        },
+        {
+          "code": "otherkindofsession4"
+        },
+        {
+          "code": "otherkindofsession4place"
+        }
+       ]
+    },
+	
+	{
+      "code": "NB001Counselingonproblemsolvingonbreastfeeding",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationCounselingonproblemsolvin"
+        }
+       ]
+    },
+	
+	{
+      "code": "NB002Weighingthebabyatbirthandduringhome",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationWeighingthebabyatbirtha"
+        }
+       ]
+    },
+	
+	{
+      "code": "NB003CapabletooperateDigitalThermometer",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationCapabletooperateDigitalThermometer"
+        }
+       ]
+    },
+	
+	{
+      "code": "NB004Keepingthebabywarm ",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationKeepingthebabywarm"
+        }
+       ]
+    },
+	
+	{
+      "code": "NB005IdentificationandbasicmanagementofLBW",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationIdentificationandbasicma"
+        }
+       ]
+    },
+	
+	{
+      "code": "NB006Examinationneededforidentificationfirs",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationExaminationneededforiden"
+        }
+       ]
+    },
+	
+	{
+      "code": "Countingofbreathrespiratoryrate",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationCountingofbreathrespirato"
+        }
+       ]
+    },
+	
+	{
+      "code": "NU001Counselingforexclusivebreastfeeding",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationCounselingforexclusivebre"
+        }
+       ]
+    },
+	{
+      "code": "NU002CounselingonSupplementaryfeeding",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationCounselingonSupplementary"
+        }
+       ]
+    },
+	{
+      "code": "NU003CounselingandreferralofMalnourishedChi",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationCounselingandreferralof"
+        }
+       ]
+    },
+	{
+      "code": "CH001ProvidinghomecareforDiarrheaacuteres",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationProvidinghomecareforDiar"
+        }
+       ]
+    },
+	{
+      "code": "CH002TemperatureManagement",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationTemperatureManagement"
+        }
+       ]
+    },
+	{
+      "code": "CH003Counselingforfeedingduringillness",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationCounselingforfeedingdurin"
+        }
+       ]
+    },
+	{
+      "code": "CH004Dewormingandtreatmentofirondeficiency",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationDewormingandtreatmentofi"
+        }
+       ]
+    },
+	{
+      "code": "CH005IdentificationofMalnourishedChildrenand",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationIdentificationofMalnouris"
+        }
+       ]
+    },
+	{
+      "code": "SM001HoldingcommunitymeetingforRCHcare",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationHoldingcommunitymeetingfo"
+        }
+       ]
+    },
+	
+	{
+      "code": "SM002AssistinginmakingVillageHealthPlan",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationAssistinginmakingVillage"
+        }
+       ]
+    },
+	{
+      "code": "SM003Enablingmarginalizedandvulnerablecommun",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationEnablingmarginalizedandvu"
+        }
+       ]
+    },
+	{
+      "code": "SM004IdentifyingsymptomsofMalariaLeprosyand",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationIdentifyingsymptomsofMala"
+        }
+       ]
+    },
+	{
+      "code": "SM005IdentifyingsymptomsofTBHIVetcforpre",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationIdentifyingsymptomsofTB"
+        }
+       ]
+    },
+	{
+      "code": "SM006Encouragingcommunitytotakecollectiveact",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationEncouragingcommunitytotak"
+        }
+       ]
+    },
+	{
+      "code": "AwarenessaboutlodinedeficiancyNCDandOtherP",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "DateofCertificationAwarenessaboutIodinedefic"
+        }
+       ]
+    },
+  
+
+	{
+      "code": "MobilizationofcommunityforRI",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "mobilizationofcommunityforridateofsession"
+        },
+        {
+          "code": "mobilizationofcommunityforriplaceofsession"
+        }
+        ]
+    },
+	
+	{
+      "code": "1Otherkindofsession",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "otherkindofsession1date"
+        },
+        {
+          "code": "otherkindofsession1"
+        },
+        {
+          "code": "otherkindofsession1place"
+        }
+       ]
+    },
+	{
+      "code": "2Otherkindofsession",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "otherkindofsession2date"
+        },
+        {
+          "code": "otherkindofsession2"
+        },
+        {
+          "code": "otherkindofsession2place"
+        }
+       ]
+    },
+	{
+      "code": "3Otherkindofsession",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "otherkindofsession3date"
+        },
+        {
+          "code": "otherkindofsession3"
+        },
+        {
+          "code": "otherkindofsession3place"
+        }
+       ]
+    },
+	
+	{
+      "code": "4Otherkindofsession",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "otherkindofsession4date"
+        },
+        {
+          "code": "otherkindofsession4"
+        },
+        {
+          "code": "otherkindofsession4place"
+        }
+       ]
+    },
+	
+	{
+      "code": "CommunityMobilizationforVHNDCelebration",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "communitymobilizationforvhndcelebrationdate"
+        },
+        {
+          "code": "communitymobilizationforvhndcelebrationplace"
+        }
+        ]
+    },
+	{
+      "code": "ConveningMonthlyMeetingofVHSNC",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "conveningmonthlymeetingofvhsncdate"
+        },
+        {
+          "code": "conveningmonthlymeetingofvhsncplace"
+        }
+        ]
+    },
+	{
+      "code": "MonthlyMeetingsatPHC",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "monthlymeetingsatphcdate"
+        },
+        {
+          "code": "monthlymeetingsatphcplace"
+        }
+        ]
+    },
+	{
+      "code": "Convenientmonthlymeetingofadolescentgirl",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "convenientmonthlymeetingofadolescentgirldate"
+        },
+        {
+          "code": "convenientmonthlymeetingofadolescentgirlplace"
+        }
+        ]
+    },
+
+	{
+      "code": "Othermeeting1",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "othermeeting1date"
+        },
+        {
+          "code": "othermeeting1purpose"
+        },
+        {
+          "code": "othermeeting1place"
+        }
+       ]
+    },
+	{
+      "code": "Othermeeting2",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "othermeeting2date"
+        },
+        {
+          "code": "othermeeting2purpose"
+        },
+        {
+          "code": "othermeeting2place"
+        }
+       ]
+    },
+	{
+      "code": "Othermeeting3",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "othermeeting3date"
+        },
+        {
+          "code": "othermeeting3purpose"
+        },
+        {
+          "code": "othermeeting3place"
+        }
+       ]
+    },
+	
+	{
+      "code": "WaterSamplesTakenCommunity",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "watersamplestakencommunityschoolawctobetakenfortes"
+        },
+        {
+          "code": "watersamplestakencommunityschoolawctobetakenforte"
+        },
+        {
+          "code": "watersamplestakencommunityschoolawctobetakenfort"
+        }
+       ]
+    },
+	{
+      "code": "ConductingTestingofSaltSampleunderNIDDCP",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "conductingtestingofsaltsampleunderniddcpdateofsamp"
+        },
+        {
+          "code": "conductingtestingofsaltsampleunderniddcpplaceofsam"
+        },
+        {
+          "code": "conductingtestingofsaltsampleunderniddcpnumberofsa"
+        }
+       ]
+    },
+	{
+      "code": "TADAforAttendingTrainingProgrammes",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "tadaforattendingtrainingprogrammesdateofactivity"
+        },
+        {
+          "code": "tadaforattendingtrainingprogrammesplaceofactivity"
+        },
+        {
+          "code": "tadaforattendingtrainingprogrammesnumberofdaysintr"
+        }
+       ]
+    },
+	
+	{
+      "code": "TADAforAttendingQuarterlyAwardCeremony",
+      "value": "true",
+      "itemsToShow": [
+        {
+          "code": "tadaforattendingquarterlyawardceremonydateofactivi"
+        },
+        {
+          "code": "tadaforattendingquarterlyawardceremonyplaceofactiv"
+        }
+       ]
+
+    },
+  
     {
       "code": "AshaDiaryReceived",
       "value": "true",

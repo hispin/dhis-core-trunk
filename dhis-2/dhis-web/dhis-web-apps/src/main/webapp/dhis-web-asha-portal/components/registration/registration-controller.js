@@ -23,19 +23,13 @@ trackerCapture.controller('RegistrationController',
     $scope.selectedTei = {};    
     
     $scope.attributesById = CurrentSelection.getAttributesById();
-    $scope.attributeIdsByCode = CurrentSelection.getAttributeIdsByCode();
-    if(!$scope.attributesById || !$scope.attributeIdsByCode){
+    if(!$scope.attributesById){
+        $scope.attributesById = [];
         AttributesFactory.getAll().then(function(atts){
-            $scope.attributesById = [];
-            $scope.attributeIdsByCode = [];
             angular.forEach(atts, function(att){
                 $scope.attributesById[att.id] = att;
-                if(att.code){
-                    $scope.attributeIdsByCode[att.code] = att.id;
-                }
             });
             
-            CurrentSelection.setAttributeIdsByCode($scope.attributeIdsByCode);
             CurrentSelection.setAttributesById($scope.attributesById);
         });
     }    
@@ -51,8 +45,6 @@ trackerCapture.controller('RegistrationController',
             CurrentSelection.setOptionSets($scope.optionSets);
         });
     }
-    
-    
     
     $scope.selectedOrgUnit = storage.get('SELECTED_OU');
     $scope.selectedEnrollment = {dateOfEnrollment: '', dateOfIncident: ''};   
@@ -143,7 +135,14 @@ trackerCapture.controller('RegistrationController',
                         }
                         else{
                             enrollment.enrollment = data.reference;
-                            $scope.autoGenerateEvents(teiId,$scope.selectedProgram, $scope.selectedOrgUnit, enrollment, destination);                          
+                            var dhis2Events = EventUtils.autoGenerateEvents(teiId, $scope.selectedProgram, $scope.selectedOrgUnit, enrollment);
+                            if(dhis2Events.events.length > 0){
+                                DHIS2EventFactory.create(dhis2Events).then(function(data){
+                                    goToDashboard(destination, teiId);
+                                });
+                            }else{
+                                goToDashboard(destination, teiId);
+                            }                            
                         }
                     });
                 }
@@ -180,44 +179,6 @@ trackerCapture.controller('RegistrationController',
         }, 100);
     };
     
-    $scope.autoGenerateEvents = function(teiId, program, orgUnit, enrollment, destination){            
-            
-        if(teiId && program && orgUnit && enrollment){            
-            var dhis2Events = {events: []};
-            angular.forEach(program.programStages, function(stage){
-                if(stage.autoGenerateEvent){
-                    var newEvent = {
-                            trackedEntityInstance: teiId,
-                            program: program.id,
-                            programStage: stage.id,
-                            orgUnit: orgUnit.id,                        
-                            dueDate: DateUtils.formatFromUserToApi(EventUtils.getEventDueDate(null,stage, enrollment)),
-                            status: 'SCHEDULE'
-                        };
-                    
-                    if(stage.openAfterEnrollment){
-                        if(stage.reportDateToUse === 'dateOfIncident'){
-                            newEvent.eventDate = DateUtils.formatFromUserToApi(enrollment.dateOfIncident);
-                        }
-                        else{
-                            newEvent.eventDate = DateUtils.formatFromUserToApi(enrollment.dateOfEnrollment);
-                        }
-                    }
-                    
-                    dhis2Events.events.push(newEvent);    
-                }
-            });
-
-            if(dhis2Events.events.length > 0){
-                DHIS2EventFactory.create(dhis2Events).then(function(data){
-                    goToDashboard(destination, teiId);
-                });
-            }else{
-                goToDashboard(destination, teiId);
-            }
-        }
-    };
-    
     var goToDashboard = function(destination, teiId){
         //reset form
         $scope.selectedTei = {};
@@ -232,9 +193,5 @@ trackerCapture.controller('RegistrationController',
             $scope.tei.trackedEntityInstance = teiId;
             $scope.broadCastSelections();
         }
-    };
-    
-    $scope.switchRegistrationForm = function(){
-        $scope.customFormExists = !$scope.customFormExists;
     };
 });

@@ -1,3 +1,5 @@
+/* global trackerCapture, angular */
+
 //conroller for tei report
 trackerCapture.controller('TeiReportController',
         function($scope,
@@ -24,13 +26,14 @@ trackerCapture.controller('TeiReportController',
         $scope.programNames = selections.prNames;  
         $scope.programStageNames = selections.prStNames;
     
-        if($scope.selectedTei && $scope.selectedOrgUnit){            
-            $scope.getEvents();
-        }
-        
         angular.forEach(selections.enrollments, function(en){            
             $scope.enrollmentsByProgram[en.program] = en;
         });
+        
+        if( $scope.selectedTei ){            
+            $scope.getEvents();
+        }
+        
     });
     
     $scope.getEvents = function(){
@@ -48,7 +51,7 @@ trackerCapture.controller('TeiReportController',
             $scope.report[pr.id] = {};
         });
         
-        DHIS2EventFactory.getEventsByProgram($scope.selectedTei.trackedEntityInstance, $scope.selectedOrgUnit.id, programId).then(function(eventList){
+        DHIS2EventFactory.getEventsByProgram($scope.selectedTei.trackedEntityInstance, programId).then(function(eventList){
             angular.forEach(eventList, function(ev){
                 if(ev.program && $scope.report[ev.program] && ev.orgUnit){       
                     ev.visited = true;
@@ -117,7 +120,7 @@ trackerCapture.controller('TeiReportController',
                         providedElsewhereExists = true;
                         $scope.allowProvidedElsewhereExists[st.id] = true;
                     }                
-                }            
+                }
             });
         });
         

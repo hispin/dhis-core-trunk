@@ -45,7 +45,7 @@ trackerCapture.controller('ProfileController',
                         $scope.customForm = CustomFormService.getForTrackedEntity($scope.trackedEntityForm, 'PROFILE');
                     }                    
                 }); 
-            }
+            }           
         });
     });
     
