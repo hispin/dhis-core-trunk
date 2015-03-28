@@ -51,7 +51,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 })
 
 /* current selections */
-.service('PeriodService', function($translate, $filter, DateUtils, CalendarService){
+.service('PeriodService', function(DateUtils, CalendarService){
     
     var calendarSetting = CalendarService.getSetting();    
     
@@ -199,17 +199,38 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 })
 
 /* Factory to fetch programs */
-.factory('ProgramFactory', function($q, $rootScope, TCStorageService) { 
-    return {
+.factory('ProgramFactory', function($q, $rootScope, SessionStorageService, TCStorageService) { 
+    
+    var userHasValidRole = function(program, userRoles){
+        
+        var hasRole = false;
+
+        if($.isEmptyObject(program.userRoles)){
+            return !hasRole;
+        }
+
+        for(var i=0; i < userRoles.length && !hasRole; i++){
+            if( program.userRoles.hasOwnProperty( userRoles[i].id ) ){
+                hasRole = true;
+            }
+        }        
+        return hasRole;        
+    };
+    
+    return {        
+        
         getAll: function(){
             
+            var roles = SessionStorageService.get('USER_ROLES');
+            var userRoles = roles && roles.userCredentials && roles.userCredentials.userRoles ? roles.userCredentials.userRoles : [];
+            var ou = SessionStorageService.get('SELECTED_OU');
             var def = $q.defer();
             
             TCStorageService.currentStore.open().done(function(){
                 TCStorageService.currentStore.getAll('programs').done(function(prs){
                     var programs = [];
                     angular.forEach(prs, function(pr){
-                        if(pr.type === 1){
+                        if(pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles)){
                             programs.push(pr);
                         }
                     });
@@ -235,13 +256,15 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             return def.promise;            
         },
         getProgramsByOu: function(ou, selectedProgram){
+            var roles = SessionStorageService.get('USER_ROLES');
+            var userRoles = roles && roles.userCredentials && roles.userCredentials.userRoles ? roles.userCredentials.userRoles : [];
             var def = $q.defer();
             
             TCStorageService.currentStore.open().done(function(){
                 TCStorageService.currentStore.getAll('programs').done(function(prs){
                     var programs = [];
                     angular.forEach(prs, function(pr){                            
-                        if(pr.organisationUnits.hasOwnProperty(ou.id)){                                
+                        if(pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles)){
                             programs.push(pr);
                         }
                     });
@@ -434,6 +457,42 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             return myOrgUnitsPromise;
         }
     }; 
+})
+
+/* service to deal with TEI registration and update */
+.service('RegistrationService', function(DialogService, TEIService, $q){
+    return {
+        registerOrUpdate: function(tei, optionSets, attributesById){
+            if(tei){
+                var def = $q.defer();
+                if(tei.trackedEntityInstance){
+                    TEIService.update(tei, optionSets, attributesById).then(function(response){
+                        def.resolve(response); 
+                    });
+                }
+                else{
+                    TEIService.register(tei, optionSets, attributesById).then(function(response){
+                        def.resolve(response); 
+                    });
+                }
+                return def.promise;
+            }            
+        },
+        processForm: function(existingTei, formTei, attributesById){
+            var tei = angular.copy(existingTei);
+            tei.attributes = [];
+            var formEmpty = true;
+            for(var k in attributesById){
+                if( formTei[k] ){
+                    var att = attributesById[k];
+                    tei.attributes.push({attribute: att.id, value: formTei[k], displayName: att.name, type: att.valueType});
+                    formEmpty = false;
+                }
+                delete tei[k];
+            }
+            return {tei: tei, formEmpty: formEmpty};
+        }
+    };
 })
 
 /* Service to deal with enrollment */
@@ -638,10 +697,12 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         },
         register: function(tei, optionSets, attributesById){
             var formattedTei = angular.copy(tei);
-            angular.forEach(formattedTei.attributes, function(att){                        
-                att.value = AttributesFactory.formatAttributeValue(att, attributesById, optionSets, 'API');                                                                
+            var attributes = [];
+            angular.forEach(formattedTei.attributes, function(att){ 
+                attributes.push({attribute: att.attribute, value: AttributesFactory.formatAttributeValue(att, attributesById, optionSets, 'API')});
             });
             
+            formattedTei.attributes = attributes;
             var promise = $http.post( '../api/trackedEntityInstances' , formattedTei ).then(function(response){                    
                 return response.data;
             });            
@@ -843,7 +904,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 })
 
 /* factory for handling events */
-.factory('DHIS2EventFactory', function($http, $q) {   
+.factory('DHIS2EventFactory', function($http) {   
     
     return {     
         
@@ -854,7 +915,12 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             return promise;
         },
         getEventsByProgram: function(entity, program){   
-            var promise = $http.get( '../api/events.json?' + 'trackedEntityInstance=' + entity + '&program=' + program + '&paging=false').then(function(response){
+            
+            var url = '../api/events.json?' + 'trackedEntityInstance=' + entity + '&paging=false';            
+            if(program){
+                url = url + '&program=' + program;
+            }
+            var promise = $http.get( url ).then(function(response){
                 return response.data.events;
             });            
             return promise;

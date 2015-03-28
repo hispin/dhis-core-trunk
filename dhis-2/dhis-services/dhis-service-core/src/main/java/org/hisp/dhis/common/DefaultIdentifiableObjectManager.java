@@ -351,6 +351,35 @@ public class DefaultIdentifiableObjectManager
     }
 
     @Override
+    @SuppressWarnings( "unchecked" )
+    public <T extends IdentifiableObject> List<T> getByUidOrdered( Class<T> clazz, List<String> uids )
+    {
+        GenericIdentifiableObjectStore<T> store = (GenericIdentifiableObjectStore<T>) getIdentifiableObjectStore( clazz );
+
+        if ( store == null )
+        {
+            return new ArrayList<>();
+        }
+
+        List<T> list = new ArrayList<>();
+
+        if ( uids != null )
+        {
+            for ( String uid : uids )
+            {
+                T object = store.getByUid( uid );
+
+                if ( object != null )
+                {
+                    list.add( object );
+                }
+            }
+        }
+
+        return list;
+    }
+
+    @Override
     public <T extends IdentifiableObject> int getCount( Class<T> clazz )
     {
         GenericIdentifiableObjectStore<IdentifiableObject> store = getIdentifiableObjectStore( clazz );
@@ -853,6 +882,20 @@ public class DefaultIdentifiableObjectManager
         }
 
         return (T) store.getByUidNoAcl( uid );
+    }
+    
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public <T extends IdentifiableObject> T getNoAcl( Class<T> clazz, int id )
+    {
+        GenericIdentifiableObjectStore<IdentifiableObject> store = getIdentifiableObjectStore( clazz );
+
+        if ( store == null )
+        {
+            return null;
+        }
+
+        return (T) store.getNoAcl( id );
     }
 
     @Override

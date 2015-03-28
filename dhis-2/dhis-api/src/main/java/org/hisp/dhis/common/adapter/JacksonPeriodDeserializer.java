@@ -28,14 +28,14 @@ package org.hisp.dhis.common.adapter;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
+import java.io.IOException;
+
 import org.hisp.dhis.period.Period;
 import org.hisp.dhis.period.PeriodType;
 
-import java.io.IOException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 
 class LocalPeriod
 {
@@ -76,7 +76,7 @@ public class JacksonPeriodDeserializer
 {
     @Override
     public Period deserialize( JsonParser jp, DeserializationContext ctxt )
-        throws IOException, JsonProcessingException
+        throws IOException
     {
         LocalPeriod p = jp.readValueAs( LocalPeriod.class );
 

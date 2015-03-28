@@ -32,8 +32,8 @@ Ext.onReady( function() {
 					data: {
 						value: 'data',
 						name: NS.i18n.data || 'Data',
-						dimensionName: 'dx',
-						objectName: 'dx',
+						dimensionName: 'dy',
+						objectName: 'dy',
 						warning: {
 							filter: '...'//NS.i18n.wm_multiple_filter_ind_de
 						}
@@ -128,7 +128,8 @@ Ext.onReady( function() {
 					{id: 'FinancialOct', name: NS.i18n.financial_oct},
 					{id: 'FinancialJuly', name: NS.i18n.financial_july},
 					{id: 'FinancialApril', name: NS.i18n.financial_april}
-				]
+				],
+                relativePeriods: []
 			};
 
 			conf.layout = {
@@ -674,6 +675,32 @@ Ext.onReady( function() {
 
 				return array;
 			};
+
+            support.prototype.array.sortArrayByArray = function(array, reference, isNotDistinct) {
+                var tmp = [];
+
+                // copy and clear
+                for (var i = 0; i < array.length; i++) {
+                    tmp[tmp.length] = array[i];
+                }
+
+                array.length = 0;
+
+                // sort
+                for (var i = 0; i < reference.length; i++) {
+                    for (var j = 0; j < tmp.length; j++) {
+                        if (tmp[j] === reference[i]) {
+                            array.push(tmp[j]);
+
+                            if (!isNotDistinct) {
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                return array;
+            };
 
             support.prototype.array.uniqueByProperty = function(array, property) {
                 var names = [],
@@ -1296,6 +1323,32 @@ Ext.onReady( function() {
 					return headerNames;
 				};
 
+                // collapse data dimensions?
+                (function() {
+                    var keys = xLayout.collapseDataDimensions ? ['dy', 'pe', 'ou'] : ['dy'],
+                        dimensionsToRemove = [];
+
+                    // find dimensions to remove
+                    for (var i = 0, dim; i < dimensions.length; i++) {
+                        dim = dimensions[i];
+
+                        if (xLayout.collapseDataDimensions && !Ext.Array.contains(keys, dim.dimension)) {
+                            dimensionsToRemove.push(dim);
+                        }
+                        else if (!xLayout.collapseDataDimensions && Ext.Array.contains(keys, dim.dimension)) {
+                            dimensionsToRemove.push(dim);
+                        }
+                    }
+
+                    // remove dimensions
+                    for (var i = 0, dim; i < dimensionsToRemove.length; i++) {
+                        removeDimensionFromXLayout(dimensionsToRemove[i].dimension);
+                    }
+
+                    // update dimensions array
+                    dimensions = Ext.Array.clean([].concat(xLayout.columns || [], xLayout.rows || [], xLayout.filters || []));
+                }());
+
                 // items
                 for (var i = 0, dim, header; i < dimensions.length; i++) {
                     dim = dimensions[i];
@@ -1815,6 +1868,7 @@ Ext.onReady( function() {
 				var emptyId = '[N/A]',
                     meta = ['ou', 'pe'],
                     ouHierarchy,
+                    md,
                     names,
 					headers,
                     booleanNameMap = {
@@ -1823,13 +1877,15 @@ Ext.onReady( function() {
                     };
 
 				response = Ext.clone(response);
+                md = response.metaData;
 				headers = response.headers;
-                ouHierarchy = response.metaData.ouHierarchy,
-                names = response.metaData.names;
+                ouHierarchy = md.ouHierarchy,
+                names = md.names;
                 names[emptyId] = emptyId;
 
-                response.metaData.optionNames = {};
-                response.metaData.booleanNames = {};
+                md.optionNames = {};
+                md.booleanNames = {};
+
 				response.nameHeaderMap = {};
 				response.idValueMap = {};
 
@@ -1867,6 +1923,23 @@ Ext.onReady( function() {
 
                             support.prototype.array.sort(objects, 'ASC', 'sortingId');
                             header.ids = Ext.Array.pluck(objects, 'id');
+                        }
+                        else if (header.name === 'pe') {
+                            var selectedItems = xLayout.dimensionNameIdsMap['pe'],
+                                isRelative = false;
+
+                            for (var j = 0; j < selectedItems.length; j++) {
+                                if (Ext.Array.contains(conf.period.relativePeriods, selectedItems[j])) {
+                                    isRelative = true;
+                                    break;
+                                }
+                            }
+
+                            header.ids = Ext.clone(md[header.name]);
+
+                            if (!isRelative) {
+                                support.prototype.array.sortArrayByArray(header.ids, xLayout.dimensionNameIdsMap['pe'])
+                            }
                         }
                         else {
 							var objects = [];
@@ -1923,13 +1996,17 @@ Ext.onReady( function() {
 
 				// idValueMap: vars
 				var valueHeaderIndex = response.nameHeaderMap[conf.finals.dimension.value.value].index,
-					dx = dimConf.data.dimensionName,
+					dy = dimConf.data.dimensionName,
 					axisDimensionNames = xLayout.axisDimensionNames,
 					idIndexOrder = [];
 
 				// idValueMap: idIndexOrder
-				for (var i = 0; i < axisDimensionNames.length; i++) {
-					idIndexOrder.push(response.nameHeaderMap[axisDimensionNames[i]].index);
+				for (var i = 0, dimensionName; i < axisDimensionNames.length; i++) {
+                    dimensionName = axisDimensionNames[i];
+
+                    if (response.nameHeaderMap.hasOwnProperty(dimensionName)) {
+                        idIndexOrder.push(response.nameHeaderMap[dimensionName].index);
+                    }
 				}
 
 				// idValueMap
@@ -2072,7 +2149,7 @@ Ext.onReady( function() {
 			web.analytics.getParamString = function(view, format, skipPaging) {
                 var paramString,
                     dimensions = Ext.Array.clean([].concat(view.columns || [], view.rows || [])),
-                    ignoreKeys = ['longitude', 'latitude'],
+                    ignoreKeys = ['dy', 'longitude', 'latitude'],
                     dataTypeMap = {
                         'aggregated_values': 'aggregate',
                         'individual_cases': 'query'
@@ -2193,6 +2270,11 @@ Ext.onReady( function() {
 
                 // display property
                 paramString += '&displayProperty=' + init.userAccount.settings.keyAnalysisDisplayProperty.toUpperCase();
+
+                // collapse data items
+                if (view.collapseDataDimensions) {
+                    paramString += '&collapseDataDimensions=true';
+                }
 
                 return paramString;
             };
@@ -2456,7 +2538,7 @@ Ext.onReady( function() {
                                 for (var j = 0; j < xRowAxis.dims - 1; j++) {
                                     a.push(getEmptyNameTdConfig({
                                         cls: 'pivot-dim-label',
-                                        htmlValue: dimConf.objectNameMap[xLayout.rowObjectNames[j]].name
+                                        htmlValue: dimConf.objectNameMap[xLayout.rowObjectNames[j]] ? dimConf.objectNameMap[xLayout.rowObjectNames[j]].name : 'missing col name'
                                     }));
                                 }
                             }

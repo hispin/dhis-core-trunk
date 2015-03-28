@@ -7,7 +7,7 @@ trackerCapture.controller('DataEntryController',
                 DateUtils,
                 EventUtils,
                 orderByFilter,
-                storage,
+                SessionStorageService,
                 ProgramStageFactory,
                 DHIS2EventFactory,
                 OptionSetService,
@@ -24,11 +24,9 @@ trackerCapture.controller('DataEntryController',
     $scope.currentPeriod = [];
     $scope.filterEvents = true;
     
-    var loginDetails = storage.get('LOGIN_DETAILS');
-    var storedBy = '';
-    if(loginDetails){
-        storedBy = loginDetails.userCredentials.username;
-    }
+    var userProfile = SessionStorageService.get('USER_PROFILE');
+    var storedBy = userProfile && userProfile.username ? userProfile.username : '';
+    
     var today = DateUtils.getToday();
     $scope.invalidDate = false;
     
@@ -60,7 +58,7 @@ trackerCapture.controller('DataEntryController',
         $scope.prStDes = [];
         
         var selections = CurrentSelection.get();          
-        $scope.selectedOrgUnit = storage.get('SELECTED_OU');
+        $scope.selectedOrgUnit = SessionStorageService.get('SELECTED_OU');
         $scope.selectedEntity = selections.tei;      
         $scope.selectedProgram = selections.pr;        
         $scope.selectedEnrollment = selections.selectedEnrollment;   
@@ -251,7 +249,7 @@ trackerCapture.controller('DataEntryController',
             
             var val = dataValue.value;
             var de = $scope.prStDes[dataValue.dataElement].dataElement;
-            if(de){                
+            if(de){           
                 if(val && de.type === 'string' && de.optionSet && $scope.optionSets[de.optionSet.id].options  ){
                     val = OptionSetService.getName($scope.optionSets[de.optionSet.id].options, val);
                 }
@@ -276,8 +274,7 @@ trackerCapture.controller('DataEntryController',
         if(stage.captureCoordinates){
             event.coordinate = {latitude: event.coordinate.latitude ? event.coordinate.latitude : '',
                                      longitude: event.coordinate.longitude ? event.coordinate.longitude : ''};
-        }
-        
+        }        
         
         event.allowProvidedElsewhereExists = false;
         angular.forEach(stage.programStageDataElements, function(prStDe){

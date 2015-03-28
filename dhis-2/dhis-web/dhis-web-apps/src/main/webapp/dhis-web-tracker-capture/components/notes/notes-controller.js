@@ -1,17 +1,16 @@
+/* global trackerCapture, angular */
+
 trackerCapture.controller('NotesController',
         function($scope,
-                storage,
                 DateUtils,
                 EnrollmentService,
                 CurrentSelection,
+                SessionStorageService,
                 orderByFilter) {
     
-    var loginDetails = storage.get('LOGIN_DETAILS');
-    var storedBy = '';
-    if(loginDetails && loginDetails.userCredentials){
-        storedBy = loginDetails.userCredentials.username;
-    }
-    
+    var userProfile = SessionStorageService.get('USER_PROFILE');
+    var storedBy = userProfile && userProfile.username ? userProfile.username : '';
+
     var today = DateUtils.getToday();
     
     $scope.showMessagingDiv = false;
@@ -53,7 +52,7 @@ trackerCapture.controller('NotesController',
     
     $scope.addNote = function(){
         
-        if(!angular.isUndefined($scope.note) && $scope.note != ""){
+        if(!angular.isUndefined($scope.note) && $scope.note !== ""){
             
             var newNote = {value: $scope.note};
 

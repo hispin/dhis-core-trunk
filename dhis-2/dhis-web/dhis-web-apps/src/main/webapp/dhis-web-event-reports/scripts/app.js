@@ -10,7 +10,7 @@ Ext.onReady( function() {
 
 		extendCore,
 		createViewport,
-		dimConf,
+		dimConf;
 
 		ns = {
 			core: {},
@@ -1301,6 +1301,9 @@ Ext.onReady( function() {
 			filterStore,
             onValueSelect,
 			value,
+            val,
+            onCollapseDataDimensionsChange,
+            collapseDataDimensions,
             aggregationType,
 
 			getStore,
@@ -1326,7 +1329,8 @@ Ext.onReady( function() {
             defaultValueId = 'default';
 
 		getStore = function(applyConfig) {
-			var config = {};
+			var config = {},
+                store;
 
 			config.fields = ['id', 'name'];
 
@@ -1342,7 +1346,9 @@ Ext.onReady( function() {
 				return Ext.clone(dimensionNames);
 			};
 
-			return Ext.create('Ext.data.Store', config);
+			store = Ext.create('Ext.data.Store', config);
+
+            return store;
 		};
 
 		getStoreKeys = function(store) {
@@ -1585,6 +1591,42 @@ Ext.onReady( function() {
             }
 		});
 
+        val = Ext.create('Ext.panel.Panel', {
+            bodyStyle: 'padding: 1px',
+            width: defaultWidth,
+            height: 220,
+            items: value,
+            tbar: {
+                height: 25,
+                style: 'padding: 1px',
+                items: [
+                    {
+                        xtype: 'label',
+                        height: 22,
+                        style: 'padding-left: 6px; line-height: 22px',
+                        text: NS.i18n.value
+                    },
+                    '->',
+                    aggregationType
+                ]
+            }
+        });
+
+        onCollapseDataDimensionsChange = function(value) {
+            toggleDataItems(value);
+            toggleValueGui(value);
+        };
+
+        collapseDataDimensions = Ext.create('Ext.form.field.Checkbox', {
+            boxLabel: NS.i18n.collapse_data_dimensions,
+            style: 'margin-left: 3px',
+            listeners: {
+                change: function(chb, value) {
+                    onCollapseDataDimensionsChange(value);
+                }
+            }
+        });
+
 		selectPanel = Ext.create('Ext.panel.Panel', {
 			bodyStyle: 'border:0 none',
 			items: [
@@ -1610,37 +1652,25 @@ Ext.onReady( function() {
 					bodyStyle: 'border:0 none',
 					items: [
 						row,
-                        {
-                            xtype: 'panel',
-                            bodyStyle: 'padding: 1px',
-                            width: defaultWidth,
-                            height: 220,
-                            items: value,
-                            tbar: {
-                                height: 25,
-                                style: 'padding: 1px',
-                                items: [
-                                    {
-                                        xtype: 'label',
-                                        height: 22,
-                                        style: 'padding-left: 6px; line-height: 22px',
-                                        text: NS.i18n.value
-                                    },
-                                    '->',
-                                    aggregationType
-                                ]
-                            }
-                        }
+                        val
 					]
 				}
 			]
 		});
 
-        addDimension = function(record, store, excludedStores) {
-            var store = dimensionStoreMap[record.id] || store || filterStore;
+        addDimension = function(record, store, excludedStores, force) {
+            store = store && force ? store : dimensionStoreMap[record.id] || store || filterStore;
 
-            if (!hasDimension(record.id, excludedStores) && record.id !== value.getValue()) {
-                store.add(record);
+            if (hasDimension(record.id, excludedStores)) {
+                if (force) {
+                    removeDimension(record.id);
+                    store.add(record);
+                }
+            }
+            else {
+                if (record.id !== value.getValue()) {
+                    store.add(record);
+                }
             }
         };
 
@@ -1726,6 +1756,57 @@ Ext.onReady( function() {
 			fixedFilterStore.setListHeight();
 		};
 
+        toggleDataItems = function(param) {
+            var stores = [colStore, rowStore, filterStore, fixedFilterStore],
+                collapse = Ext.isObject(param) && param.collapseDataItems ? param.collapseDataItems : param,
+                keys = ['ou', 'pe', 'dates'],
+                dy = ['dy'],
+                keys;
+
+            // clear filters
+            for (var i = 0, store; i < stores.length; i++) {
+                stores[i].clearFilter();
+            }
+
+            // add dy if it does not exist
+            if (!hasDimension('dy')) {
+                addDimension({
+                    id: 'dy',
+                    name: NS.i18n.data
+                }, rowStore);
+            }
+
+            // keys
+            if (collapse) { // included keys
+                keys = ['ou', 'pe', 'dates', 'dy'];
+            }
+            else { // excluded keys
+                keys = ['dy'];
+            }
+
+            // data items
+            for (var i = 0, store, include; i < stores.length; i++) {
+                store = stores[i];
+
+                if (collapse) {
+                    store.filterBy(function(record, id) {
+                        return Ext.Array.contains(keys, record.data.id);
+                    });
+                }
+                else {
+                    store.filterBy(function(record, id) {
+                        return !Ext.Array.contains(keys, record.data.id);
+                    });
+                }
+            }
+        };
+
+        toggleValueGui = function(param) {
+            var collapse = Ext.isObject(param) && param.collapseDataItems ? param.collapseDataItems : param;
+
+            val.setDisabled(collapse);
+        };
+
 		window = Ext.create('Ext.window.Window', {
 			title: NS.i18n.table_layout,
 			bodyStyle: 'background-color:#fff; padding:' + margin + 'px',
@@ -1743,9 +1824,14 @@ Ext.onReady( function() {
             addDimension: addDimension,
             removeDimension: removeDimension,
             hasDimension: hasDimension,
+            dimensionStoreMap: dimensionStoreMap,
             saveState: saveState,
             resetData: resetData,
             reset: reset,
+            onCollapseDataDimensionsChange: onCollapseDataDimensionsChange,
+            collapseDataDimensions: collapseDataDimensions,
+            toggleDataItems: toggleDataItems,
+            toggleValueGui: toggleValueGui,
             getValueConfig: function() {
                 var config = {},
                     valueId = value.getValue();
@@ -1757,9 +1843,15 @@ Ext.onReady( function() {
 
                 return config;
             },
-			hideOnBlur: true,
+            getOptions: function() {
+                return {
+                    collapseDataDimensions: collapseDataDimensions.getValue()
+                };
+            },
+            hideOnBlur: true,
 			items: selectPanel,
 			bbar: [
+                collapseDataDimensions,
 				'->',
 				{
 					text: NS.i18n.hide,
@@ -1815,7 +1907,7 @@ Ext.onReady( function() {
                 }
 			}
 		});
-
+nissa = window;
 		return window;
 	};
 
@@ -3740,8 +3832,10 @@ Ext.onReady( function() {
 
             baseWidth = 446,
             toolWidth = 36,
+            accBaseWidth = baseWidth - 2,
 
-            accBaseWidth = baseWidth - 2;
+            conf = ns.core.conf,
+            rp = conf.period.relativePeriods;
 
 		// stores
 
@@ -4354,8 +4448,11 @@ Ext.onReady( function() {
 					'ou': {id: 'ou', name: 'Organisation units'}
 				},
                 extendDim = function(dim) {
+                    var md = ns.app.response.metaData,
+                        dimConf = ns.core.conf.finals.dimension;
+
                     dim.id = dim.id || dim.dimension;
-                    dim.name = dim.name || ns.app.response.metaData.names[dim.dimension];
+                    dim.name = dim.name || md.names[dim.dimension] || dimConf.objectNameMap[dim.dimension].name;
 
                     return dim;
                 };
@@ -4425,37 +4522,46 @@ Ext.onReady( function() {
 
             // favorite
 			if (layout && layout.dataType === 'aggregated_values') {
+
+                // start end dates
 				if (layout.startDate && layout.endDate) {
 					aggWindow.fixedFilterStore.add({id: dimConf.startEndDate.value, name: dimConf.startEndDate.name});
 				}
 
+                // columns
 				if (layout.columns) {
 					for (var i = 0, record, dim; i < layout.columns.length; i++) {
                         dim = layout.columns[i];
                         record = recordMap[dim.dimension];
 
-						aggWindow.addDimension(record || extendDim(Ext.clone(dim)), aggWindow.colStore);
+						aggWindow.addDimension(record || extendDim(Ext.clone(dim)), aggWindow.colStore, null, true);
 					}
 				}
 
+                // rows
 				if (layout.rows) {
 					for (var i = 0, record, dim; i < layout.rows.length; i++) {
                         dim = layout.rows[i];
                         record = recordMap[dim.dimension];
 
-						aggWindow.addDimension(record || extendDim(Ext.clone(dim)), aggWindow.rowStore);
+						aggWindow.addDimension(record || extendDim(Ext.clone(dim)), aggWindow.rowStore, null, true);
 					}
 				}
 
+                // filters
 				if (layout.filters) {
 					for (var i = 0, store, record, dim; i < layout.filters.length; i++) {
                         dim = layout.filters[i];
 						record = recordMap[dim.dimension];
 						store = Ext.Array.contains(includeKeys, element.type) || element.optionSet ? aggWindow.filterStore : aggWindow.fixedFilterStore;
 
-                        aggWindow.addDimension(record || extendDim(Ext.clone(dim)), store);
+                        aggWindow.addDimension(record || extendDim(Ext.clone(dim)), store, null, true);
 					}
 				}
+
+                // collapse data dimensions
+                aggWindow.collapseDataDimensions.setValue(layout.collapseDataDimensions);
+                aggWindow.onCollapseDataDimensionsChange(layout.collapseDataDimensions);
 			}
         };
 
@@ -4652,22 +4758,22 @@ Ext.onReady( function() {
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_WEEK',
+                    relativePeriodId: rp[rp.push('LAST_WEEK') - 1],
                     boxLabel: NS.i18n.last_week
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_4_WEEKS',
+                    relativePeriodId: rp[rp.push('LAST_4_WEEKS') - 1],
                     boxLabel: NS.i18n.last_4_weeks
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_12_WEEKS',
+                    relativePeriodId: rp[rp.push('LAST_12_WEEKS') - 1],
                     boxLabel: NS.i18n.last_12_weeks
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_52_WEEKS',
+                    relativePeriodId: rp[rp.push('LAST_52_WEEKS') - 1],
                     boxLabel: NS.i18n.last_52_weeks
                 }
             ]
@@ -4687,22 +4793,22 @@ Ext.onReady( function() {
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_MONTH',
+                    relativePeriodId: rp[rp.push('LAST_MONTH') - 1],
                     boxLabel: NS.i18n.last_month
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_3_MONTHS',
+                    relativePeriodId: rp[rp.push('LAST_3_MONTHS') - 1],
                     boxLabel: NS.i18n.last_3_months
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_6_MONTHS',
+                    relativePeriodId: rp[rp.push('LAST_6_MONTHS') - 1],
                     boxLabel: NS.i18n.last_6_months
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_12_MONTHS',
+                    relativePeriodId: rp[rp.push('LAST_12_MONTHS') - 1],
                     boxLabel: NS.i18n.last_12_months,
                     checked: true
                 }
@@ -4723,12 +4829,12 @@ Ext.onReady( function() {
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_BIMONTH',
+                    relativePeriodId: rp[rp.push('LAST_BIMONTH') - 1],
                     boxLabel: NS.i18n.last_bimonth
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_6_BIMONTHS',
+                    relativePeriodId: rp[rp.push('LAST_6_BIMONTHS') - 1],
                     boxLabel: NS.i18n.last_6_bimonths
                 }
             ]
@@ -4748,12 +4854,12 @@ Ext.onReady( function() {
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_QUARTER',
+                    relativePeriodId: rp[rp.push('LAST_QUARTER') - 1],
                     boxLabel: NS.i18n.last_quarter
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_4_QUARTERS',
+                    relativePeriodId: rp[rp.push('LAST_4_QUARTERS') - 1],
                     boxLabel: NS.i18n.last_4_quarters
                 }
             ]
@@ -4773,12 +4879,12 @@ Ext.onReady( function() {
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_SIX_MONTH',
+                    relativePeriodId: rp[rp.push('LAST_SIX_MONTH') - 1],
                     boxLabel: NS.i18n.last_sixmonth
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_2_SIXMONTHS',
+                    relativePeriodId: rp[rp.push('LAST_2_SIXMONTHS') - 1],
                     boxLabel: NS.i18n.last_2_sixmonths
                 }
             ]
@@ -4799,17 +4905,17 @@ Ext.onReady( function() {
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'THIS_FINANCIAL_YEAR',
+                    relativePeriodId: rp[rp.push('THIS_FINANCIAL_YEAR') - 1],
                     boxLabel: NS.i18n.this_financial_year
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_FINANCIAL_YEAR',
+                    relativePeriodId: rp[rp.push('LAST_FINANCIAL_YEAR') - 1],
                     boxLabel: NS.i18n.last_financial_year
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_5_FINANCIAL_YEARS',
+                    relativePeriodId: rp[rp.push('LAST_5_FINANCIAL_YEARS') - 1],
                     boxLabel: NS.i18n.last_5_financial_years
                 }
             ]
@@ -4829,17 +4935,17 @@ Ext.onReady( function() {
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'THIS_YEAR',
+                    relativePeriodId: rp[rp.push('THIS_YEAR') - 1],
                     boxLabel: NS.i18n.this_year
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_YEAR',
+                    relativePeriodId: rp[rp.push('LAST_YEAR') - 1],
                     boxLabel: NS.i18n.last_year
                 },
                 {
                     xtype: 'checkbox',
-                    relativePeriodId: 'LAST_5_YEARS',
+                    relativePeriodId: rp[rp.push('LAST_5_YEARS') - 1],
                     boxLabel: NS.i18n.last_5_years
                 }
             ]
@@ -6044,6 +6150,9 @@ Ext.onReady( function() {
 				rows = [],
 				filters = [],
                 values = [],
+                addAxisDimension,
+                store,
+                data,
 				a;
 
 			view.dataType = dataType;
@@ -6053,6 +6162,9 @@ Ext.onReady( function() {
             if (!(view.dataType && view.program && view.programStage)) {
                 return;
             }
+
+            // dy
+            map['dy'] = [{dimension: 'dy'}];
 
 			// pe
             if (periodMode.getValue() === 'dates') {
@@ -6098,110 +6210,71 @@ Ext.onReady( function() {
             map['longitude'] = [{dimension: 'longitude'}];
             map['latitude'] = [{dimension: 'latitude'}];
 
-            // dimensions
-            if (layoutWindow.colStore) {
-				layoutWindow.colStore.each(function(item) {
-					a = map[item.data.id] || [];
+            addAxisDimension = function(a, axis) {
+                if (a.length) {
+                    if (a.length === 1) {
+                        axis.push(a[0]);
+                    }
+                    else {
+                        var dim;
 
-					if (a.length) {
-						if (a.length === 1) {
-							columns.push(a[0]);
-						}
-						else {
-							var dim;
+                        for (var i = 0; i < a.length; i++) {
+                            if (!dim) { //todo ??
+                                dim = a[i];
+                            }
+                            else {
+                                dim.filter += ':' + a[i].filter;
+                            }
+                        }
 
-							for (var i = 0; i < a.length; i++) {
-								if (!dim) {
-									dim = a[i];
-								}
-								else {
-									dim.filter += ':' + a[i].filter;
-								}
-							}
+                        axis.push(dim);
+                    }
+                }
+            };
 
-							columns.push(dim);
-						}
-					}
-				});
-			}
+            // columns
+            store = layoutWindow.colStore;
 
-            if (layoutWindow.rowStore) {
-				layoutWindow.rowStore.each(function(item) {
-					a = map[item.data.id] || [];
+            if (store) {
+                data = store.snapshot || store.data;
 
-					if (a.length) {
-						if (a.length === 1) {
-							rows.push(a[0]);
-						}
-						else {
-							var dim;
+                data.each(function(item) {
+                    addAxisDimension(map[item.data.id] || [], columns);
+                });
+            }
 
-							for (var i = 0; i < a.length; i++) {
-								if (!dim) {
-									dim = a[i];
-								}
-								else {
-									dim.filter += ':' + a[i].filter;
-								}
-							}
+            // rows
+            store = layoutWindow.rowStore;
 
-							rows.push(dim);
-						}
-					}
-				});
-			}
+            if (store) {
+                data = store.snapshot || store.data;
 
-            if (layoutWindow.filterStore) {
-				layoutWindow.filterStore.each(function(item) {
-					a = map[item.data.id] || [];
+                data.each(function(item) {
+                    addAxisDimension(map[item.data.id] || [], rows);
+                });
+            }
 
-					if (a.length) {
-						if (a.length === 1) {
-							filters.push(a[0]);
-						}
-						else {
-							var dim;
+            // filters
+            store = layoutWindow.filterStore;
 
-							for (var i = 0; i < a.length; i++) {
-								if (!dim) {
-									dim = a[i];
-								}
-								else {
-									dim.filter += ':' + a[i].filter;
-								}
-							}
+            if (store) {
+                data = store.snapshot || store.data;
 
-							filters.push(dim);
-						}
-					}
-				});
-			}
+                data.each(function(item) {
+                    addAxisDimension(map[item.data.id] || [], filters);
+                });
+            }
 
-            if (layoutWindow.fixedFilterStore) {
-				layoutWindow.fixedFilterStore.each(function(item) {
-					a = map[item.data.id] || [];
+            // fixed filters
+            store = layoutWindow.fixedFilterStore;
 
-					if (a.length) {
-						if (a.length === 1) {
-							filters.push(a[0]);
-						}
-						else {
-							var dim;
+            if (store) {
+                data = store.snapshot || store.data;
 
-							for (var i = 0; i < a.length; i++) {
-								if (!dim) {
-									dim = a[i];
-								}
-								else {
-									dim.filter += ':' + a[i].filter;
-								}
-							}
-
-							filters.push(dim);
-						}
-					}
-				});
-			}
+                data.each(function(item) {
+                    addAxisDimension(map[item.data.id] || [], filters);
+                });
+            }
 
 			if (columns.length) {
 				view.columns = columns;
@@ -6215,7 +6288,7 @@ Ext.onReady( function() {
 
             // value, aggregation type
             Ext.apply(view, layoutWindow.getValueConfig());
-
+console.log(view);
 			return view;
 		};
 
@@ -6769,16 +6842,15 @@ Ext.onReady( function() {
 			web.report = web.report || {};
 
 			web.report.getLayoutConfig = function() {
-                var view = ns.app.accordion.getView(),
-                    options = {};
+                var view = ns.app.accordion.getView();
 
                 if (!view) {
                     return;
                 }
 
                 if (view.dataType === 'aggregated_values') {
-                    options = ns.app.aggregateOptionsWindow.getOptions();
-                    Ext.applyIf(view, options);
+                    Ext.applyIf(view, ns.app.aggregateOptionsWindow.getOptions());
+                    Ext.applyIf(view, ns.app.aggregateLayoutWindow.getOptions());
 
                     // if order and limit -> sort
                     if (view.sortOrder && view.topLimit) {
@@ -6790,8 +6862,7 @@ Ext.onReady( function() {
                 }
 
                 if (view.dataType === 'individual_cases') {
-                    options = ns.app.queryOptionsWindow.getOptions();
-                    Ext.applyIf(view, options);
+                    Ext.applyIf(view, ns.app.queryOptionsWindow.getOptions());
 
                     view.paging = {
                         page: ns.app.statusBar.getCurrentPage(),
@@ -6895,6 +6966,7 @@ Ext.onReady( function() {
                         // add to dimConf, TODO
                         for (var i = 0, map = dimConf.objectNameMap, header; i < response.headers.length; i++) {
                             header = response.headers[i];
+
                             map[header.name] = map[header.name] || {
                                 id: header.name,
                                 dimensionName: header.name,

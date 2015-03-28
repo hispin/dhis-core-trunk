@@ -453,7 +453,7 @@ dhis2.de.uploadLocalData = function()
 	                setHeaderMessage( message );
 
 	                $( '#sync_button' ).bind( 'click', dhis2.de.uploadLocalData );
-                  $( '#discard_button' ).bind( 'click', dhis2.de.discardLocalData );
+                    $( '#discard_button' ).bind( 'click', dhis2.de.discardLocalData );
             	}
             }
         } );
@@ -466,16 +466,14 @@ dhis2.de.addEventListeners = function()
     {
         var id = $( this ).attr( 'id' );
 
-        // if entryfield is a datepicker, remove old target field, and change id
-        if( /-dp$/.test(id) ) {
-          var dpTargetId = id.substring(0, id.length - 3);
-          $('#' + dpTargetId).remove();
-
-          $( this )
-            .attr('id', dpTargetId)
-            .calendarsPicker('destroy');
-
-          id = dpTargetId;
+        // If entry field is a date picker, remove old target field, and change id
+        
+        if ( /-dp$/.test( id ) ) 
+        {
+            var dpTargetId = id.substring( 0, id.length - 3 );
+            $( '#' + dpTargetId ).remove();
+            $( this ).attr( 'id', dpTargetId ).calendarsPicker( 'destroy' );
+            id = dpTargetId;
         }
 
         var split = dhis2.de.splitFieldId( id );
@@ -1651,6 +1649,8 @@ function insertDataValues( json )
         }
         
         dataValueMap[value.id] = value.val;
+
+        dhis2.period.picker.updateDate(fieldId);
     } );
 
     // Set min-max values and colorize violation fields

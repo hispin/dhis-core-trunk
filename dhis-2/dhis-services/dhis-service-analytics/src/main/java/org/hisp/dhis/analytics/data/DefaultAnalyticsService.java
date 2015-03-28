@@ -38,6 +38,7 @@ import static org.hisp.dhis.analytics.DataQueryParams.DISPLAY_NAME_LATITUDE;
 import static org.hisp.dhis.analytics.DataQueryParams.DISPLAY_NAME_LONGITUDE;
 import static org.hisp.dhis.analytics.DataQueryParams.DISPLAY_NAME_ORGUNIT;
 import static org.hisp.dhis.analytics.DataQueryParams.DISPLAY_NAME_PERIOD;
+import static org.hisp.dhis.analytics.DataQueryParams.DISPLAY_NAME_PROGRAM_INDICATOR;
 import static org.hisp.dhis.analytics.DataQueryParams.KEY_DE_GROUP;
 import static org.hisp.dhis.common.DimensionalObject.CATEGORYOPTIONCOMBO_DIM_ID;
 import static org.hisp.dhis.common.DimensionalObject.DATAELEMENT_DIM_ID;
@@ -47,6 +48,7 @@ import static org.hisp.dhis.common.DimensionalObject.DIMENSION_SEP;
 import static org.hisp.dhis.common.DimensionalObject.INDICATOR_DIM_ID;
 import static org.hisp.dhis.common.DimensionalObject.LATITUDE_DIM_ID;
 import static org.hisp.dhis.common.DimensionalObject.LONGITUDE_DIM_ID;
+import static org.hisp.dhis.common.DimensionalObject.PROGRAM_INDICATOR_DIM_ID;
 import static org.hisp.dhis.common.DimensionalObject.ORGUNIT_DIM_ID;
 import static org.hisp.dhis.common.DimensionalObject.PERIOD_DIM_ID;
 import static org.hisp.dhis.common.DimensionalObjectUtils.toDimension;
@@ -100,6 +102,7 @@ import org.hisp.dhis.common.DimensionalObjectUtils;
 import org.hisp.dhis.common.DisplayProperty;
 import org.hisp.dhis.common.Grid;
 import org.hisp.dhis.common.GridHeader;
+import org.hisp.dhis.common.IdentifiableObjectManager;
 import org.hisp.dhis.common.IdentifiableObjectUtils;
 import org.hisp.dhis.common.IdentifiableProperty;
 import org.hisp.dhis.common.IllegalQueryException;
@@ -118,11 +121,9 @@ import org.hisp.dhis.dataelement.DataElementOperand;
 import org.hisp.dhis.dataelement.DataElementOperandService;
 import org.hisp.dhis.dataelement.DataElementService;
 import org.hisp.dhis.dataset.DataSet;
-import org.hisp.dhis.dataset.DataSetService;
 import org.hisp.dhis.expression.ExpressionService;
 import org.hisp.dhis.i18n.I18nFormat;
 import org.hisp.dhis.indicator.Indicator;
-import org.hisp.dhis.indicator.IndicatorService;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.organisationunit.OrganisationUnitGroup;
 import org.hisp.dhis.organisationunit.OrganisationUnitGroupService;
@@ -133,6 +134,7 @@ import org.hisp.dhis.period.PeriodType;
 import org.hisp.dhis.period.RelativePeriodEnum;
 import org.hisp.dhis.period.RelativePeriods;
 import org.hisp.dhis.period.comparator.AscendingPeriodEndDateComparator;
+import org.hisp.dhis.program.ProgramIndicator;
 import org.hisp.dhis.reporttable.ReportTable;
 import org.hisp.dhis.setting.SystemSettingManager;
 import org.hisp.dhis.system.grid.ListGrid;
@@ -141,7 +143,6 @@ import org.hisp.dhis.system.util.ListUtils;
 import org.hisp.dhis.system.util.MathUtils;
 import org.hisp.dhis.system.util.SystemUtils;
 import org.hisp.dhis.system.util.UniqueArrayList;
-import org.hisp.dhis.trackedentity.TrackedEntityAttributeService;
 import org.hisp.dhis.user.CurrentUserService;
 import org.hisp.dhis.user.User;
 import org.hisp.dhis.util.Timer;
@@ -172,8 +173,8 @@ public class DefaultAnalyticsService
     private QueryPlanner queryPlanner;
 
     @Autowired
-    private IndicatorService indicatorService;
-
+    private IdentifiableObjectManager idObjectManager;
+    
     @Autowired
     private DataElementService dataElementService;
 
@@ -181,16 +182,10 @@ public class DefaultAnalyticsService
     private DataElementCategoryService categoryService;
 
     @Autowired
-    private DataSetService dataSetService;
-
-    @Autowired
     private OrganisationUnitService organisationUnitService;
 
     @Autowired
     private OrganisationUnitGroupService organisationUnitGroupService;
-
-    @Autowired
-    private TrackedEntityAttributeService attributeService;
 
     @Autowired
     private ExpressionService expressionService;
@@ -509,7 +504,7 @@ public class DefaultAnalyticsService
             User user = currentUserService.getCurrentUser();
             
             List<OrganisationUnit> organisationUnits = asTypedList( params.getDimensionOrFilter( ORGUNIT_DIM_ID ), OrganisationUnit.class );
-            Collection<OrganisationUnit> roots = user != null ? user.getDataViewOrganisationUnits() : null;
+            Collection<OrganisationUnit> roots = user != null ? user.getOrganisationUnits() : null;
             
             if ( params.isHierarchyMeta() )
             {
@@ -816,7 +811,7 @@ public class DefaultAnalyticsService
     @Override
     public DataQueryParams getFromUrl( Set<String> dimensionParams, Set<String> filterParams, AggregationType aggregationType,
         String measureCriteria, boolean skipMeta, boolean skipRounding, boolean hierarchyMeta, boolean ignoreLimit,
-        boolean hideEmptyRows, boolean showHierarchy, DisplayProperty displayProperty, IdentifiableProperty outputIdScheme, I18nFormat format )
+        boolean hideEmptyRows, boolean showHierarchy, DisplayProperty displayProperty, IdentifiableProperty outputIdScheme, String approvalLevel, I18nFormat format )
     {
         DataQueryParams params = new DataQueryParams();
 
@@ -845,6 +840,7 @@ public class DefaultAnalyticsService
         params.setShowHierarchy( showHierarchy );
         params.setDisplayProperty( displayProperty );
         params.setOutputIdScheme( outputIdScheme );
+        params.setApprovalLevel( approvalLevel );
 
         return params;
     }
@@ -936,7 +932,7 @@ public class DefaultAnalyticsService
                     continue itemLoop;
                 }
                 
-                Indicator in = indicatorService.getIndicator( uid );
+                Indicator in = idObjectManager.get( Indicator.class, uid );
 
                 if ( in != null )
                 {
@@ -944,7 +940,7 @@ public class DefaultAnalyticsService
                     continue itemLoop;
                 }
 
-                DataElement de = dataElementService.getDataElement( uid );
+                DataElement de = idObjectManager.get( DataElement.class, uid );
 
                 if ( de != null )
                 {
@@ -952,7 +948,7 @@ public class DefaultAnalyticsService
                     continue itemLoop;
                 }
 
-                DataSet ds = dataSetService.getDataSet( uid );
+                DataSet ds = idObjectManager.get( DataSet.class, uid );
 
                 if ( ds != null )
                 {
@@ -1073,17 +1069,17 @@ public class DefaultAnalyticsService
 
             for ( String ou : items )
             {
-                if ( KEY_USER_ORGUNIT.equals( ou ) && user != null && user.hasDataViewOrganisationUnitWithFallback() )
+                if ( KEY_USER_ORGUNIT.equals( ou ) && user != null && user.hasOrganisationUnit() )
                 {
-                    ous.add( user.getDataViewOrganisationUnitWithFallback() );
+                    ous.add( user.getOrganisationUnit() );
                 }
-                else if ( KEY_USER_ORGUNIT_CHILDREN.equals( ou ) && user != null && user.hasDataViewOrganisationUnitWithFallback() )
+                else if ( KEY_USER_ORGUNIT_CHILDREN.equals( ou ) && user != null && user.hasOrganisationUnit() )
                 {
-                    ous.addAll( user.getDataViewOrganisationUnitWithFallback().getSortedChildren() );
+                    ous.addAll( user.getOrganisationUnit().getSortedChildren() );
                 }
-                else if ( KEY_USER_ORGUNIT_GRANDCHILDREN.equals( ou ) && user != null && user.hasDataViewOrganisationUnitWithFallback() )
+                else if ( KEY_USER_ORGUNIT_GRANDCHILDREN.equals( ou ) && user != null && user.hasOrganisationUnit() )
                 {
-                    ous.addAll( user.getDataViewOrganisationUnitWithFallback().getSortedGrandChildren() );
+                    ous.addAll( user.getOrganisationUnit().getSortedGrandChildren() );
                 }
                 else if ( ou != null && ou.startsWith( KEY_LEVEL ) )
                 {
@@ -1148,6 +1144,15 @@ public class DefaultAnalyticsService
             return ListUtils.getList( object );
         }
 
+        if ( PROGRAM_INDICATOR_DIM_ID.equals( dimension ) )
+        {
+            List<ProgramIndicator> indicators = idObjectManager.getByUid( ProgramIndicator.class, items );
+            
+            DimensionalObject object = new BaseDimensionalObject( PROGRAM_INDICATOR_DIM_ID, DimensionType.PROGRAM_INDICATOR, null, DISPLAY_NAME_PROGRAM_INDICATOR, indicators );
+            
+            return ListUtils.getList( object );
+        }
+        
         if ( LONGITUDE_DIM_ID.contains( dimension ) )
         {
             DimensionalObject object = new BaseDimensionalObject( dimension, DimensionType.STATIC, null, DISPLAY_NAME_LONGITUDE, new ArrayList<NameableObject>() );

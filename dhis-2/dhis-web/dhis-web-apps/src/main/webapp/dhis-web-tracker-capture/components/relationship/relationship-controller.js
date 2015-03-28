@@ -1,11 +1,16 @@
+/* global trackerCapture, angular */
+
 trackerCapture.controller('RelationshipController',
         function($scope,
                 $rootScope,
                 $modal,                
                 $location,
+                TEIService,
                 AttributesFactory,
                 CurrentSelection,
-                RelationshipFactory) {
+                RelationshipFactory,
+                ModalService,
+                DialogService) {
     $rootScope.showAddRelationshipDiv = false;    
     $scope.relatedProgramRelationship = false;
     
@@ -77,6 +82,45 @@ trackerCapture.controller('RelationshipController',
         }
     };
     
+    $scope.removeRelationship = function(rel){
+        
+        var modalOptions = {
+            closeButtonText: 'cancel',
+            actionButtonText: 'delete',
+            headerText: 'delete',
+            bodyText: 'are_you_sure_to_delete_relationship'
+        };
+
+        ModalService.showModal({}, modalOptions).then(function(result){
+            
+            var index = -1;
+            for(var i=0; i<$scope.selectedTei.relationships.length; i++){
+                if($scope.selectedTei.relationships[i].relationship === rel.relId){
+                    index = i;
+                    break;
+                }
+            }
+
+            if( index !== -1 ){
+                $scope.selectedTei.relationships.splice(index,1);
+                TEIService.update($scope.selectedTei, $scope.optionSets, $scope.attributesById).then(function(response){
+                    if(response.status !== 'SUCCESS'){//update has failed
+                        var dialogOptions = {
+                                headerText: 'update_error',
+                                bodyText: response.description
+                            };
+                        DialogService.showDialog({}, dialogOptions);
+                        return;
+                    }
+
+                    var selections = CurrentSelection.get();
+                    CurrentSelection.set({tei: $scope.selectedTei, te: $scope.selectedTei.trackedEntity, prs: selections.prs, pr: $scope.selectedProgram, prNames: selections.prNames, prStNames: selections.prStNames, enrollments: selections.enrollments, selectedEnrollment: $scope.selectedEnrollment, optionSets: selections.optionSets});                                
+                    setRelationships();
+                });
+            }
+        });        
+    };
+    
     $scope.showDashboard = function(teiId, relId){
         
         var dashboardProgram = null;
@@ -135,7 +179,7 @@ trackerCapture.controller('RelationshipController',
             TEIGridService,
             DialogService,
             Paginator,
-            storage,
+            SessionStorageService,
             $modalInstance, 
             relationshipTypes,
             selectedProgram,
@@ -172,7 +216,7 @@ trackerCapture.controller('RelationshipController',
     };
     
     //Selection
-    $scope.selectedOrgUnit = storage.get('SELECTED_OU');
+    $scope.selectedOrgUnit = SessionStorageService.get('SELECTED_OU');
     $scope.optionSets = selections.optionSets;
     $scope.selectedTeiForDisplay = angular.copy($scope.selectedTei);
     
@@ -473,7 +517,7 @@ trackerCapture.controller('RelationshipController',
                 OptionSetService,
                 DateUtils,
                 storage) {
-    $scope.selectedOrgUnit = storage.get('SELECTED_OU');
+    $scope.selectedOrgUnit = SessionStorageService.get('SELECTED_OU');
     $scope.enrollment = {enrollmentDate: '', incidentDate: ''};    
     
     var selections = CurrentSelection.get();

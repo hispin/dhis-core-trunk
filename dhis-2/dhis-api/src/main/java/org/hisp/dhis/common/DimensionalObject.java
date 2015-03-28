@@ -48,6 +48,7 @@ public interface DimensionalObject
     extends NameableObject
 {
     final String DATA_X_DIM_ID = "dx"; // in, de, ds, do
+    final String DATA_COLLAPSED_DIM_ID = "dy"; // Collapsed event data dimensions
     final String INDICATOR_DIM_ID = "in";
     final String DATAELEMENT_DIM_ID = "de";
     final String DATASET_DIM_ID = "ds";
@@ -56,6 +57,7 @@ public interface DimensionalObject
     final String PERIOD_DIM_ID = "pe";
     final String ORGUNIT_DIM_ID = "ou";
     final String ORGUNIT_GROUP_DIM_ID = "oug"; // Used for org unit target
+    final String PROGRAM_INDICATOR_DIM_ID = "pin";
     final String ITEM_DIM_ID = "item";
 
     final String OU_MODE_SELECTED = "selected"; //TODO replace with OrganisationUnitSelectionMode

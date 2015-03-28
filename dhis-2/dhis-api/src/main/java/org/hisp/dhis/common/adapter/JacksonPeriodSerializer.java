@@ -28,13 +28,13 @@ package org.hisp.dhis.common.adapter;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import java.io.IOException;
+
 import org.hisp.dhis.period.Period;
 
-import java.io.IOException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -43,7 +43,7 @@ public class JacksonPeriodSerializer
     extends JsonSerializer<Period>
 {
     @Override
-    public void serialize( Period value, JsonGenerator jgen, SerializerProvider provider ) throws IOException, JsonProcessingException
+    public void serialize( Period value, JsonGenerator jgen, SerializerProvider provider ) throws IOException
     {
         if ( value != null && value.getIsoDate() != null )
         {
