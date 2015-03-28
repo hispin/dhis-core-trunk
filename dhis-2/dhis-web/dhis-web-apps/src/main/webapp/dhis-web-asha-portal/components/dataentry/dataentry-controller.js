@@ -81,6 +81,7 @@ trackerCapture.controller('DataEntryController',
                     }                   
                     
                     angular.forEach(stage.programStageDataElements, function(prStDe){
+                        console.log('the prStde:  ', prStDe);
                         prStDe.show = true;                        
                         if($scope.skipLogicChild[prStDe.dataElement.code]){
                             prStDe.show = false;
@@ -96,6 +97,7 @@ trackerCapture.controller('DataEntryController',
                     $scope.stagesById[stage.id] = stage;
                     $scope.eventsByStage[stage.id] = [];
                 });
+                
                 $scope.getEvents();                
             });
         }
@@ -251,10 +253,11 @@ trackerCapture.controller('DataEntryController',
             section.open = true;
         });
 
-        $scope.customForm = CustomFormService.getForProgramStage($scope.currentStage);
+        $scope.customForm = CustomFormService.getForProgramStage($scope.currentStage, $scope.prStDes);
         $scope.displayCustomForm = $scope.customForm ? true:false;        
 
-        $scope.currentEventOriginal = angular.copy($scope.currentEvent);        
+        $scope.currentEventOriginal = angular.copy($scope.currentEvent);
+    
     };
     
     var processEvent = function(event, stage){
@@ -263,39 +266,39 @@ trackerCapture.controller('DataEntryController',
         
         angular.forEach(event.dataValues, function(dataValue){
             
-            var val = dataValue.value;
-            var de = $scope.prStDes[dataValue.dataElement].dataElement;
-            if(de){                
-                if(val && de.type === 'string' && de.optionSet && $scope.optionSets[de.optionSet.id].options  ){
-                    val = OptionSetService.getName($scope.optionSets[de.optionSet.id].options, val);
-                }
-                if(val && de.type === 'date'){
-                    val = DateUtils.formatFromApiToUser(val);
-                }
-                if(de.type === 'trueOnly'){
-                    if(val === 'true'){
-                        val = true;
+            var prStDe = $scope.prStDes[dataValue.dataElement];
+            
+            if( prStDe ){                
+                var val = dataValue.value;
+                if(prStDe.dataElement){           
+                    if(val && prStDe.dataElement.type === 'string' && prStDe.dataElement.optionSet && $scope.optionSets[prStDe.dataElement.optionSet.id].options  ){
+                        val = OptionSetService.getName($scope.optionSets[prStDe.dataElement.optionSet.id].options, val);
                     }
-                    else{
-                        val = '';
+                    if(val && prStDe.dataElement.type === 'date'){
+                        val = DateUtils.formatFromApiToUser(val);
                     }
+                    if(prStDe.dataElement.type === 'trueOnly'){
+                        if(val === 'true'){
+                            val = true;
+                        }
+                        else{
+                            val = '';
+                        }
+                    }
+                }    
+                event[dataValue.dataElement] = val;
+                $scope.applySkipLogic(event, prStDe);
+                if(dataValue.providedElsewhere){
+                    event.providedElsewhere[dataValue.dataElement] = dataValue.providedElsewhere;
                 }
-            }    
-            event[dataValue.dataElement] = val;
-            if(de){                
-                $scope.applySkipLogic(event, $scope.prStDes[dataValue.dataElement]);
             }
             
-            if(dataValue.providedElsewhere){
-                event.providedElsewhere[dataValue.dataElement] = dataValue.providedElsewhere;
-            }
         });
         
         if(stage.captureCoordinates){
             event.coordinate = {latitude: event.coordinate.latitude ? event.coordinate.latitude : '',
                                      longitude: event.coordinate.longitude ? event.coordinate.longitude : ''};
-        }
-        
+        }        
         
         event.allowProvidedElsewhereExists = false;
         angular.forEach(stage.programStageDataElements, function(prStDe){
