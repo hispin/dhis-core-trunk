@@ -6,6 +6,7 @@ trackerCapture.controller('DataEntryController',
                 $filter,
                 DateUtils,
                 EventUtils,
+                AshaPortalUtils,
                 orderByFilter,
                 storage,
                 ProgramStageFactory,
@@ -81,7 +82,6 @@ trackerCapture.controller('DataEntryController',
                     }                   
                     
                     angular.forEach(stage.programStageDataElements, function(prStDe){
-                        console.log('the prStde:  ', prStDe);
                         prStDe.show = true;                        
                         if($scope.skipLogicChild[prStDe.dataElement.code]){
                             prStDe.show = false;
@@ -91,6 +91,7 @@ trackerCapture.controller('DataEntryController',
                             $scope.prStDeMasterList[prStDe.dataElement.code] = prStDe;
                         }
                         
+                        prStDe = AshaPortalUtils.processForBeneficiaryRegistration(prStDe);
                         $scope.prStDes[prStDe.dataElement.id] = prStDe;
                     });
                     
@@ -286,11 +287,12 @@ trackerCapture.controller('DataEntryController',
                         }
                     }
                 }    
-                event[dataValue.dataElement] = val;
-                $scope.applySkipLogic(event, prStDe);
+                event[dataValue.dataElement] = val;                
                 if(dataValue.providedElsewhere){
                     event.providedElsewhere[dataValue.dataElement] = dataValue.providedElsewhere;
                 }
+                
+                $scope.applySkipLogic(event, prStDe);
             }
             
         });
@@ -300,12 +302,13 @@ trackerCapture.controller('DataEntryController',
                                      longitude: event.coordinate.longitude ? event.coordinate.longitude : ''};
         }        
         
-        event.allowProvidedElsewhereExists = false;
-        angular.forEach(stage.programStageDataElements, function(prStDe){
-            if(prStDe.allowProvidedElsewhere){
-                event.allowProvidedElsewhereExists = true;                
+        event.allowProvidedElsewhereExists = false;        
+        for(var i=0; i<stage.programStageDataElements.length; i++){
+            if(stage.programStageDataElements[i].allowProvidedElsewhere){
+                event.allowProvidedElsewhereExists = true;
+                break;
             }
-        });
+        }
         
         return event;
     };

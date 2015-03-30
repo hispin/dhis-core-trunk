@@ -191,18 +191,12 @@ var d2Services = angular.module('d2Services', ['ngResource'])
 .service('CustomFormService', function(){
     
     return {
-        getForProgramStage: function(programStage){
+        getForProgramStage: function(programStage, programStageDataElements){
             
             var htmlCode = programStage.dataEntryForm ? programStage.dataEntryForm.htmlCode : null;  
             
-            if(htmlCode){                
-            
-                var programStageDataElements = [];
-
-                angular.forEach(programStage.programStageDataElements, function(prStDe){
-                    programStageDataElements[prStDe.dataElement.id] = prStDe;
-                });
-
+            if(htmlCode){
+            	
                 var inputRegex = /<input.*?\/>/g,
                     match,
                     inputFields = [],

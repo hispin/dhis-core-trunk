@@ -280,12 +280,13 @@ trackerCapture.controller('DataEntryController',
                                      longitude: event.coordinate.longitude ? event.coordinate.longitude : ''};
         }        
         
-        event.allowProvidedElsewhereExists = false;
-        angular.forEach(stage.programStageDataElements, function(prStDe){
-            if(prStDe.allowProvidedElsewhere){
-                event.allowProvidedElsewhereExists = true;                
+        event.allowProvidedElsewhereExists = false;        
+        for(var i=0; i<stage.programStageDataElements.length; i++){
+            if(stage.programStageDataElements[i].allowProvidedElsewhere){
+                event.allowProvidedElsewhereExists = true;
+                break;
             }
-        });
+        }
         
         return event;
     };

@@ -1507,4 +1507,23 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             return e;
         }
     };
+})
+
+.service('AshaPortalUtils', function(){
+    
+    return {
+        //check for beneficiary registration
+        processForBeneficiaryRegistration: function(prStDe){            
+            if(prStDe.dataElement.attributeValues){
+                for(var i=0; i<prStDe.dataElement.attributeValues.length; i++){
+                    if(prStDe.dataElement.attributeValues[i].value === 'true' && prStDe.dataElement.attributeValues[i].attribute && prStDe.dataElement.attributeValues[i].attribute.code === 'BeneficiaryRegistration'){
+                        prStDe.BeneficiaryRegistration = true;
+                        break;
+                    }
+                }
+            }
+            
+            return prStDe;
+        }
+    };
 });
