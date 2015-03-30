@@ -103,13 +103,13 @@ var d2Services = angular.module('d2Services', ['ngResource'])
 })
 
 /* service for getting calendar setting */
-.service('CalendarService', function(storage, $rootScope, SessionStorageService){    
+.service('CalendarService', function(storage, $rootScope){    
 
     return {
         getSetting: function() {
             
             var dhis2CalendarFormat = {keyDateFormat: 'yyyy-MM-dd', keyCalendar: 'gregorian', momentFormat: 'YYYY-MM-DD'};                
-            var storedFormat = SessionStorageService.get('CALENDAR_SETTING');
+            var storedFormat = storage.get('CALENDAR_SETTING');
             if(angular.isObject(storedFormat) && storedFormat.keyDateFormat && storedFormat.keyCalendar){
                 if(storedFormat.keyCalendar === 'iso8601'){
                     storedFormat.keyCalendar = 'gregorian';
@@ -196,7 +196,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
             var htmlCode = programStage.dataEntryForm ? programStage.dataEntryForm.htmlCode : null;  
             
             if(htmlCode){
-            	
+
                 var inputRegex = /<input.*?\/>/g,
                     match,
                     inputFields = [],

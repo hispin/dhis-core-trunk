@@ -235,7 +235,7 @@ trackerCapture.controller('DataEntryController',
             section.open = true;
         });
 
-        $scope.customForm = CustomFormService.getForProgramStage($scope.currentStage);
+        $scope.customForm = CustomFormService.getForProgramStage($scope.currentStage, $scope.prStDes);
         $scope.displayCustomForm = $scope.customForm ? true:false;        
 
         $scope.currentEventOriginal = angular.copy($scope.currentEvent);        

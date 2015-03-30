@@ -29,7 +29,7 @@ package org.hisp.dhis.schema.descriptors;
  */
 
 import com.google.common.collect.Lists;
-import org.hisp.dhis.program.ProgramStage;
+import org.hisp.dhis.program.ProgramStageDataElement;
 import org.hisp.dhis.schema.Authority;
 import org.hisp.dhis.schema.AuthorityType;
 import org.hisp.dhis.schema.Schema;
@@ -40,21 +40,20 @@ import org.springframework.stereotype.Component;
  * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
 @Component
-public class
-    ProgramStageSchemaDescriptor implements SchemaDescriptor
+public class ProgramStageDataElementSchemaDescriptor implements SchemaDescriptor
 {
-    public static final String SINGULAR = "programStage";
+    public static final String SINGULAR = "programStageDataElement";
 
-    public static final String PLURAL = "programStages";
+    public static final String PLURAL = "programStageDataElements";
 
     public static final String API_ENDPOINT = "/" + PLURAL;
 
     @Override
     public Schema getSchema()
     {
-        Schema schema = new Schema( ProgramStage.class, SINGULAR, PLURAL );
+        Schema schema = new Schema( ProgramStageDataElement.class, SINGULAR, PLURAL );
         schema.setApiEndpoint( API_ENDPOINT );
-        schema.setOrder( 1510 );
+        schema.setOrder( 1509 );
 
         schema.getAuthorities().add( new Authority( AuthorityType.CREATE, Lists.newArrayList( "F_PROGRAMSTAGE_ADD" ) ) );
         schema.getAuthorities().add( new Authority( AuthorityType.DELETE, Lists.newArrayList( "F_PROGRAMSTAGE_DELETE" ) ) );

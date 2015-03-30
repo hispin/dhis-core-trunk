@@ -1,4 +1,4 @@
-package org.hisp.dhis.schema.descriptors;
+package org.hisp.dhis.webapi.controller.event;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -28,37 +28,18 @@ package org.hisp.dhis.schema.descriptors;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.google.common.collect.Lists;
-import org.hisp.dhis.program.ProgramStage;
-import org.hisp.dhis.schema.Authority;
-import org.hisp.dhis.schema.AuthorityType;
-import org.hisp.dhis.schema.Schema;
-import org.hisp.dhis.schema.SchemaDescriptor;
-import org.springframework.stereotype.Component;
+import org.hisp.dhis.program.ProgramStageDataElement;
+import org.hisp.dhis.schema.descriptors.ProgramStageDataElementSchemaDescriptor;
+import org.hisp.dhis.webapi.controller.AbstractCrudController;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
-@Component
-public class
-    ProgramStageSchemaDescriptor implements SchemaDescriptor
+@Controller
+@RequestMapping( value = ProgramStageDataElementSchemaDescriptor.API_ENDPOINT )
+public class ProgramStageDataElementController
+    extends AbstractCrudController<ProgramStageDataElement>
 {
-    public static final String SINGULAR = "programStage";
-
-    public static final String PLURAL = "programStages";
-
-    public static final String API_ENDPOINT = "/" + PLURAL;
-
-    @Override
-    public Schema getSchema()
-    {
-        Schema schema = new Schema( ProgramStage.class, SINGULAR, PLURAL );
-        schema.setApiEndpoint( API_ENDPOINT );
-        schema.setOrder( 1510 );
-
-        schema.getAuthorities().add( new Authority( AuthorityType.CREATE, Lists.newArrayList( "F_PROGRAMSTAGE_ADD" ) ) );
-        schema.getAuthorities().add( new Authority( AuthorityType.DELETE, Lists.newArrayList( "F_PROGRAMSTAGE_DELETE" ) ) );
-
-        return schema;
-    }
 }

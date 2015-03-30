@@ -68,7 +68,6 @@ import org.hisp.dhis.period.PeriodService;
 import org.hisp.dhis.period.PeriodType;
 import org.hisp.dhis.program.ProgramStage;
 import org.hisp.dhis.program.ProgramStageDataElement;
-import org.hisp.dhis.program.ProgramStageDataElementService;
 import org.hisp.dhis.program.ProgramTrackedEntityAttribute;
 import org.hisp.dhis.program.ProgramValidation;
 import org.hisp.dhis.schema.SchemaService;
@@ -122,9 +121,6 @@ public class DefaultIdentifiableObjectImporter<T extends BaseIdentifiableObject>
 
     @Autowired
     private DataElementOperandService dataElementOperandService;
-
-    @Autowired
-    private ProgramStageDataElementService programStageDataElementService;
 
     @Autowired
     private ObjectBridge objectBridge;
@@ -589,7 +585,8 @@ public class DefaultIdentifiableObjectImporter<T extends BaseIdentifiableObject>
         }
 
         if ( (object.getName() == null || object.getName().length() == 0)
-            && !DashboardItem.class.isInstance( object ) && !Translation.class.isInstance( object ) )
+            && !DashboardItem.class.isInstance( object ) && !Translation.class.isInstance( object )
+            && !ProgramStageDataElement.class.isInstance( object ) )
         {
             conflict = new ImportConflict( ImportUtils.getDisplayName( object ), "Empty name for object " + object );
         }
@@ -603,7 +600,8 @@ public class DefaultIdentifiableObjectImporter<T extends BaseIdentifiableObject>
                 && !TrackedEntityAttribute.class.isAssignableFrom( object.getClass() )
                 && !TrackedEntity.class.isAssignableFrom( object.getClass() )
                 && !CategoryOptionGroupSet.class.isAssignableFrom( object.getClass() )
-                && !DashboardItem.class.isAssignableFrom( object.getClass() ) )
+                && !DashboardItem.class.isAssignableFrom( object.getClass() )
+                && !ProgramStageDataElement.class.isAssignableFrom( object.getClass() ) )
             {
                 conflict = new ImportConflict( ImportUtils.getDisplayName( object ), "Empty shortName for object " + object );
             }
@@ -948,7 +946,6 @@ public class DefaultIdentifiableObjectImporter<T extends BaseIdentifiableObject>
             compulsoryDataElementOperands = Sets.newHashSet( extractDataElementOperands( object, "compulsoryDataElementOperands" ) );
             greyedFields = Sets.newHashSet( extractDataElementOperands( object, "greyedFields" ) );
             dataElementOperands = Lists.newArrayList( extractDataElementOperands( object, "dataElementOperands" ) );
-            programStageDataElements = extractProgramStageDataElements( object );
             programTrackedEntityAttributes = extractProgramTrackedEntityAttributes( object );
             categoryDimensions = extractCategoryDimensions( object );
         }
@@ -969,7 +966,6 @@ public class DefaultIdentifiableObjectImporter<T extends BaseIdentifiableObject>
                     deleteDataElementOperands( object, "greyedFields" );
                 }
 
-                deleteProgramStageDataElements( object );
                 deleteProgramTrackedEntityAttributes( object );
             }
         }
@@ -983,7 +979,6 @@ public class DefaultIdentifiableObjectImporter<T extends BaseIdentifiableObject>
             saveDataElementOperands( object, "compulsoryDataElementOperands", compulsoryDataElementOperands );
             saveDataElementOperands( object, "greyedFields", greyedFields );
             saveDataElementOperands( object, "dataElementOperands", dataElementOperands );
-            saveProgramStageDataElements( object, programStageDataElements );
             saveProgramTrackedEntityAttributes( object, programTrackedEntityAttributes );
             saveCategoryDimensions( object, categoryDimensions );
         }
@@ -1242,18 +1237,8 @@ public class DefaultIdentifiableObjectImporter<T extends BaseIdentifiableObject>
                     ReflectionUtils.invokeSetterMethod( "programAttributes", object, programTrackedEntityAttributes );
                 }
 
-                for ( ProgramTrackedEntityAttribute trackedEntityAttribute : programTrackedEntityAttributes )
-                {
-                    if ( sessionFactory.getCurrentSession().contains( trackedEntityAttribute ) )
-                    {
-                        sessionFactory.getCurrentSession().delete( trackedEntityAttribute );
-                    }
-
-                    programTrackedEntityAttributeSet.add( trackedEntityAttribute );
-                }
-
+                programTrackedEntityAttributeSet.addAll( programTrackedEntityAttributes );
                 programTrackedEntityAttributes.clear();
-                sessionFactory.getCurrentSession().flush();
             }
 
             return programTrackedEntityAttributeSet;
@@ -1267,87 +1252,17 @@ public class DefaultIdentifiableObjectImporter<T extends BaseIdentifiableObject>
         private void saveProgramTrackedEntityAttributes( T object, Collection<ProgramTrackedEntityAttribute>
             programTrackedEntityAttributes )
         {
-            for ( ProgramTrackedEntityAttribute programTrackedEntityAttribute : programTrackedEntityAttributes )
+            List<ProgramTrackedEntityAttribute> programTrackedEntityAttributeList = ReflectionUtils.invokeGetterMethod( "programAttributes", object );
+
+            if ( programTrackedEntityAttributeList != null )
             {
-                Map<Field, Object> identifiableObjects = detachFields( programTrackedEntityAttribute );
-                reattachFields( programTrackedEntityAttribute, identifiableObjects, user );
-                sessionFactory.getCurrentSession().save( programTrackedEntityAttribute );
-            }
-
-            ReflectionUtils.invokeSetterMethod( "programAttributes", object, programTrackedEntityAttributes );
-        }
-
-        private Collection<ProgramStageDataElement> extractProgramStageDataElements( T object )
-        {
-            Method method = ReflectionUtils.findGetterMethod( "programStageDataElements", object );
-
-            if ( method != null )
-            {
-                Collection<ProgramStageDataElement> programStageDataElements = ReflectionUtils.invokeGetterMethod(
-                    "programStageDataElements", object );
-
-                for ( ProgramStageDataElement programStageDataElement : programStageDataElements )
+                for ( ProgramTrackedEntityAttribute programTrackedEntityAttribute : programTrackedEntityAttributes )
                 {
-                    if ( sessionFactory.getCurrentSession().contains( programStageDataElement ) )
-                    {
-                        programStageDataElementService.deleteProgramStageDataElement( programStageDataElement );
-                    }
-                }
-
-                sessionFactory.getCurrentSession().flush();
-                ReflectionUtils.invokeSetterMethod( "programStageDataElements", object,
-                    ReflectionUtils.newCollectionInstance( method.getReturnType() ) );
-                sessionFactory.getCurrentSession().flush();
-
-                return programStageDataElements;
-            }
-
-            return null;
-        }
-
-        private void saveProgramStageDataElements( T object, Collection<ProgramStageDataElement> programStageDataElements )
-        {
-            if ( programStageDataElements == null )
-            {
-                return;
-            }
-
-            Collection<ProgramStageDataElement> programStageDataElementCollection =
-                ReflectionUtils.newCollectionInstance( programStageDataElements.getClass() );
-
-            for ( ProgramStageDataElement programStageDataElement : programStageDataElements )
-            {
-                Map<Field, Object> identifiableObjects = detachFields( programStageDataElement );
-                reattachFields( programStageDataElement, identifiableObjects, user );
-
-                if ( ProgramStage.class.isAssignableFrom( object.getClass() ) )
-                {
-                    programStageDataElement.setProgramStage( (ProgramStage) object );
-                }
-
-                ProgramStageDataElement persisted = programStageDataElementService.get( programStageDataElement.getProgramStage(),
-                    programStageDataElement.getDataElement() );
-
-                if ( persisted == null )
-                {
-                    if ( programStageDataElement.getDataElement() != null && programStageDataElement.getProgramStage() != null )
-                    {
-                        programStageDataElementService.addProgramStageDataElement( programStageDataElement );
-                    }
-                }
-                else
-                {
-                    programStageDataElementCollection.add( persisted );
+                    Map<Field, Object> identifiableObjects = detachFields( programTrackedEntityAttribute );
+                    reattachFields( programTrackedEntityAttribute, identifiableObjects, user );
+                    programTrackedEntityAttributeList.add( programTrackedEntityAttribute );
                 }
             }
-
-            ReflectionUtils.invokeSetterMethod( "programStageDataElements", object, programStageDataElementCollection );
-        }
-
-        private void deleteProgramStageDataElements( T object )
-        {
-            // deletion will be done in extractProgramStageDataElements
-            extractProgramStageDataElements( object );
         }
     }
 }
