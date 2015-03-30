@@ -1,10 +1,11 @@
+/* global trackerCapture, angular */
+
 trackerCapture.controller('ProgramStatisticsController',
          function($scope,
                 DateUtils,                
                 EnrollmentService,
                 ProgramFactory,
-                DHIS2EventFactory,
-                storage) {
+                DHIS2EventFactory) {
     $scope.today = DateUtils.getToday();
     
     $scope.ouModes = [{name: 'SELECTED'}, {name: 'CHILDREN'}, {name: 'DESCENDANTS'}, {name: 'ACCESSIBLE'}];         
@@ -20,8 +21,7 @@ trackerCapture.controller('ProgramStatisticsController',
     //watch for selection of org unit from tree
     $scope.$watch('selectedOrgUnit', function() {      
         $scope.selectedProgram = null;
-        if( angular.isObject($scope.selectedOrgUnit)){            
-            storage.set('SELECTED_OU', $scope.selectedOrgUnit);            
+        if( angular.isObject($scope.selectedOrgUnit)){        
             $scope.loadPrograms($scope.selectedOrgUnit);
         }
     });

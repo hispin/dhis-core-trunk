@@ -21,7 +21,7 @@
                 <ng-form name="dataEntryInnerForm">
                     <div ng-switch="prStDe.dataElement.type">
                         <div ng-switch-when="int">
-                            <input type="number"
+                            <input type="text"
                                    ng-class='getInputNotifcationClass(prStDe.dataElement.id,false)'
                                    ng-model="currentEvent[prStDe.dataElement.id]" 
                                    ng-required={{prStDe.compulsory}}
@@ -83,8 +83,7 @@
                             </div>
                             <div ng-if="prStDe.BeneficiaryRegistration">
                                 <div ng-include="'components/beneficiary-registration/default-form.html'"></div>
-                            </div>
-                            
+                            </div>                            
                         </div>
                         <div ng-switch-when="bool">
                             <select ng-class='getInputNotifcationClass(prStDe.dataElement.id,false)'

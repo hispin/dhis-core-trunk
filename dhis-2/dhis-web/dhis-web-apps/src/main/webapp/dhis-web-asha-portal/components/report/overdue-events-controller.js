@@ -1,3 +1,5 @@
+/* global angular, trackerCapture */
+
 trackerCapture.controller('OverdueEventsController',
          function($scope,
                 $modal,
@@ -11,8 +13,7 @@ trackerCapture.controller('OverdueEventsController',
                 AttributesFactory,
                 ProgramFactory,
                 CurrentSelection,
-                OptionSetService,
-                storage) {    
+                OptionSetService) {    
     $scope.today = DateUtils.getToday();
     
     $scope.selectedOuMode = 'SELECTED';
@@ -55,7 +56,6 @@ trackerCapture.controller('OverdueEventsController',
         $scope.reportStarted = false;
         $scope.selectedProgram = null;
         if( angular.isObject($scope.selectedOrgUnit)){            
-            storage.set('SELECTED_OU', $scope.selectedOrgUnit);            
             $scope.loadPrograms($scope.selectedOrgUnit);
         }
     });

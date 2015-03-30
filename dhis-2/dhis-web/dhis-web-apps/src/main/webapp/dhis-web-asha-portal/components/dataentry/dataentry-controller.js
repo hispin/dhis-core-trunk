@@ -8,7 +8,7 @@ trackerCapture.controller('DataEntryController',
                 EventUtils,
                 AshaPortalUtils,
                 orderByFilter,
-                storage,
+                SessionStorageService,
                 ProgramStageFactory,
                 DHIS2EventFactory,
                 OptionSetService,
@@ -25,11 +25,9 @@ trackerCapture.controller('DataEntryController',
     $scope.currentPeriod = [];
     $scope.filterEvents = true;
     
-    var loginDetails = storage.get('LOGIN_DETAILS');
-    var storedBy = '';
-    if(loginDetails){
-        storedBy = loginDetails.userCredentials.username;
-    }
+    var userProfile = SessionStorageService.get('USER_PROFILE');
+    var storedBy = userProfile && userProfile.username ? userProfile.username : '';
+    
     var today = DateUtils.getToday();
     $scope.invalidDate = false;
     
@@ -66,7 +64,7 @@ trackerCapture.controller('DataEntryController',
         $scope.skipLogicChild = CurrentSelection.getRuleMetadata().skipLogic.child;        
         
         var selections = CurrentSelection.get();          
-        $scope.selectedOrgUnit = storage.get('SELECTED_OU');
+        $scope.selectedOrgUnit = SessionStorageService.get('SELECTED_OU');
         $scope.selectedEntity = selections.tei;      
         $scope.selectedProgram = selections.pr;        
         $scope.selectedEnrollment = selections.selectedEnrollment;   
@@ -98,7 +96,6 @@ trackerCapture.controller('DataEntryController',
                     $scope.stagesById[stage.id] = stage;
                     $scope.eventsByStage[stage.id] = [];
                 });
-                
                 $scope.getEvents();                
             });
         }
@@ -257,8 +254,7 @@ trackerCapture.controller('DataEntryController',
         $scope.customForm = CustomFormService.getForProgramStage($scope.currentStage, $scope.prStDes);
         $scope.displayCustomForm = $scope.customForm ? true:false;        
 
-        $scope.currentEventOriginal = angular.copy($scope.currentEvent);
-    
+        $scope.currentEventOriginal = angular.copy($scope.currentEvent);        
     };
     
     var processEvent = function(event, stage){
@@ -287,7 +283,7 @@ trackerCapture.controller('DataEntryController',
                         }
                     }
                 }    
-                event[dataValue.dataElement] = val;                
+                event[dataValue.dataElement] = val;
                 if(dataValue.providedElsewhere){
                     event.providedElsewhere[dataValue.dataElement] = dataValue.providedElsewhere;
                 }
