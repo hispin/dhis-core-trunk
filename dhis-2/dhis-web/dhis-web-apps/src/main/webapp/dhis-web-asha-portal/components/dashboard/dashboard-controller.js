@@ -8,6 +8,7 @@ trackerCapture.controller('DashboardController',
                 $modal,
                 $timeout,
                 $filter,
+                RemoteDataService,
                 TCStorageService,
                 orderByFilter,
                 SessionStorageService,
@@ -156,56 +157,88 @@ trackerCapture.controller('DashboardController',
             AttributesFactory.getAll().then(function(atts){
                 
                 $scope.attributesById = [];
+                $scope.attributeIdsByCode = [];
                 angular.forEach(atts, function(att){
                     $scope.attributesById[att.id] = att;
+                    if(att.code){
+                        $scope.attributeIdsByCode[att.code] = att.id;
+                    }
                 });
 
                 CurrentSelection.setAttributesById($scope.attributesById);
-            
-                //Fetch the selected entity
-                TEIService.get($scope.selectedTeiId, $scope.optionSets, $scope.attributesById).then(function(response){
-                    $scope.selectedTei = response;
-
-                    //get the entity type
-                    TEService.get($scope.selectedTei.trackedEntity).then(function(te){                    
-                        $scope.trackedEntity = te;
-
-                        //get enrollments for the selected tei
-                        EnrollmentService.getByEntity($scope.selectedTeiId).then(function(response){                    
-                            var enrollments = angular.isObject(response) && response.enrollments ? response.enrollments : [];
-                            var selectedEnrollment = null;
-                            if(enrollments.length === 1 && enrollments[0].status === 'ACTIVE'){
-                                selectedEnrollment = enrollments[0];
-                            }
-
-                            ProgramFactory.getAll().then(function(programs){
-                                $scope.programs = [];
-
-                                $scope.programNames = [];  
-                                $scope.programStageNames = [];        
-
-                                //get programs valid for the selected ou and tei
-                                angular.forEach(programs, function(program){                                    
-                                    if( program.trackedEntity.id === $scope.selectedTei.trackedEntity ){
-                                        $scope.programs.push(program);
-                                        $scope.programNames[program.id] = {id: program.id, name: program.name};
-										angular.forEach(program.programStages, function(stage){                
-											$scope.programStageNames[stage.id] = {id: stage.id, name: stage.name};
-										});
-
-                                        if($scope.selectedProgramId && program.id === $scope.selectedProgramId || selectedEnrollment && selectedEnrollment.program === program.id){
-                                            $scope.selectedProgram = program;
-                                        }
-                                    }                                
+                CurrentSelection.setAttributeIdsByCode($scope.attributeIdsByCode);
+                
+                $scope.skipLogicParent = [];
+                $scope.skipLogicChild = [];
+                
+                RemoteDataService.get('data/rule-metadata.json').then(function(data){
+                    
+                    angular.forEach(data.skipLogics, function(d){
+                        $scope.skipLogicParent[d.code] = d;
+                        if(d.actions){
+                            angular.forEach(d.actions, function(action){
+                                angular.forEach(action.itemsToShow, function(de){               
+                                    $scope.skipLogicChild[de.code] = de;
                                 });
-
-                                //prepare selected items for broadcast
-                                CurrentSelection.set({tei: $scope.selectedTei, te: $scope.trackedEntity, prs: $scope.programs, pr: $scope.selectedProgram, prNames: $scope.programNames, prStNames: $scope.programStageNames, enrollments: enrollments, selectedEnrollment: selectedEnrollment, optionSets: $scope.optionSets});                            
-                                getDashboardLayout();                    
+                                angular.forEach(action.itemsToHide, function(de){               
+                                    $scope.skipLogicChild[de.code] = de;
+                                });
                             });
-                        });
-                    });            
-                });  
+                        }
+                        else{
+                            angular.forEach(d.itemsToShow, function(de){    
+                                $scope.skipLogicChild[de.code] = de;
+                            });
+                        }
+                    });
+                    
+                    CurrentSelection.setRuleMetadata({skipLogic: {parent: $scope.skipLogicParent, child: $scope.skipLogicChild}, validationRule: {}});
+                    
+                    //Fetch the selected entity
+                    TEIService.get($scope.selectedTeiId, $scope.optionSets, $scope.attributesById).then(function(response){
+                        $scope.selectedTei = response;
+
+                        //get the entity type
+                        TEService.get($scope.selectedTei.trackedEntity).then(function(te){                    
+                            $scope.trackedEntity = te;
+
+                            //get enrollments for the selected tei
+                            EnrollmentService.getByEntity($scope.selectedTeiId).then(function(response){                    
+                                var enrollments = angular.isObject(response) && response.enrollments ? response.enrollments : [];
+                                var selectedEnrollment = null;
+                                if(enrollments.length === 1 && enrollments[0].status === 'ACTIVE'){
+                                    selectedEnrollment = enrollments[0];
+                                }
+
+                                ProgramFactory.getAll().then(function(programs){
+                                    $scope.programs = [];
+
+                                    $scope.programNames = [];  
+                                    $scope.programStageNames = [];        
+
+                                    //get programs valid for the selected ou and tei
+                                    angular.forEach(programs, function(program){                                    
+                                        if( program.trackedEntity.id === $scope.selectedTei.trackedEntity ){
+                                            $scope.programs.push(program);
+                                            $scope.programNames[program.id] = {id: program.id, name: program.name};
+                                                                                    angular.forEach(program.programStages, function(stage){                
+                                                                                            $scope.programStageNames[stage.id] = {id: stage.id, name: stage.name};
+                                                                                    });
+
+                                            if($scope.selectedProgramId && program.id === $scope.selectedProgramId || selectedEnrollment && selectedEnrollment.program === program.id){
+                                                $scope.selectedProgram = program;
+                                            }
+                                        }                                
+                                    });
+
+                                    //prepare selected items for broadcast
+                                    CurrentSelection.set({tei: $scope.selectedTei, te: $scope.trackedEntity, prs: $scope.programs, pr: $scope.selectedProgram, prNames: $scope.programNames, prStNames: $scope.programStageNames, enrollments: enrollments, selectedEnrollment: selectedEnrollment, optionSets: $scope.optionSets});                            
+                                    getDashboardLayout();                    
+                                });
+                            });
+                        });            
+                    });  
+                });
             });
         });
     }    
