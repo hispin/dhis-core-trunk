@@ -90,7 +90,7 @@ public class AbstractEventRowService
             eventRow.setProgram( event.getProgram() );
             eventRow.setProgramStage( event.getProgramStage() );            
             eventRow.setEventOrgUnitName( event.getOrgUnitName() );
-            eventRow.setDueDate( event.getDueDate() );
+            eventRow.setDueDate( event.getEventDate() != null ? event.getEventDate() : event.getDueDate() );
             eventRow.setFollowup( event.getFollowup() );
             eventRowList.add( eventRow );
         }

@@ -258,7 +258,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 TCStorageService.currentStore.getAll('programs').done(function(prs){
                     var programs = [];
                     angular.forEach(prs, function(pr){
-                        if(pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles)){
+                        if(pr.type === 1 && pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles)){
                             programs.push(pr);
                         }
                     });
@@ -294,7 +294,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 TCStorageService.currentStore.getAll('programs').done(function(prs){
                     var programs = [];
                     angular.forEach(prs, function(pr){
-                        if(pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles) && programHasAttributeValue(pr, attributeValue, attributeCode)){
+                        if(pr.type === 1 && pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles) && programHasAttributeValue(pr, attributeValue, attributeCode)){
                             programs.push(pr);
                         }
                     });
@@ -315,7 +315,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 TCStorageService.currentStore.getAll('programs').done(function(prs){
                     var programs = [];
                     angular.forEach(prs, function(pr){                            
-                        if(pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles) && programHasAttributeValue(pr, owner, 'ProgramOwner')){
+                        if(pr.type === 1 && pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles) && programHasAttributeValue(pr, owner, 'ProgramOwner')){
                             programs.push(pr);
                         }
                     });
@@ -359,7 +359,10 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                     var programs = [], commonBenProgram = null;
                     
                     angular.forEach(prs, function(pr){
-                        if(pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles) && programHasAttributeValue(pr, 'Beneficiary', 'ProgramOwner')){                            
+                        if(pr.type === 1 &&
+                                pr.organisationUnits.hasOwnProperty( ou.id ) && 
+                                userHasValidRole(pr, userRoles) && 
+                                programHasAttributeValue(pr, 'Beneficiary', 'ProgramOwner')){                            
                             if(programHasAttributeValue(pr, 'true', 'CommonBeneficiaryProgram')){
                                 commonBenProgram = pr;
                             }
@@ -370,6 +373,32 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                     });
                     $rootScope.$apply(function(){
                         def.resolve({beneficiaryPrograms: programs, commonBenProgram: commonBenProgram});
+                    });                      
+                });
+            });
+            
+            return def.promise;            
+        },
+        getActivityPrograms: function(){            
+            var roles = SessionStorageService.get('USER_ROLES');
+            var userRoles = roles && roles.userCredentials && roles.userCredentials.userRoles ? roles.userCredentials.userRoles : [];
+            var ou = SessionStorageService.get('SELECTED_OU');
+            var def = $q.defer();
+            
+            TCStorageService.currentStore.open().done(function(){
+                TCStorageService.currentStore.getAll('programs').done(function(prs){
+                    var programs = [];
+                    
+                    angular.forEach(prs, function(pr){
+                        if( pr.type === 3 &&
+                                pr.organisationUnits.hasOwnProperty( ou.id ) && 
+                                userHasValidRole(pr, userRoles) && 
+                                programHasAttributeValue(pr, 'ASHA', 'ProgramOwner')){                            
+                            programs.push(pr);                            
+                        }
+                    });
+                    $rootScope.$apply(function(){
+                        def.resolve(programs);
                     });                      
                 });
             });
@@ -1260,7 +1289,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     this.dataElementIdsByCode = null;
     this.ruleMetadata = null;
     this.sortedTeiIds = [];
-    this.beneficiaryOwners = null;
+    this.benOrActOwners = null;
     
     this.set = function(currentSelection){  
         this.currentSelection = currentSelection;        
@@ -1325,11 +1354,11 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         return this.sortedTeiIds;
     };
     
-    this.setBeneficiaryOwners = function(beneficiaryOwners){
-        this.beneficiaryOwners = beneficiaryOwners;
+    this.setBenOrActOwners = function(benOrActOwners){
+        this.benOrActOwners = benOrActOwners;
     };
-    this.getBeneficiaryOwners = function(){
-        return this.beneficiaryOwners;
+    this.getBenOrActOwners = function(){
+        return this.benOrActOwners;
     };
 })
 

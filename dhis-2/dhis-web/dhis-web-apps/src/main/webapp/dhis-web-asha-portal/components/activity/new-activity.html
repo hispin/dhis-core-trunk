@@ -1,0 +1,123 @@
+<div class="vertical-spacing" ng-if="selectedProgramStage">
+    <!-- beneficiary details begins -->
+    <table class="table table-striped table-bordered">               
+        <thead>                        
+            <tr>
+                <th>
+                    {{'date'| translate}}
+                </th>
+                <th ng-repeat="prStDe in selectedProgramStage.programStageDataElements| filter:{displayForDataEntry: true}">                            
+                    {{prStDe.dataElement.name}}                           
+                </th>                                    
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <input type="text"               
+                           class="form-control" 
+                           placeholder="{{dhis2CalendarFormat.keyDateFormat}}"
+                           d2-date
+                           max-date='0'
+                           ng-model="newActivity.eventDate"   
+                           ng-required="true" 
+                           name="eventDate"
+                           input-field-id="eventDate">
+                    <span ng-show="outerForm.submitted && outerForm.eventDate.$invalid" class="error">{{'required'| translate}}</span>
+                </td>
+                <td ng-repeat="prStDe in selectedProgramStage.programStageDataElements| filter:{displayForDataEntry: true}">                            
+                    <ng-form name="innerForm">
+                        <div ng-switch="prStDe.dataElement.type">
+                            <div ng-switch-when="int">
+                                <input type="text" 
+                                       class="form-control"  
+                                       ng-model="newActivity[prStDe.dataElement.id]" 
+                                       ng-required={{prStDe.compulsory}}
+                                       name="foo"/>
+                                <span ng-show="outerForm.submitted && innerForm.foo.$invalid" class="error">{{'number_required'| translate}}</span>
+                            </div>                        
+                            <div ng-switch-when="string">                            
+                                <div ng-if="prStDe.dataElement.optionSet">
+                                    <div ng-if="!selectedProgram.dataEntryMethod || optionSets[prStDe.dataElement.optionSet.id].options.length >= 7">
+                                        <input type="text"
+                                            class="form-control"  
+                                            ng-model="newActivity[prStDe.dataElement.id]" 
+                                            ng-required={{prStDe.compulsory}}                                             
+                                            typeahead="option.name as option.name for option in optionSets[prStDe.dataElement.optionSet.id].options | filter:$viewValue | limitTo:20" 
+                                            typeahead-open-on-focus 
+                                            typeahead-editable="false" 
+                                            name="foo"/>
+                                        <span ng-show="outerForm.submitted && innerForm.foo.$invalid || !newActivity[prStDe.dataElement.id] && currentElement.id === prStDe.dataElement.id" class="error">{{'invalid'| translate}}</span>
+                                    </div>
+                                    <div ng-if="selectedProgram.dataEntryMethod && optionSets[prStDe.dataElement.optionSet.id].options.length < 7">
+                                        <label>                                        
+                                            <input type="radio"
+                                                class="form-control"  
+                                                name={{newActivity[prStDe.dataElement.id]}}
+                                                ng-required={{prStDe.compulsory}}                                                 
+                                                ng-model="newActivity[prStDe.dataElement.id]"
+                                                ng-change="saveDatavalue(prStDe)" 
+                                                value=""> {{'no_value' | translate}}<br>                                       
+                                        </label><br>
+                                        <span ng-repeat="option in optionSets[prStDe.dataElement.optionSet.id].options">
+                                            <label>
+                                                <input type="radio"
+                                                    class="form-control"  
+                                                    name={{newActivity[prStDe.dataElement.id]}}
+                                                    ng-required={{prStDe.compulsory}}                                                     
+                                                    ng-model="newActivity[prStDe.dataElement.id]"
+                                                    ng-change="saveDatavalue(prStDe)" 
+                                                    value={{option.name}}> {{option.name}}
+                                            </label><br>
+                                        </span>
+                                    </div>                                    
+                                </div>
+                                <div ng-if="!prStDe.dataElement.optionSet">
+                                    <input type="text"
+                                        class="form-control"  
+                                        ng-model="newActivity[prStDe.dataElement.id]" 
+                                        ng-required={{prStDe.compulsory}}                                         
+                                        ng-blur="saveDatavalue(prStDe)" 
+                                        name="foo"/>
+                                </div>
+                            </div>
+                            <div ng-switch-when="bool">
+                                <select class="form-control"  
+                                        ng-model="newActivity[prStDe.dataElement.id]" 
+                                        ng-required={{prStDe.compulsory}}                                         
+                                        ng-change="saveDatavalue(prStDe)" 
+                                        name="foo">
+                                    <option value="">{{'please_select'| translate}}</option>                        
+                                    <option value="false">{{'no'| translate}}</option>
+                                    <option value="true">{{'yes'| translate}}</option>
+                                </select>
+
+                            </div>
+                            <div ng-switch-when="date">
+                                <input type="text" 
+                                       placeholder="{{dhis2CalendarFormat.keyDateFormat}}" 
+                                       d2-date
+                                       max-date="prStDe.allowFutureDate ? '' : 0"
+                                       class="form-control"  
+                                       ng-model="newActivity[prStDe.dataElement.id]"
+                                       ng-required={{prStDe.compulsory}}  
+                                       blur-or-change="saveDatavalue(prStDe)"
+                                       name="foo"/>
+                            </div>
+                            <div ng-switch-when="trueOnly">
+                                <input type="checkbox"                         
+                                       class="form-control"  
+                                       ng-model="newActivity[prStDe.dataElement.id]"                                                               
+                                       ng-required={{prStDe.compulsory}}                                        
+                                       ng-change="saveDatavalue(prStDe)" 
+                                       name="foo"/>
+                            </div>
+                        </div>
+                    </ng-form>
+                    <span ng-show="outerForm.submitted && innerForm.foo.$invalid" class="error">{{'required'| translate}}</span>                            
+                </td>
+            </tr>
+        </tbody>        
+    </table>
+    <!-- beneficiary details ends -->
+</div>

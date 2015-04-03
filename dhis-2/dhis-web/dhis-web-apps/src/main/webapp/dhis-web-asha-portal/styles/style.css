@@ -1022,3 +1022,8 @@ ul.tree ul li:last-child:before {
     display: table-cell;
     vertical-align: middle;
 }
+
+/*.table-striped>tbody>tr:nth-child(odd)>td, 
+.table-striped>tbody>tr:nth-child(odd)>th {
+   background-color: white;
+ }*/

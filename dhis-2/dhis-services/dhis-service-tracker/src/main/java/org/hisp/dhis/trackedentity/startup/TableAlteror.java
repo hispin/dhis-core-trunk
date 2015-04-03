@@ -316,13 +316,32 @@ public class TableAlteror
 
         updateProgramExpressionUid();
         
-        executeSql( "DROP TABLE programstage_programindicators" );
+        if ( tableExists( "programstage_programindicators" ) )
+        {
+        	executeSql( "DROP TABLE programstage_programindicators" );
+            
+            log.info( "Dropped table programstage_ programindicators" );
+        }
+        
     }
 
     // -------------------------------------------------------------------------
     // Supporting methods
     // -------------------------------------------------------------------------
 
+    private boolean tableExists( String table )
+    {
+        try
+        {
+            statementManager.getHolder().queryForInteger( "select 1 from " + table );
+            return true;
+        }
+        catch ( Exception ex )
+        {
+            return false;
+        }
+    }
+    
     private void updateAggregateQueryBuilder()
     {
         StatementHolder holder = statementManager.getHolder();

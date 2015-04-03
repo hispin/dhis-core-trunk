@@ -248,9 +248,16 @@ trackerCapture.controller('DataEntryController',
         $scope.currentStage = $scope.stagesById[$scope.currentEvent.programStage];
         
         if($scope.currentStage.BeneficiaryRegistration){
-            CurrentSelection.setBeneficiaryOwners({asha: $scope.selectedTei, period: $scope.currentPeriod[$scope.currentStage.id]});
+            CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: $scope.currentPeriod[$scope.currentStage.id]});
             $timeout(function() { 
-                $rootScope.$broadcast('beneficiaryRegistration', {});
+                $rootScope.$broadcast('beneficiaryRegistration', {optionSets: $scope.optionSets});
+            }, 100);
+        }
+        
+        if($scope.currentStage.ActivityRegistration){
+            CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: $scope.currentPeriod[$scope.currentStage.id]});
+            $timeout(function() { 
+                $rootScope.$broadcast('activityRegistration', {optionSets: $scope.optionSets});
             }, 100);
         }
         

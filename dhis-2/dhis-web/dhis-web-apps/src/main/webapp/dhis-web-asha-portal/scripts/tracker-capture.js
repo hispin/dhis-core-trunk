@@ -435,7 +435,7 @@ function getProgramStage( id )
         return $.ajax( {
             url: '../api/programStages.json',
             type: 'GET',
-            data: 'filter=id:eq:' + id +'&fields=id,name,sortOrder,version,dataEntryForm,captureCoordinates,blockEntryForm,autoGenerateEvent,allowGenerateNextVisit,generatedByEnrollmentDate,reportDateDescription,minDaysFromStart,repeatable,openAfterEnrollment,standardInterval,periodType,reportDateToUse,attributeValues[value,attribute[id,name,code]],programStageSections[id,name,programStageDataElements[dataElement[id]]],programStageDataElements[displayInReports,allowProvidedElsewhere,allowFutureDate,compulsory,dataElement[id,code,name,formName,type,attributeValues[value,attribute[id,name,code]],optionSet[id]]]'
+            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,sortOrder,version,dataEntryForm,captureCoordinates,blockEntryForm,autoGenerateEvent,allowGenerateNextVisit,generatedByEnrollmentDate,reportDateDescription,minDaysFromStart,repeatable,openAfterEnrollment,standardInterval,periodType,reportDateToUse,attributeValues[value,attribute[id,name,code]],programStageSections[id,name,programStageDataElements[dataElement[id]]],programStageDataElements[displayInReports,allowProvidedElsewhere,allowFutureDate,compulsory,dataElement[id,code,name,formName,type,attributeValues[value,attribute[id,name,code]],optionSet[id]]]'
         }).done( function( response ){            
             _.each( _.values( response.programStages ), function( programStage ) {
                 programStage = processProgramStage( programStage );
@@ -509,7 +509,7 @@ function getOptionSet( id )
         return $.ajax( {
             url: '../api/optionSets.json',
             type: 'GET',
-            data: 'filter=id:eq:' + id +'&fields=id,name,version,options[id,name,code]'
+            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,version,options[id,name,code]'
         }).done( function( response ){            
             _.each( _.values( response.optionSets ), function( optionSet ) {                
                 dhis2.tc.store.set( 'optionSets', optionSet );

@@ -1,0 +1,46 @@
+<div ng-controller="ActivityController">    
+
+    <!--new activity registration area begins-->
+    <div class="col-sm-6 bordered-div">
+        <h1 class="align-center">{{'new_activity_registration'| translate}}</h1>
+        <div class="row col-sm-8">
+            <select ng-model="selectedActivityProgram"
+                    class="form-control"
+                    ng-options="program as program.name for program in activityPrograms | orderBy: 'name'" 
+                    ng-disabled="activityPrograms.length < 1">
+                <option value="">{{activityPrograms.length > 0 ? 'please_select_activity' : 'no_actvity_exists'| translate}}</option>
+            </select>
+        </div>
+        <button class="btn btn-primary trim small-horizonal-spacing" ng-click="addActivity()" ng-disabled="!selectedProgramStage.id">{{'save'| translate}}</button>
+        <button class="btn btn-default trim" ng-click="cancel()" ng-disabled="!selectedActivityProgram.id">{{'cancel'| translate}}</button>
+
+        <!--activity registration area begins-->
+        <div ng-form="outerForm" novalidate>
+            <div class="row" ng-if="selectedActivityProgram && selectedActivityProgram.id">
+                <div class="col-sm-12" ng-include="'components/activity/new-activity.html'"></div> 
+            </div>
+        </div>
+        <!--activity service registration area ends-->
+        
+        <div class='vertical-spacing alert alert-info' ng-if="!selectedActivityProgram.id">{{'select_for_new_activity'| translate}}</div>
+        
+    </div>
+    <!--new activity registration area ends-->
+
+    <!--conducted activity list area begins-->
+    <div class="col-sm-6 bordered-div">
+        <h1 class="align-center">{{'activities_conducted'| translate}}</h1>
+
+        <div class="row" ng-if="activitiesConducted.length > 0">
+            <div class="col-sm-12" ng-include="'components/activity/conducted-activity-list.html'"></div>  
+        </div>
+
+        <div class='alert alert-warning' ng-if="!activitiesConducted.length > 0 && !showAddNewActivityDiv">{{'no_activity_conducted'| translate}}</div>
+    </div>
+    <!--conducted activity list area ends-->
+    
+    <div class='row'>
+        &nbsp;
+    </div>
+
+</div>

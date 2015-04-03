@@ -143,13 +143,16 @@
 
                 <!-- data entry form begins -->
                 <div ng-if="currentEvent.eventDate">
-                    <div ng-if="!currentStage.BeneficiaryRegistration">
+                    <div ng-if="!currentStage.ActivityRegistration && !currentStage.BeneficiaryRegistration">
                         <div class="clear vertical-spacing" ng-if="displayCustomForm" ng-include="'../dhis-web-commons/customform/custom-form.html'"></div>  
                         <div class="clear vertical-spacing" ng-if="!displayCustomForm" ng-include="'components/dataentry/default-form.html'"></div>
                     </div>
                     <div ng-if="currentStage.BeneficiaryRegistration">
                         <div class="clear vertical-spacing" ng-include="'components/beneficiary/beneficiary.html'"></div>
-                    </div>                    
+                    </div>
+                    <div ng-if="currentStage.ActivityRegistration">
+                        <div class="clear vertical-spacing" ng-include="'components/activity/activity.html'"></div>
+                    </div>
                 </div>            
                 <!-- data entry form ends -->
                 
