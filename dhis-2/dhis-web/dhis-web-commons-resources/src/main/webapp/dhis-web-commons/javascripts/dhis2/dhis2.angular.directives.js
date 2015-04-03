@@ -47,7 +47,7 @@ var d2Directives = angular.module('d2Directives', [])
     };
 })
 
-.directive('selectedOrgUnit', function($timeout, storage) {        
+.directive('selectedOrgUnit', function($timeout, OrgUnitService) {        
 
     return {        
         restrict: 'A',        
@@ -78,12 +78,20 @@ var d2Directives = angular.module('d2Directives', [])
             
             function setSelectedOu( ids, names ) {
                 var ou = {id: ids[0], name: names[0]};
-                $timeout(function() {
-                    scope.selectedOrgUnit = ou;
-                    scope.$apply();
+                
+                OrgUnitService.open().then(function(){                    
+                    OrgUnitService.get(ou.id).then(function(obj){
+                        if(obj){
+                            ou.level = obj.l;
+                            $timeout(function() {
+                                scope.selectedOrgUnit = ou;
+                                scope.$apply();
+                            });
+                        }
+                    });                            
                 });
             }
-        }  
+        }
     };
 })
 

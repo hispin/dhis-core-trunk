@@ -6,21 +6,29 @@
 <table class="listTable dhis2-table-striped-border vertical-spacing">               
     <thead>                        
         <tr>
-            <th ng-show="gridColumn.show" ng-repeat="gridColumn in serviceGridColumns">
+            <th ng-if="gridColumn.show" ng-repeat="gridColumn in serviceGridColumns">
                 {{gridColumn.name}}
             </th>
         </tr>                        
     </thead>
     <tbody>        
-        <tr ng-repeat-end ng-repeat="serviceProvided in servicesProvided | orderBy:'program'">
-            <td ng-show="gridColumn.show" ng-repeat="gridColumn in serviceGridColumns">                                                
-                <span ng-if="gridColumn.id !== 'program'">
+        <tr ng-repeat-end ng-repeat="serviceProvided in servicesProvided| orderBy:'program'">
+            <td ng-if="gridColumn.show" ng-repeat="gridColumn in serviceGridColumns">                                                
+                <span ng-if="gridColumn.id !== 'program' && gridColumn.id !== dataElementForLatestApprovalStatus.id">
                     {{serviceProvided[gridColumn.id]}}
                 </span>
                 <span ng-if="gridColumn.id === 'program'">
                     {{beneficiaryProgramsById[serviceProvided.program].name}}
                 </span>
+                <span ng-if="gridColumn.id === dataElementForLatestApprovalStatus.id">
+                    <select ng-model="serviceProvided[gridColumn.id]"
+                            class="form-control"
+                            ng-options="option.name as option.name for option in optionSets[dataElementForLatestApprovalStatus.optionSet.id].options" 
+                            ng-disabled="false">
+                        <option value="">{{'please_select'| translate}}</option>
+                    </select>
+                </span>
             </td>                                
         </tr>
-    </tbody>        
+    </tbody>
 </table>

@@ -26,8 +26,18 @@
                     {{activity.eventDate}}
                 </td>
                 <td ng-repeat="prStDe in stagesById[program.programStages[0].id].programStageDataElements" 
-                    ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id">
-                    {{activity[prStDe.dataElement.id]}}
+                    ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id">                    
+                    <span ng-if="prStDe.dataElement.id !== dataElementForLatestApprovalStatus.id">
+                        {{activity[prStDe.dataElement.id]}}
+                    </span>
+                    <span ng-if="prStDe.dataElement.id === dataElementForLatestApprovalStatus.id">
+                        <select ng-model="activity[prStDe.dataElement.id]"
+                                class="form-control"
+                                ng-options="option.name as option.name for option in optionSets[dataElementForLatestApprovalStatus.optionSet.id].options" 
+                                ng-disabled="false">
+                            <option value="">{{'please_select'| translate}}</option>
+                        </select>
+                    </span>
                 </td>
             </tr>
         </tbody>
