@@ -52,7 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hisp.dhis.analytics.AggregationType;
 import org.hisp.dhis.analytics.AnalyticsSecurityManager;
 import org.hisp.dhis.analytics.AnalyticsService;
@@ -660,6 +660,15 @@ public class DefaultEventAnalyticsService
                 {
                     map.putAll( IdentifiableObjectUtils.getUidNameMap( objects ) );
                 }
+            }
+            
+            if ( dimension.getDisplayShortName() != null && DisplayProperty.SHORTNAME.equals( displayProperty ) )
+            {
+                map.put( dimension.getDimension(), dimension.getDisplayShortName() );
+            }
+            else if ( dimension.getDisplayName() != null ) // NAME
+            {
+                map.put( dimension.getDimension(), dimension.getDisplayName() );
             }
         }
 

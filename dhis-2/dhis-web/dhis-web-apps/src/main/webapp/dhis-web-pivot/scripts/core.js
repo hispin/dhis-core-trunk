@@ -326,7 +326,7 @@ Ext.onReady( function() {
 
 				// hideEmptyRows: boolean (false)
 
-                // aggregationType: string ('default') - 'default', 'count', 'sum'
+                // aggregationType: string ('DEFAULT') - 'DEFAULT', 'COUNT', 'SUM', 'STDDEV', 'VARIANCE', 'MIN', 'MAX'
 
 				// showHierarchy: boolean (false)
 
@@ -493,7 +493,7 @@ Ext.onReady( function() {
 					layout.showRowSubTotals = Ext.isBoolean(config.rowSubTotals) ? config.rowSubTotals : (Ext.isBoolean(config.showRowSubTotals) ? config.showRowSubTotals : true);
 					layout.showDimensionLabels = Ext.isBoolean(config.showDimensionLabels) ? config.showDimensionLabels : (Ext.isBoolean(config.showDimensionLabels) ? config.showDimensionLabels : true);
 					layout.hideEmptyRows = Ext.isBoolean(config.hideEmptyRows) ? config.hideEmptyRows : false;
-                    layout.aggregationType = Ext.isString(config.aggregationType) ? config.aggregationType : 'default';
+                    layout.aggregationType = Ext.isString(config.aggregationType) ? config.aggregationType : 'DEFAULT';
 
 					layout.showHierarchy = Ext.isBoolean(config.showHierarchy) ? config.showHierarchy : false;
 
@@ -1677,6 +1677,10 @@ Ext.onReady( function() {
 					delete layout.sorting;
 				}
 
+				if (layout.aggregationType === 'DEFAULT') {
+					delete layout.aggregationType;
+				}
+
 				delete layout.parentGraphMap;
 				delete layout.reportingPeriod;
 				delete layout.organisationUnit;
@@ -1685,7 +1689,6 @@ Ext.onReady( function() {
 				delete layout.cumulative;
 				delete layout.sortOrder;
 				delete layout.topLimit;
-                delete layout.aggregationType;
 
 				return layout;
 			};
@@ -1972,9 +1975,10 @@ Ext.onReady( function() {
 					paramString += '&hierarchyMeta=true';
 				}
 
-                if (aggTypes.hasOwnProperty(xLayout.aggregationType)) {
-                    paramString += '&aggregationType=' + aggTypes[xLayout.aggregationType];
-                }
+				// aggregation type
+				if (xLayout.aggregationType) {
+					paramString += '&aggregationType=' + xLayout.aggregationType;
+				}
 
                 // display property
                 paramString += '&displayProperty=' + init.userAccount.settings.keyAnalysisDisplayProperty.toUpperCase();
@@ -2165,8 +2169,6 @@ Ext.onReady( function() {
 					rowSpan = config.rowSpan ? 'rowspan="' + config.rowSpan + '" ' : '';
                     htmlValue = getHtmlValue(config);
 					htmlValue = config.type !== 'dimension' ? support.prototype.number.prettyPrint(htmlValue, xLayout.digitGroupSeparator) : htmlValue;
-					displayDensity = conf.pivot.displayDensity[config.displayDensity] || conf.pivot.displayDensity[xLayout.displayDensity];
-					fontSize = conf.pivot.fontSize[config.fontSize] || conf.pivot.fontSize[xLayout.fontSize];
 
 					cls += config.hidden ? ' td-hidden' : '';
 					cls += config.collapsed ? ' td-collapsed' : '';
@@ -2197,7 +2199,7 @@ Ext.onReady( function() {
 						//html += '</div></div></div></td>';
 					//}
 					//else {
-						html += 'style="' + (bgColor && isValue ? 'color:' + bgColor + '; ' : '') + 'padding:' + displayDensity + '; font-size:' + fontSize + ';"' + '>' + htmlValue + '</td>';
+						html += 'style="' + (bgColor && isValue ? 'color:' + bgColor + '; ' : '') + '">' + htmlValue + '</td>';
 					//}
 
 					return html;
@@ -2841,13 +2843,19 @@ Ext.onReady( function() {
 				};
 
 				getHtml = function() {
-					var s = '<table id="' + xLayout.tableUuid + '" class="pivot">';
+                    var cls = 'pivot',
+                        table;
+
+                    cls += xLayout.displayDensity && xLayout.displayDensity !== 'normal' ? ' displaydensity-' + xLayout.displayDensity : '';
+                    cls += xLayout.fontSize && xLayout.fontSize !== 'normal' ? ' fontsize-' + xLayout.fontSize : '';
+
+					table = '<table id="' + xLayout.tableUuid + '" class="' + cls + '">';
 
 					for (var i = 0; i < htmlArray.length; i++) {
-						s += '<tr>' + htmlArray[i].join('') + '</tr>';
+						table += '<tr>' + htmlArray[i].join('') + '</tr>';
 					}
 
-					return s += '</table>';
+					return table += '</table>';
 				};
 
 				// get html

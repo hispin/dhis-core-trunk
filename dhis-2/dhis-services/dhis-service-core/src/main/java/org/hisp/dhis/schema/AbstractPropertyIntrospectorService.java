@@ -40,6 +40,9 @@ import org.hibernate.persister.collection.CollectionPersister;
 import org.hibernate.persister.entity.Joinable;
 import org.hibernate.type.AssociationType;
 import org.hibernate.type.CollectionType;
+import org.hibernate.type.ManyToOneType;
+import org.hibernate.type.OneToOneType;
+import org.hibernate.type.SetType;
 import org.hibernate.type.SingleColumnType;
 import org.hibernate.type.TextType;
 import org.hibernate.type.Type;
@@ -148,6 +151,14 @@ public abstract class AbstractPropertyIntrospectorService
 
                 joinTableToRoles.get( associatedJoinable.getTableName() ).add( collection.getRole() );
             }
+            else if ( collection.isInverse() )
+            {
+                if ( SetType.class.isInstance( collection.getType() ) )
+                {
+                    SetType setType = (SetType) collection.getType();
+                    Joinable joinable = setType.getAssociatedJoinable( sessionFactoryImplementor );
+                }
+            }
         }
 
         Iterator<Map.Entry<String, List<String>>> entryIterator = joinTableToRoles.entrySet().iterator();
@@ -237,6 +248,24 @@ public abstract class AbstractPropertyIntrospectorService
                     property.setOwningRole( roleToRole.get( collectionType.getRole() ) );
                     property.setInverseRole( collectionType.getRole() );
                 }
+            }
+
+            if ( ManyToOneType.class.isInstance( type ) )
+            {
+                property.setManyToOne( true );
+
+                if ( property.isOwner() )
+                {
+                    property.setOwningRole( klass.getName() + "." + property.getName() );
+                }
+                else
+                {
+                    property.setInverseRole( klass.getName() + "." + property.getName() );
+                }
+            }
+            else if ( OneToOneType.class.isInstance( type ) )
+            {
+                property.setOneToOne( true );
             }
 
             if ( SingleColumnType.class.isInstance( type ) )

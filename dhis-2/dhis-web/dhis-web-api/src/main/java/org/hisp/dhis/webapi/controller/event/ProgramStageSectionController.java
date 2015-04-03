@@ -1,4 +1,4 @@
-package org.hisp.dhis.common;
+package org.hisp.dhis.webapi.controller.event;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -28,43 +28,18 @@ package org.hisp.dhis.common;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.util.Date;
-
-import org.hisp.dhis.analytics.EventOutputType;
-import org.hisp.dhis.dataelement.DataElement;
-import org.hisp.dhis.program.Program;
-import org.hisp.dhis.program.ProgramStage;
-import org.hisp.dhis.trackedentity.TrackedEntityAttribute;
+import org.hisp.dhis.program.ProgramStageSection;
+import org.hisp.dhis.schema.descriptors.ProgramStageSectionSchemaDescriptor;
+import org.hisp.dhis.webapi.controller.AbstractCrudController;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
- * @author Lars Helge Overland
+ * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
-public interface EventAnalyticalObject
-    extends AnalyticalObject
+@Controller
+@RequestMapping( value = ProgramStageSectionSchemaDescriptor.API_ENDPOINT )
+public class ProgramStageSectionController
+    extends AbstractCrudController<ProgramStageSection>
 {
-    Program getProgram();
-    
-    ProgramStage getProgramStage();
-    
-    Date getStartDate();
-    
-    Date getEndDate();
-    
-    EventOutputType getOutputType();
-    
-    NameableObject getValue();
-    
-    boolean isCollapseDataDimensions();
-
-    // -------------------------------------------------------------------------
-    // Base class emulation methods
-    // -------------------------------------------------------------------------
-    
-    DataElement getDataElementValueDimension();
-
-    void setDataElementValueDimension( DataElement dataElementValueDimension );
-
-    TrackedEntityAttribute getAttributeValueDimension();
-    
-    void setAttributeValueDimension( TrackedEntityAttribute attributeValueDimension );   
 }

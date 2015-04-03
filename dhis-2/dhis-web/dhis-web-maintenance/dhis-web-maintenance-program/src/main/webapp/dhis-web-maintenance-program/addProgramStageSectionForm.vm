@@ -8,6 +8,7 @@ jQuery( document ).ready( function()
 		'beforeValidateHandler' : function()
 		{
 			selectAllById('dataElementIds');
+			selectAllById('selectedIndicators');
 			if(jQuery("#dataElementIds option").length > 0 ){
 				setFieldValue('dataElementList', 'true');
 			}
@@ -29,7 +30,7 @@ jQuery( document ).ready( function()
 <input type="hidden" id="programStageId" name="programStageId" value="$programStage.id"/>
 <table>
 	<thead>
-		<tr><th colspan="2">$i18n.getString( "program_stage_details" )</th></tr>
+		<tr><th colspan="2">$i18n.getString( "section_details" )</th></tr>
 	</thead>
 	<tbody>
 		<tr>

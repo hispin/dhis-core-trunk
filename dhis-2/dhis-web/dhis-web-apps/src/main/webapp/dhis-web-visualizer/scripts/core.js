@@ -855,6 +855,8 @@ Ext.onReady( function() {
 
                 // sortOrder: number
 
+                // aggregationType: string ('DEFAULT') - 'DEFAULT', 'COUNT', 'SUM', 'STDDEV', 'VARIANCE', 'MIN', 'MAX'
+
                 // rangeAxisMaxValue: number
 
                 // rangeAxisMinValue: number
@@ -1101,6 +1103,7 @@ Ext.onReady( function() {
                     layout.baseLineTitle = Ext.isString(config.baseLineLabel) && !Ext.isEmpty(config.baseLineLabel) ? config.baseLineLabel :
                         (Ext.isString(config.baseLineTitle) && !Ext.isEmpty(config.baseLineTitle) ? config.baseLineTitle : null);
                     layout.sortOrder = Ext.isNumber(config.sortOrder) ? config.sortOrder : 0;
+                    layout.aggregationType = Ext.isString(config.aggregationType) ? config.aggregationType : 'DEFAULT';
 
 					layout.rangeAxisMaxValue = Ext.isNumber(config.rangeAxisMaxValue) ? config.rangeAxisMaxValue : null;
 					layout.rangeAxisMinValue = Ext.isNumber(config.rangeAxisMinValue) ? config.rangeAxisMinValue : null;
@@ -1199,7 +1202,7 @@ Ext.onReady( function() {
 					}
 
 					if (!(Ext.isArray(config.rows) && config.rows.length > 0)) {
-                        init.alert('No values found');
+                        alert('No values found');
 						return;
 					}
 
@@ -1917,6 +1920,10 @@ Ext.onReady( function() {
 					delete layout.legend;
 				}
 
+				if (layout.aggregationType === 'DEFAULT') {
+					delete layout.aggregationType;
+				}
+
                 // default true
 
 				if (layout.showValues) {
@@ -2171,7 +2178,15 @@ Ext.onReady( function() {
                     paramString = '?',
                     addCategoryDimension = false,
                     map = xLayout.dimensionNameItemsMap,
-                    dx = dimConf.indicator.dimensionName;
+                    dx = dimConf.indicator.dimensionName,
+                    aggTypes = {
+                        'count': 'COUNT',
+                        'sum': 'SUM',
+                        'stddev': 'STDDEV',
+                        'variance': 'VARIANCE',
+                        'min': 'MIN',
+                        'max': 'MAX'
+                    };
 
                 for (var i = 0, dimName, items; i < axisDimensionNames.length; i++) {
                     dimName = axisDimensionNames[i];
@@ -2213,6 +2228,11 @@ Ext.onReady( function() {
                         paramString += '&filter=' + dim.dimensionName + ':' + dim.ids.join(';');
                     }
                 }
+
+				// aggregation type
+				if (xLayout.aggregationType) {
+					paramString += '&aggregationType=' + xLayout.aggregationType;
+				}
 
                 // display property
                 paramString += '&displayProperty=' + init.userAccount.settings.keyAnalysisDisplayProperty.toUpperCase();
