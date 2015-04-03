@@ -68,24 +68,31 @@ public class AbstractEventRowService
         Events events = eventService.getEvents( params );
 
         for ( Event event : events.getEvents() )
-        {
+        {       
+        	EventRow eventRow = new EventRow();
+        	
             if ( event.getTrackedEntityInstance() != null )
-            {
+            {            	
                 TrackedEntityInstance tei = trackedEntityInstanceService.getTrackedEntityInstance( event.getTrackedEntityInstance() );
-                
-                EventRow eventRow = new EventRow();
                 eventRow.setTrackedEntityInstance( event.getTrackedEntityInstance() );
                 eventRow.setAttributes( tei.getAttributes() );
-                eventRow.setEvent( event.getEvent() );
-                eventRow.setProgram( params.getProgram().getUid() );
-                eventRow.setProgramStage( event.getProgramStage() );                
                 eventRow.setRegistrationOrgUnit( tei.getOrgUnit() );
-                eventRow.setRegistrationDate( tei.getCreated() );
-                eventRow.setEventOrgUnitName( event.getOrgUnitName() );
-                eventRow.setDueDate( event.getDueDate() );
-                eventRow.setFollowup( event.getFollowup() );
-                eventRowList.add( eventRow );
+                eventRow.setRegistrationDate( tei.getCreated() );                
             }
+            
+            if ( event.getEvent() != null )
+            {            	
+            	Event ev = eventService.getEvent( event.getEvent() );
+            	eventRow.setDataValues( ev.getDataValues() );
+            }
+            
+            eventRow.setEvent( event.getEvent() );            
+            eventRow.setProgram( event.getProgram() );
+            eventRow.setProgramStage( event.getProgramStage() );            
+            eventRow.setEventOrgUnitName( event.getOrgUnitName() );
+            eventRow.setDueDate( event.getDueDate() );
+            eventRow.setFollowup( event.getFollowup() );
+            eventRowList.add( eventRow );
         }
 
         eventRows.setEventRows( eventRowList );

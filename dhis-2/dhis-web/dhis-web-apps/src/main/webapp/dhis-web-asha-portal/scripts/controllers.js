@@ -109,7 +109,7 @@ var trackerCaptureControllers = angular.module('trackerCaptureControllers', [])
         
         if (angular.isObject($scope.selectedOrgUnit)) {   
             
-            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram).then(function(response){
+            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram, 'ASHA').then(function(response){
                 $scope.programs = response.programs;
                 $scope.selectedProgram = response.selectedProgram;
                 

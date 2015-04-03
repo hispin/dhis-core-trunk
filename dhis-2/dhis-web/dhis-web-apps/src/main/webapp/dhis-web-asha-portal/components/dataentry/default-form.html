@@ -31,23 +31,33 @@
                             <span ng-show="dataEntryOuterForm.submitted && dataEntryInnerForm.foo.$invalid" class="error">{{'number_required'| translate}}</span>
                         </div>                        
                         <div ng-switch-when="string">
-                            <div ng-if="!prStDe.BeneficiaryRegistration">
-                                <div ng-if="prStDe.dataElement.optionSet">
-                                    <div ng-if="!selectedProgram.dataEntryMethod || optionSets[prStDe.dataElement.optionSet.id].options.length >= 7">
-                                        <input type="text"
-                                            ng-class='getInputNotifcationClass(prStDe.dataElement.id,false)'
-                                            ng-model="currentEvent[prStDe.dataElement.id]" 
+                            <div ng-if="prStDe.dataElement.optionSet">
+                                <div ng-if="!selectedProgram.dataEntryMethod || optionSets[prStDe.dataElement.optionSet.id].options.length >= 7">
+                                    <input type="text"
+                                        ng-class='getInputNotifcationClass(prStDe.dataElement.id,false)'
+                                        ng-model="currentEvent[prStDe.dataElement.id]" 
+                                        ng-required={{prStDe.compulsory}} 
+                                        ng-disabled="selectedEnrollment.status !== 'ACTIVE' || currentEvent.editingNotAllowed" 
+                                        typeahead="option.name as option.name for option in optionSets[prStDe.dataElement.optionSet.id].options | filter:$viewValue | limitTo:20" 
+                                        typeahead-open-on-focus 
+                                        typeahead-editable="false"
+                                        ng-blur="saveDatavalue(prStDe)" 
+                                        name="foo"/>
+                                    <span ng-show="dataEntryOuterForm.submitted && dataEntryInnerForm.foo.$invalid || !currentEvent[prStDe.dataElement.id] && currentElement.id === prStDe.dataElement.id" class="error">{{'invalid'| translate}}</span>
+                                </div>
+                                <div ng-if="selectedProgram.dataEntryMethod && optionSets[prStDe.dataElement.optionSet.id].options.length < 7">
+                                    <label>                                        
+                                        <input type="radio"
+                                            ng-class='getInputNotifcationClass(prStDe.dataElement.id,true)'
+                                            name={{currentEvent[prStDe.dataElement.id]}}
                                             ng-required={{prStDe.compulsory}} 
                                             ng-disabled="selectedEnrollment.status !== 'ACTIVE' || currentEvent.editingNotAllowed" 
-                                            typeahead="option.name as option.name for option in optionSets[prStDe.dataElement.optionSet.id].options | filter:$viewValue | limitTo:20" 
-                                            typeahead-open-on-focus 
-                                            typeahead-editable="false"
-                                            ng-blur="saveDatavalue(prStDe)" 
-                                            name="foo"/>
-                                        <span ng-show="dataEntryOuterForm.submitted && dataEntryInnerForm.foo.$invalid || !currentEvent[prStDe.dataElement.id] && currentElement.id === prStDe.dataElement.id" class="error">{{'invalid'| translate}}</span>
-                                    </div>
-                                    <div ng-if="selectedProgram.dataEntryMethod && optionSets[prStDe.dataElement.optionSet.id].options.length < 7">
-                                        <label>                                        
+                                            ng-model="currentEvent[prStDe.dataElement.id]"
+                                            ng-change="saveDatavalue(prStDe)" 
+                                            value=""> {{'no_value' | translate}}<br>                                       
+                                    </label><br>
+                                    <span ng-repeat="option in optionSets[prStDe.dataElement.optionSet.id].options">
+                                        <label>
                                             <input type="radio"
                                                 ng-class='getInputNotifcationClass(prStDe.dataElement.id,true)'
                                                 name={{currentEvent[prStDe.dataElement.id]}}
@@ -55,35 +65,20 @@
                                                 ng-disabled="selectedEnrollment.status !== 'ACTIVE' || currentEvent.editingNotAllowed" 
                                                 ng-model="currentEvent[prStDe.dataElement.id]"
                                                 ng-change="saveDatavalue(prStDe)" 
-                                                value=""> {{'no_value' | translate}}<br>                                       
+                                                value={{option.name}}> {{option.name}}
                                         </label><br>
-                                        <span ng-repeat="option in optionSets[prStDe.dataElement.optionSet.id].options">
-                                            <label>
-                                                <input type="radio"
-                                                    ng-class='getInputNotifcationClass(prStDe.dataElement.id,true)'
-                                                    name={{currentEvent[prStDe.dataElement.id]}}
-                                                    ng-required={{prStDe.compulsory}} 
-                                                    ng-disabled="selectedEnrollment.status !== 'ACTIVE' || currentEvent.editingNotAllowed" 
-                                                    ng-model="currentEvent[prStDe.dataElement.id]"
-                                                    ng-change="saveDatavalue(prStDe)" 
-                                                    value={{option.name}}> {{option.name}}
-                                            </label><br>
-                                        </span>
-                                    </div>                                    
-                                </div>
-                                <div ng-if="!prStDe.dataElement.optionSet">
-                                    <input type="text"
-                                        ng-class='getInputNotifcationClass(prStDe.dataElement.id,false)'
-                                        ng-model="currentEvent[prStDe.dataElement.id]" 
-                                        ng-required={{prStDe.compulsory}} 
-                                        ng-disabled="selectedEnrollment.status !== 'ACTIVE' || currentEvent.editingNotAllowed" 
-                                        ng-blur="saveDatavalue(prStDe)" 
-                                        name="foo"/>
-                                </div>
+                                    </span>
+                                </div>                                    
                             </div>
-                            <div ng-if="prStDe.BeneficiaryRegistration">
-                                <div ng-include="'components/beneficiary-registration/default-form.html'"></div>
-                            </div>                            
+                            <div ng-if="!prStDe.dataElement.optionSet">
+                                <input type="text"
+                                    ng-class='getInputNotifcationClass(prStDe.dataElement.id,false)'
+                                    ng-model="currentEvent[prStDe.dataElement.id]" 
+                                    ng-required={{prStDe.compulsory}} 
+                                    ng-disabled="selectedEnrollment.status !== 'ACTIVE' || currentEvent.editingNotAllowed" 
+                                    ng-blur="saveDatavalue(prStDe)" 
+                                    name="foo"/>
+                            </div>                                                       
                         </div>
                         <div ng-switch-when="bool">
                             <select ng-class='getInputNotifcationClass(prStDe.dataElement.id,false)'

@@ -20,7 +20,7 @@
                             ng-options="program as program.name for program in programs | orderBy: 'name'" 
                             ng-disabled="programs.length < 1 || (selectedProgramForRelative && selectedProgram.relatedProgram && relatedProgramRelationship)"
                             ng-change="setAttributesForSearch(selectedProgramForRelative)">
-                        <option value="">{{programs.length > 0 ? 'please_select_a_program' : 'no_program_exists' | translate}}</option>
+                        <option value="">{{programs.length > 0 ? 'please_select_program' : 'no_program_exists' | translate}}</option>
                     </select>                    
                 </td>
             </tr>

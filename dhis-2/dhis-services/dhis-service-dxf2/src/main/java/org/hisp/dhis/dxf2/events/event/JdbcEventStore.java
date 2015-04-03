@@ -79,7 +79,7 @@ public class JdbcEventStore
         String sql = buildSql( params, organisationUnits );
         
         SqlRowSet rowSet = jdbcTemplate.queryForRowSet( sql );
-
+        
         log.debug( "Event query SQL: " + sql );
 
         Event event = new Event();
@@ -322,6 +322,17 @@ public class JdbcEventStore
                 sql += "and psi.status = '" + params.getEventStatus().name() + "' ";
             }
         }
+
+        if ( params.getQueryDataElement() != null )
+        {            
+            sql += hlp.whereAnd() + " de.uid = '" + params.getQueryDataElement() + "' ";
+        }
+
+        if ( params.getQueryDataValue() != null )
+        {
+        	sql += hlp.whereAnd() + " pdv.value = '" + params.getQueryDataValue() + "' ";
+        }
+
 
         sql += " order by psi.lastupdated desc ";
 

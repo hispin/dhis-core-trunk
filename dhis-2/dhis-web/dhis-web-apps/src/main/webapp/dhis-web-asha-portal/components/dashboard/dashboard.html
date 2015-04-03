@@ -12,7 +12,7 @@
                 ng-options="program as program.name for program in programs | orderBy: 'name'" 
                 ng-disabled="programs.length < 1"
                 ng-change="applySelectedProgram()">
-            <option value="">{{programs.length > 0 ? 'please_select_a_program' : 'no_program_exists' | translate}}</option>
+            <option value="">{{programs.length > 0 ? 'please_select_program' : 'no_program_exists' | translate}}</option>
         </select>
 
         <div class="pull-right">

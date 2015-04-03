@@ -1,0 +1,103 @@
+<div class="modal-header page">
+    <h3>{{'adding_new_service'| translate}}</h3>
+</div>
+<div class="modal-body page">
+    <!-- beneficiary details begins -->
+    <table class="table table-striped dhis2-table-hover table-bordered">               
+        <thead>                        
+            <tr>
+                <th ng-repeat="gridColumn in gridColumns| filter:{show: true}">                            
+                    {{gridColumn.name}}                           
+                </th>                                    
+            </tr>
+        </thead>
+        <tbody id="list">
+            <tr>
+                <td ng-repeat="gridColumn in gridColumns| filter:{show: true}">
+                    <span ng-switch="gridColumn.valueType">
+                        <span ng-switch-when="bool">
+                            <span ng-if="selectedBeneficiary[gridColumn.id] === 'true'">{{'yes'| translate}}</span>
+                            <span ng-if="selectedBeneficiary[gridColumn.id] === 'false'">{{ 'no' | translate}}</span>
+                        </span>
+                        <span ng-switch-when="trueOnly">
+                            <span ng-if="selectedBeneficiary[gridColumn.id] === 'true'"><i class="fa fa-check"></i></span>
+                        </span>
+                        <span ng-switch-default>{{selectedBeneficiary[gridColumn.id]}}</span>
+                    </span>                            
+                </td>
+            </tr>
+        </tbody>        
+    </table>
+    <!-- beneficiary details ends -->
+
+    <!-- service provision form begins -->
+    <div class="row">
+        <div class="col-sm-4">
+            <select ng-model="selectedBeneficiaryProgram"
+                    class="form-control-program"
+                    ng-options="program as program.name for program in beneficiaryPrograms | orderBy: 'name'" 
+                    ng-disabled="beneficiaryPrograms.length < 1">
+                <option value="">{{beneficiaryPrograms.length > 0 ? 'please_select_program' : 'no_program_exists'| translate}}</option>
+            </select>
+        </div>
+        <div class="col-sm-4">
+            <select ng-model="selectedBeneficiaryProgram"
+                    class="form-control-program"
+                    ng-options="stage as stage.name for stage in selectedBeneficiaryProgram.programStages | orderBy: 'name' | filter: {}" 
+                    ng-disabled="!selectedBeneficiaryProgram">
+                <option value="">{{beneficiaryPrograms.length > 0 ? 'please_select_service' : 'no_service_exists'| translate}}</option>
+            </select>
+        </div>
+        <div class="col-sm-4 pull-right">
+
+        </div>
+    </div>
+    <!--<form name="eventCreationForm" class="form-horizontal" role="form" novalidate>
+        <div ng-if="!selectedStage.periodType">
+            <div class="form-group">
+                <label class="col-sm-2 control-label">{{'due_date'| translate}}</label>
+                <div class="col-sm-10">
+                    <input type="text" 
+                           class="form-control" 
+                           name="dueDate"
+                           placeholder="{{dhis2CalendarFormat.keyDateFormat}}" 
+                           ng-rquired="true" 
+                           d2-date
+                           ng-model="dhis2Event.dueDate">
+                    <span ng-if="dueDateInvalid" class="error">{{'required'| translate}}</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">{{dhis2Event.reportDateDescription}}</label>
+                <div class="col-sm-10">
+                    <input type="text" 
+                           class="form-control" 
+                           name="eventDate"
+                           placeholder="{{dhis2CalendarFormat.keyDateFormat}}" 
+                           ng-rquired="false" 
+                           d2-date
+                           ng-model="dhis2Event.eventDate">
+                    <span ng-if="eventDateInvalid" class="error">{{'required'| translate}}</span>
+                </div>
+            </div>
+        </div>
+        <div ng-if="selectedStage.periodType">
+            <div class="form-group">
+                <label class="control-label">
+                    {{'period'| translate}}
+                </label>                
+                <select class="form-control-program" 
+                        ng-model="dhis2Event.selectedPeriod"
+                        ng-options="period.name for period in dhis2Event.periods">
+                </select>                
+                <button ng-disabled="true" type="button" class="btn btn-default small-horizonal-spacing trim" ng-click="fetchPeriod('PREV')" title="{{'prev_period'| translate}}"><i class="fa fa-backward"></i></button>        
+                <button ng-disabled="true" type="button" class="btn btn-default small-horizonal-spacing trim" ng-click="fetchPeriod('NEXT')" title="{{'nxt_period'| translate}}"><i class="fa fa-forward"></i></button>        
+        
+            </div>            
+        </div>
+    </form>-->  
+</div>
+<div class="modal-footer page">        
+    <button class="btn btn-primary" data-ng-click="save()">{{'save'| translate}}</button>
+    <button class="btn btn-default" data-ng-click="cancel()">{{'cancel'| translate}}</button>
+</div>

@@ -155,7 +155,7 @@ public class EventController
         WebOptions options = new WebOptions( parameters );
 
         EventSearchParams params = eventService.getFromUrl( program, programStage, programStatus, followUp, orgUnit, ouMode, 
-            trackedEntityInstance, startDate, endDate, status, lastUpdated, idSchemes, page, pageSize );
+            trackedEntityInstance, startDate, endDate, status, null, null, lastUpdated, idSchemes, page, pageSize );
         
         Events events = eventService.getEvents( params );
 
@@ -209,7 +209,7 @@ public class EventController
         WebOptions options = new WebOptions( parameters );
 
         EventSearchParams params = eventService.getFromUrl( program, programStage, programStatus, followUp, orgUnit, ouMode, 
-            trackedEntityInstance, startDate, endDate, status, lastUpdated, idSchemes, page, pageSize );
+            trackedEntityInstance, startDate, endDate, status, null, null, lastUpdated, idSchemes, page, pageSize );
         
         Events events = eventService.getEvents( params );
 
@@ -252,14 +252,16 @@ public class EventController
         @RequestParam( required = false ) OrganisationUnitSelectionMode ouMode,
         @RequestParam( required = false ) ProgramStatus programStatus,
         @RequestParam( required = false ) EventStatus eventStatus,
+        @RequestParam( required = false ) String queryDataElement,
+        @RequestParam( required = false ) String queryDataValue,
         @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date startDate,
         @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date endDate,
         @RequestParam Map<String, String> parameters, Model model, HttpServletRequest request )
     {
         WebOptions options = new WebOptions( parameters );
-
+        
         EventSearchParams params = eventService.getFromUrl( program, null, programStatus, false, 
-            orgUnit, ouMode, null, startDate, endDate, null, null, null, null, null );
+            orgUnit, ouMode, null, startDate, endDate, null, queryDataElement, queryDataValue, null, null, null, null );
         
         EventRows eventRows = eventRowService.getEventRows( params );
 

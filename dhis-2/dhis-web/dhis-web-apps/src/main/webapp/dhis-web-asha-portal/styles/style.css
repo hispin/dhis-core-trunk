@@ -158,6 +158,12 @@ textarea {
     color: white;
 }
 
+.heading-title {
+    font-size: 16pt;
+    font-weight: normal;
+    color: #585D61;
+}
+
 div.paging a.active
 {
     text-decoration: none; 

@@ -8,7 +8,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 
 .factory('TCStorageService', function(){
     var store = new dhis2.storage.Store({
-        name: "dhis2tc",
+        name: "dhis2ap",
         adapters: [dhis2.storage.IndexedDBAdapter, dhis2.storage.DomSessionStorageAdapter, dhis2.storage.InMemoryAdapter],
         objectStores: ['programs', 'programStages', 'trackedEntities', 'trackedEntityForms', 'attributes', 'relationshipTypes', 'optionSets', 'programValidations', 'ouLevels']
     });
@@ -230,6 +230,21 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         return hasRole;        
     };
     
+    var programHasAttributeValue = function(program, attributeValue, attributeCode ){
+        if(!attributeValue){
+            return true;
+        }
+        
+        if(program.attributeValues){
+            for(var i=0; i<program.attributeValues.length; i++){
+                if(program.attributeValues[i].value === attributeValue && program.attributeValues[i].attribute && program.attributeValues[i].attribute.code === attributeCode){
+                    return true;
+                }
+            }
+        }        
+        return false;        
+    };    
+    
     return {        
         
         getAll: function(){
@@ -268,7 +283,30 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             });                        
             return def.promise;            
         },
-        getProgramsByOu: function(ou, selectedProgram){
+        getByAttributeValueCode: function( attributeValue, attributeCode ){
+            
+            var roles = SessionStorageService.get('USER_ROLES');
+            var userRoles = roles && roles.userCredentials && roles.userCredentials.userRoles ? roles.userCredentials.userRoles : [];
+            var ou = SessionStorageService.get('SELECTED_OU');
+            var def = $q.defer();
+            
+            TCStorageService.currentStore.open().done(function(){
+                TCStorageService.currentStore.getAll('programs').done(function(prs){
+                    var programs = [];
+                    angular.forEach(prs, function(pr){
+                        if(pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles) && programHasAttributeValue(pr, attributeValue, attributeCode)){
+                            programs.push(pr);
+                        }
+                    });
+                    $rootScope.$apply(function(){
+                        def.resolve(programs);
+                    });                      
+                });
+            });
+            
+            return def.promise;            
+        },        
+        getProgramsByOu: function(ou, selectedProgram, owner){
             var roles = SessionStorageService.get('USER_ROLES');
             var userRoles = roles && roles.userCredentials && roles.userCredentials.userRoles ? roles.userCredentials.userRoles : [];
             var def = $q.defer();
@@ -277,7 +315,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 TCStorageService.currentStore.getAll('programs').done(function(prs){
                     var programs = [];
                     angular.forEach(prs, function(pr){                            
-                        if(pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles)){
+                        if(pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles) && programHasAttributeValue(pr, owner, 'ProgramOwner')){
                             programs.push(pr);
                         }
                     });
@@ -307,17 +345,59 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                         def.resolve({programs: programs, selectedProgram: selectedProgram});
                     });                      
                 });
+            });            
+            return def.promise;
+        },
+        getBeneficairyPrograms: function(){            
+            var roles = SessionStorageService.get('USER_ROLES');
+            var userRoles = roles && roles.userCredentials && roles.userCredentials.userRoles ? roles.userCredentials.userRoles : [];
+            var ou = SessionStorageService.get('SELECTED_OU');
+            var def = $q.defer();
+            
+            TCStorageService.currentStore.open().done(function(){
+                TCStorageService.currentStore.getAll('programs').done(function(prs){
+                    var programs = [], commonBenProgram = null;
+                    
+                    angular.forEach(prs, function(pr){
+                        if(pr.organisationUnits.hasOwnProperty( ou.id ) && userHasValidRole(pr, userRoles) && programHasAttributeValue(pr, 'Beneficiary', 'ProgramOwner')){                            
+                            if(programHasAttributeValue(pr, 'true', 'CommonBeneficiaryProgram')){
+                                commonBenProgram = pr;
+                            }
+                            else{
+                                programs.push(pr);
+                            }                            
+                        }
+                    });
+                    $rootScope.$apply(function(){
+                        def.resolve({beneficiaryPrograms: programs, commonBenProgram: commonBenProgram});
+                    });                      
+                });
             });
             
-            return def.promise;
-        }          
+            return def.promise;            
+        }
     };
 })
 
 /* Factory to fetch programStages */
 .factory('ProgramStageFactory', function($q, $rootScope, TCStorageService) {  
     
-    return {        
+    return {     
+        
+        getAll: function(){
+            
+            var def = $q.defer();
+            
+            TCStorageService.currentStore.open().done(function(){
+                TCStorageService.currentStore.getAll('programStages').done(function(programStages){
+                    $rootScope.$apply(function(){
+                        def.resolve(programStages);
+                    });                    
+                });
+            });            
+            
+            return def.promise;            
+        },
         get: function(uid){            
             var def = $q.defer();
             TCStorageService.currentStore.open().done(function(){
@@ -1000,15 +1080,26 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 .factory('EventReportService', function($http, $q) {   
     
     return {        
-        getEventReport: function(orgUnit, ouMode, program, startDate, endDate, programStatus, eventStatus, pager){ 
+        getEventReport: function(orgUnit, ouMode, program, startDate, endDate, programStatus, eventStatus, dataElement, dataValue, pager){ 
             var pgSize = pager ? pager.pageSize : 50;
         	var pg = pager ? pager.page : 1;
             pgSize = pgSize > 1 ? pgSize  : 1;
             pg = pg > 1 ? pg : 1; 
-            var url = '../api/events/eventRows.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&program=' + program + '&programStatus=' + programStatus + '&eventStatus='+ eventStatus + '&pageSize=' + pgSize + '&page=' + pg;
-            if(startDate && endDate){
+            
+            var url = '../api/events/eventRows.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&programStatus=' + programStatus + '&eventStatus='+ eventStatus;
+            
+            if( program ){
+                url = url + + '&program=' + program;
+            }
+            if( startDate && endDate) {
                 url = url + '&startDate=' + startDate + '&endDate=' + endDate ;
             }
+            
+            if( dataElement && dataValue ){
+                url = url + '&queryDataElement=' + dataElement + '&queryDataValue=' + dataValue ;
+            }
+            
+            url = url + '&pageSize=' + pgSize + '&page=' + pg;
             var promise = $http.get( url ).then(function(response){
                 return response.data;
             });            
@@ -1169,6 +1260,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     this.dataElementIdsByCode = null;
     this.ruleMetadata = null;
     this.sortedTeiIds = [];
+    this.beneficiaryOwners = null;
     
     this.set = function(currentSelection){  
         this.currentSelection = currentSelection;        
@@ -1231,6 +1323,13 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };
     this.getSortedTeiIds = function(){
         return this.sortedTeiIds;
+    };
+    
+    this.setBeneficiaryOwners = function(beneficiaryOwners){
+        this.beneficiaryOwners = beneficiaryOwners;
+    };
+    this.getBeneficiaryOwners = function(){
+        return this.beneficiaryOwners;
     };
 })
 
@@ -1578,17 +1677,17 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 .service('AshaPortalUtils', function(){   
     return {
         //check for beneficiary registration
-        processForBeneficiaryRegistration: function(prStDe){            
-            if(prStDe.dataElement.attributeValues){
-                for(var i=0; i<prStDe.dataElement.attributeValues.length; i++){
-                    if(prStDe.dataElement.attributeValues[i].value === 'true' && prStDe.dataElement.attributeValues[i].attribute && prStDe.dataElement.attributeValues[i].attribute.code === 'BeneficiaryRegistration'){
-                        prStDe.BeneficiaryRegistration = true;
+        processForBeneficiaryRegistration: function(stage){            
+            if(stage.attributeValues){
+                for(var i=0; i<stage.attributeValues.length; i++){
+                    if(stage.attributeValues[i].value === 'true' && stage.attributeValues[i].attribute && stage.attributeValues[i].attribute.code === 'BeneficiaryRegistration'){
+                        stage.BeneficiaryRegistration = true;
                         break;
                     }
                 }
             }
             
-            return prStDe;
+            return stage;
         }
     };
 });

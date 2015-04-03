@@ -35,6 +35,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 import org.hisp.dhis.common.BaseLinkableObject;
 import org.hisp.dhis.common.DxfNamespaces;
+import org.hisp.dhis.dxf2.events.event.DataValue;
 import org.hisp.dhis.dxf2.events.event.Note;
 import org.hisp.dhis.dxf2.events.trackedentity.Attribute;
 
@@ -53,6 +54,8 @@ public class EventRow
     private String trackedEntityInstance;
     
     private List<Attribute> attributes = new ArrayList<>();
+    
+    private List<DataValue> dataValues = new ArrayList<>();
     
     private String event;
     
@@ -102,7 +105,19 @@ public class EventRow
     public void setAttributes( List<Attribute> attributes )
     {
         this.attributes = attributes;
-    }    
+    }
+    
+    @JsonProperty
+    @JacksonXmlProperty( isAttribute = true )
+    public List<DataValue> getDataValues()
+    {
+        return dataValues;
+    }
+
+    public void setDataValues( List<DataValue> dataValues )
+    {
+        this.dataValues = dataValues;
+    }
 
     @JsonProperty
     @JacksonXmlProperty( isAttribute = true )

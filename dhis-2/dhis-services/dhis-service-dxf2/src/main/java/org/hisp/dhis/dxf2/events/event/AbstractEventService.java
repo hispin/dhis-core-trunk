@@ -433,7 +433,7 @@ public abstract class AbstractEventService
     @Override
     public EventSearchParams getFromUrl( String program, String programStage, ProgramStatus programStatus, Boolean followUp, String orgUnit,
         OrganisationUnitSelectionMode orgUnitSelectionMode, String trackedEntityInstance, Date startDate, Date endDate, 
-        EventStatus status, Date lastUpdated, IdSchemes idSchemes, Integer page, Integer pageSize )
+        EventStatus status, String queryDataElement, String queryDataValue, Date lastUpdated, IdSchemes idSchemes, Integer page, Integer pageSize )
     {
         EventSearchParams params = new EventSearchParams();
 
@@ -470,6 +470,8 @@ public abstract class AbstractEventService
         params.setOrgUnit( ou );
         params.setTrackedEntityInstance( tei );
         params.setProgramStatus( programStatus );
+        params.setQueryDataElement( queryDataElement );
+        params.setQueryDataValue( queryDataValue );
         params.setFollowUp( followUp );
         params.setOrgUnitSelectionMode( orgUnitSelectionMode );
         params.setStartDate( startDate );

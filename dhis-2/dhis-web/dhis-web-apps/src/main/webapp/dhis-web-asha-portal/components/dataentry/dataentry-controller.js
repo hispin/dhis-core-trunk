@@ -1,12 +1,13 @@
 /* global angular, trackerCapture */
 
 trackerCapture.controller('DataEntryController',
-        function($scope,
+        function($rootScope,
+                $scope,
                 $modal,
                 $filter,
+                $timeout,
                 DateUtils,
                 EventUtils,
-                AshaPortalUtils,
                 orderByFilter,
                 SessionStorageService,
                 ProgramStageFactory,
@@ -65,13 +66,13 @@ trackerCapture.controller('DataEntryController',
         
         var selections = CurrentSelection.get();          
         $scope.selectedOrgUnit = SessionStorageService.get('SELECTED_OU');
-        $scope.selectedEntity = selections.tei;      
+        $scope.selectedTei = selections.tei;      
         $scope.selectedProgram = selections.pr;        
         $scope.selectedEnrollment = selections.selectedEnrollment;   
         $scope.optionSets = selections.optionSets;
         
         $scope.stagesById = [];        
-        if($scope.selectedOrgUnit && $scope.selectedProgram && $scope.selectedProgram.id && $scope.selectedEntity && $scope.selectedEnrollment && $scope.selectedEnrollment.enrollment){            
+        if($scope.selectedOrgUnit && $scope.selectedProgram && $scope.selectedProgram.id && $scope.selectedTei && $scope.selectedEnrollment && $scope.selectedEnrollment.enrollment){            
             ProgramStageFactory.getByProgram($scope.selectedProgram).then(function(stages){
                 $scope.programStages = stages;
                 angular.forEach(stages, function(stage){
@@ -89,7 +90,6 @@ trackerCapture.controller('DataEntryController',
                             $scope.prStDeMasterList[prStDe.dataElement.code] = prStDe;
                         }
                         
-                        prStDe = AshaPortalUtils.processForBeneficiaryRegistration(prStDe);
                         $scope.prStDes[prStDe.dataElement.id] = prStDe;
                     });
                     
@@ -102,7 +102,7 @@ trackerCapture.controller('DataEntryController',
     });
     
     $scope.getEvents = function(){
-        DHIS2EventFactory.getEventsByProgram($scope.selectedEntity.trackedEntityInstance, $scope.selectedProgram.id).then(function(events){
+        DHIS2EventFactory.getEventsByProgram($scope.selectedTei.trackedEntityInstance, $scope.selectedProgram.id).then(function(events){
             if(angular.isObject(events)){
                 angular.forEach(events, function(dhis2Event){                    
                     if(dhis2Event.enrollment === $scope.selectedEnrollment.enrollment && dhis2Event.orgUnit){
@@ -166,7 +166,7 @@ trackerCapture.controller('DataEntryController',
     
     $scope.showCreateEvent = function(stage){
         
-        var dummyEvent = EventUtils.createDummyEvent($scope.eventsByStage[stage.id], $scope.selectedEntity, $scope.selectedProgram, stage, $scope.selectedOrgUnit, $scope.selectedEnrollment);
+        var dummyEvent = EventUtils.createDummyEvent($scope.eventsByStage[stage.id], $scope.selectedTei, $scope.selectedProgram, stage, $scope.selectedOrgUnit, $scope.selectedEnrollment);
         
         var modalInstance = $modal.open({
             templateUrl: 'components/dataentry/new-event.html',
@@ -246,6 +246,14 @@ trackerCapture.controller('DataEntryController',
     $scope.getDataEntryForm = function(){
         
         $scope.currentStage = $scope.stagesById[$scope.currentEvent.programStage];
+        
+        if($scope.currentStage.BeneficiaryRegistration){
+            CurrentSelection.setBeneficiaryOwners({asha: $scope.selectedTei, period: $scope.currentPeriod[$scope.currentStage.id]});
+            $timeout(function() { 
+                $rootScope.$broadcast('beneficiaryRegistration', {});
+            }, 100);
+        }
+        
         
         angular.forEach($scope.currentStage.programStageSections, function(section){
             section.open = true;

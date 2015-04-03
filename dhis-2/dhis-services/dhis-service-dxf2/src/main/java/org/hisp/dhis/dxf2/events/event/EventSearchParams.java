@@ -64,6 +64,10 @@ public class EventSearchParams
     
     private EventStatus eventStatus;
     
+    private String queryDataElement;
+    
+    private String queryDataValue;
+    
     private Date lastUpdated;
     
     private IdSchemes idSchemes;
@@ -206,6 +210,26 @@ public class EventSearchParams
     public void setEventStatus( EventStatus eventStatus )
     {
         this.eventStatus = eventStatus;
+    }
+
+    public String getQueryDataElement()
+    {
+        return queryDataElement;
+    }
+    
+    public void setQueryDataElement( String queryDataElement )
+    {
+        this.queryDataElement = queryDataElement;
+    }
+
+    public String getQueryDataValue()
+    {
+        return queryDataValue;
+    }
+    
+    public void setQueryDataValue( String queryDataValue )
+    {
+        this.queryDataValue = queryDataValue;
     }
 
     public Date getLastUpdated()

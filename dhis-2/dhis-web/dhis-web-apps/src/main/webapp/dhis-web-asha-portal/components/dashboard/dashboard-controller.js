@@ -210,7 +210,7 @@ trackerCapture.controller('DashboardController',
                                     selectedEnrollment = enrollments[0];
                                 }
 
-                                ProgramFactory.getAll().then(function(programs){
+                                ProgramFactory.getByAttributeValueCode('ASHA', 'ProgramOwner').then(function(programs){
                                     $scope.programs = [];
 
                                     $scope.programNames = [];  

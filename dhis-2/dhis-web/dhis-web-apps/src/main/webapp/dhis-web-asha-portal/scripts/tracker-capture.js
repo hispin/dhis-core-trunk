@@ -27,7 +27,7 @@ if( dhis2.tc.memoryOnly ) {
 }
 
 dhis2.tc.store = new dhis2.storage.Store({
-    name: 'dhis2tc',
+    name: 'dhis2ap',
     adapters: [dhis2.storage.IndexedDBAdapter, dhis2.storage.DomSessionStorageAdapter, dhis2.storage.InMemoryAdapter],
     objectStores: ['programs', 'programStages', 'trackedEntities', 'trackedEntityForms', 'attributes', 'relationshipTypes', 'optionSets', 'programValidations', 'ouLevels']      
 });
@@ -254,7 +254,7 @@ function getMetaPrograms()
     $.ajax({
         url: '../api/programs.json',
         type: 'GET',
-        data:'filter=type:eq:1&paging=false&fields=id,version,programTrackedEntityAttributes[trackedEntityAttribute[id,optionSet[id,version]]],programStages[id,name,version,minDaysFromStart,standardInterval,periodType,generatedByEnrollmentDate,reportDateDescription,repeatable,autoGenerateEvent,openAfterEnrollment,reportDateToUse,programStageDataElements[dataElement[optionSet[id,version]]]]'
+        data:'paging=false&fields=id,type,version,programTrackedEntityAttributes[trackedEntityAttribute[id,optionSet[id,version]]],programStages[id,name,version,minDaysFromStart,standardInterval,periodType,generatedByEnrollmentDate,reportDateDescription,repeatable,autoGenerateEvent,openAfterEnrollment,reportDateToUse,programStageDataElements[dataElement[optionSet[id,version]]]]'
     }).done( function(response) {          
         var programs = [];
         _.each( _.values( response.programs ), function ( program ) { 
@@ -321,7 +321,7 @@ function getProgram( id )
         return $.ajax( {
             url: '../api/programs.json',
             type: 'GET',
-            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,type,version,dataEntryMethod,dateOfEnrollmentDescription,dateOfIncidentDescription,displayIncidentDate,ignoreOverdueEvents,selectEnrollmentDatesInFuture,selectIncidentDatesInFuture,onlyEnrollOnce,externalAccess,displayOnAllOrgunit,registration,relationshipText,relationshipFromA,relatedProgram[id,name],relationshipType[id,name],trackedEntity[id,name,description],userRoles[id,name],organisationUnits[id,name],userRoles[id,name],programStages[id,name,version,minDaysFromStart,standardInterval,periodType,generatedByEnrollmentDate,reportDateDescription,repeatable,autoGenerateEvent,openAfterEnrollment,reportDateToUse],programTrackedEntityAttributes[displayInList,mandatory,allowFutureDate,trackedEntityAttribute[id,unique]]'
+            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,type,version,dataEntryMethod,dateOfEnrollmentDescription,dateOfIncidentDescription,displayIncidentDate,ignoreOverdueEvents,selectEnrollmentDatesInFuture,selectIncidentDatesInFuture,onlyEnrollOnce,externalAccess,displayOnAllOrgunit,registration,relationshipText,relationshipFromA,relatedProgram[id,name],relationshipType[id,name],trackedEntity[id,name,description],userRoles[id,name],attributeValues[value,attribute[id,name,code]],organisationUnits[id,name],userRoles[id,name],programStages[id,name,version,minDaysFromStart,standardInterval,periodType,generatedByEnrollmentDate,reportDateDescription,repeatable,autoGenerateEvent,openAfterEnrollment,reportDateToUse],programTrackedEntityAttributes[displayInList,mandatory,allowFutureDate,trackedEntityAttribute[id,unique]]'
         }).done( function( response ){
             
             _.each( _.values( response.programs ), function ( program ) { 
@@ -344,9 +344,7 @@ function getProgram( id )
                 }                
 
                 program.userRoles = ur;
-
                 dhis2.tc.store.set( 'programs', program );
-
             });         
         });
     };
@@ -401,15 +399,46 @@ function getProgramStages( programs )
     return mainPromise;    
 }
 
-function getProgramStage( id )
+function processProgramStage( stage )
 {
+    if(!stage){
+        return;
+    }
+    
+    if(stage.attributeValues){
+        for(var i=0; i<stage.attributeValues.length; i++){
+            if(stage.attributeValues[i].value === 'true' && stage.attributeValues[i].attribute && stage.attributeValues[i].attribute.code){
+                stage[stage.attributeValues[i].attribute.code] = true;
+            }
+        }
+    }
+    
+    if(stage.programStageDataElements){
+        for(var i=0; i<stage.programStageDataElements.length; i++){
+            var prStDe = stage.programStageDataElements[i];
+            if(prStDe && prStDe.dataElement && prStDe.dataElement.attributeValues){
+                for(var j=0; j<prStDe.dataElement.attributeValues.length; j++){
+                    if(prStDe.dataElement.attributeValues[j].value === 'true' && prStDe.dataElement.attributeValues[j].attribute && prStDe.dataElement.attributeValues[j].attribute.code){
+                        prStDe.dataElement[prStDe.dataElement.attributeValues[j].attribute.code] = true;
+                    }
+                }
+            }            
+        }
+    }
+    
+    return stage;
+    
+}
+function getProgramStage( id )
+{    
     return function() {
         return $.ajax( {
             url: '../api/programStages.json',
             type: 'GET',
-            data: 'filter=id:eq:' + id +'&fields=id,name,sortOrder,version,dataEntryForm,captureCoordinates,blockEntryForm,autoGenerateEvent,allowGenerateNextVisit,generatedByEnrollmentDate,reportDateDescription,minDaysFromStart,repeatable,openAfterEnrollment,standardInterval,periodType,reportDateToUse,programStageSections[id,name,programStageDataElements[dataElement[id]]],programStageDataElements[displayInReports,allowProvidedElsewhere,allowFutureDate,compulsory,dataElement[id,code,name,formName,type,optionSet[id]]]'
+            data: 'filter=id:eq:' + id +'&fields=id,name,sortOrder,version,dataEntryForm,captureCoordinates,blockEntryForm,autoGenerateEvent,allowGenerateNextVisit,generatedByEnrollmentDate,reportDateDescription,minDaysFromStart,repeatable,openAfterEnrollment,standardInterval,periodType,reportDateToUse,attributeValues[value,attribute[id,name,code]],programStageSections[id,name,programStageDataElements[dataElement[id]]],programStageDataElements[displayInReports,allowProvidedElsewhere,allowFutureDate,compulsory,dataElement[id,code,name,formName,type,attributeValues[value,attribute[id,name,code]],optionSet[id]]]'
         }).done( function( response ){            
             _.each( _.values( response.programStages ), function( programStage ) {
+                programStage = processProgramStage( programStage );
                 dhis2.tc.store.set( 'programStages', programStage );
             });
         });

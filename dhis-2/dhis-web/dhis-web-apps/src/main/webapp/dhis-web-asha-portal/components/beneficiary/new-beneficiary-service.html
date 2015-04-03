@@ -1,0 +1,64 @@
+<h3>{{'adding_new_service'| translate}}</h3>
+
+
+<!-- beneficiary details begins -->
+<table class="table table-striped dhis2-table-hover table-bordered">               
+    <thead>                        
+        <tr>
+            <th ng-repeat="gridColumn in gridColumns| filter:{show: true}">                            
+                {{gridColumn.name}}                           
+            </th>                                    
+        </tr>
+    </thead>
+    <tbody id="list">
+        <tr>
+            <td ng-repeat="gridColumn in gridColumns| filter:{show: true}">
+                <span ng-switch="gridColumn.valueType">
+                    <span ng-switch-when="bool">
+                        <span ng-if="selectedBeneficiary[gridColumn.id] === 'true'">{{'yes'| translate}}</span>
+                        <span ng-if="selectedBeneficiary[gridColumn.id] === 'false'">{{ 'no' | translate}}</span>
+                    </span>
+                    <span ng-switch-when="trueOnly">
+                        <span ng-if="selectedBeneficiary[gridColumn.id] === 'true'"><i class="fa fa-check"></i></span>
+                    </span>
+                    <span ng-switch-default>{{selectedBeneficiary[gridColumn.id]}}</span>
+                </span>                            
+            </td>
+        </tr>
+    </tbody>        
+</table>
+<!-- beneficiary details ends -->
+
+<!-- service provision form begins -->
+<div class="row">
+    <div class="col-sm-4">
+        <select ng-model="selectedService.program"
+                class="form-control"
+                ng-options="program as program.name for program in beneficiaryPrograms | orderBy: 'name'" 
+                ng-disabled="beneficiaryPrograms.length < 1">
+            <option value="">{{beneficiaryPrograms.length > 0 ? 'please_select_program' : 'no_program_exists'| translate}}</option>
+        </select>
+    </div>
+    <div class="col-sm-4">
+        <select ng-model="selectedService.service"
+                class="form-control"
+                ng-options="stage as stage.name for stage in selectedService.program.programStages | orderBy: 'name' | filter: {}" 
+                ng-disabled="!selectedService.program">
+            <option value="">{{beneficiaryPrograms.length > 0 ? 'please_select_service' : 'no_service_exists'| translate}}</option>
+        </select>
+    </div>
+    <div class="col-sm-4">
+        <input type="text" 
+                class="form-control" 
+                name="dueDate"
+                placeholder="{{dhis2CalendarFormat.keyDateFormat}}" 
+                ng-rquired="true" 
+                d2-date
+                ng-model="selectedService.dueDate"
+                ng-disabled="!selectedService.service">
+         <span ng-if="dueDateInvalid" class="error">{{'required'| translate}}</span>
+    </div>
+</div>
+<button class="btn btn-primary" ng-click="addNewService()" ng-disabled="!selectedService.program || !selectedService.service || !selectedService.dueDate">{{'save'| translate}}</button>
+<button class="btn btn-default" ng-click="hideAddNewService()">{{'close'| translate}}</button>
+

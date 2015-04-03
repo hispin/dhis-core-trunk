@@ -1,0 +1,79 @@
+
+<div ng-controller="BeneficiaryController">
+
+    <div class="row vertical-spacing">
+
+        <!--beneficiary search/list/registration area begins-->
+        <div class='col-sm-4 bordered-div'>            
+            <h1 class="align-center">{{'beneficiary_list'| translate}}</h1>
+            <!--- search and registration menu ends -->
+            <div class="row">
+                
+                <!-- search and registration buttons begin -->
+                <div id="searchDropDownParent" class="col-sm-12 not-printable">
+                    <div class='input-group'>
+                        <input type="text" placeholder="{{'search_for_beneficiary'| translate}}" ng-model="searchText.value" class="form-control" d2-enter="search(searchMode.freeText)" ng-class="{true: 'invalid - input'} [!searchText && emptySearchText]" ng-disabled="showRegistrationDiv">
+                        <div class="input-group-btn">
+                            <button class="btn btn-default search-dropdown-button trim" type="button" title="{{'advanced_search'| translate}}" ng-click="showAdvancedSearch(false)"><i class="fa fa-caret-down"></i></button>
+                            <button class="btn btn-primary trim" type="button" title="{{'search'| translate}}" ng-disabled="showRegistrationDiv" ng-click="search(searchMode.freeText)"><i class="fa fa-search"></i></button>
+                            <button class="btn btn-default trim" type="button" title="{{'list_all'| translate}}" ng-disabled="showRegistrationDiv" ng-click="search(searchMode.listAll)"><i class="fa fa-list"></i></button>
+                            <button class="btn btn-success trim" type="button" title="{{'register'| translate}}" ng-disabled="showRegistrationDiv" ng-click="showRegistration()"><i class="fa fa-user-plus"></i></button>
+                        </div>
+                        <div ng-if="showSearchDiv" class='row col-sm-8'>
+                            <div ng-include="'components/relationship/search.html'"></div>     
+                            <span>&nbsp;</span>
+                        </div>
+                    </div>                    
+                </div>
+                <!-- search and registration buttons end -->
+                
+            </div>
+            <!--- search and registration menu ends -->
+
+            <!--- Error display for search begins -->
+            <div class="row" ng-if="emptySearchAttribute || !searchText && emptySearchText">
+                <div class="col-md-8 vertical-spacing">
+                    <div class="alert alert-warning">{{'search_input_required'| translate}}</div>         
+                </div>
+            </div>
+            <!--- Error display for search ends -->
+
+            <!--registration form begins -->
+            <div class="row" ng-if="showRegistrationDiv">
+                <div class="col-sm-12">
+                    <div ng-include="'components/beneficiary/default-registration-form.html'"></div>             
+                </div>
+                <div class="col-sm-12" ng-if="formEmpty && outerForm.submitted">
+                    <div class="alert alert-warning">{{'form_is_empty_fill_at_least_one'| translate}}</div> 
+                </div>
+            </div>
+            <!-- registration form ends -->
+            
+            <div class="row" ng-if="showTrackedEntityDiv">
+                <div class="col-sm-12" ng-include="'components/beneficiary/beneficiary-list.html'"></div>  
+            </div>
+
+        </div>
+        <!--beneficiary search/list/registration area ends-->
+
+        <!--beneficiary service registration area begins-->
+        <div class='col-sm-8 bordered-div'>
+            <h1 class="align-center">{{'services_provided'| translate}}</h1>
+            <div class="row" ng-if="servicesProvided.length > 0">
+                <div class="col-sm-12" ng-include="'components/beneficiary/provided-service-list.html'"></div>  
+            </div>
+            <div class='alert alert-warning' ng-if="!servicesProvided.length > 0 && !showAddNewServiceDiv">{{'no_service_provided'| translate}}</div>
+            <div class='vertical-spacing alert alert-info' ng-if="!showAddNewServiceDiv">{{'select_beneficiary_to_add_new_service'| translate}}</div>
+            <div class="row" ng-if="showAddNewServiceDiv">
+                <div class="col-sm-12" ng-include="'components/beneficiary/new-beneficiary-service.html'"></div> 
+            </div>                        
+        </div>
+        <!--beneficiary service registration area ends-->
+    </div>
+
+
+    <div class='row'>
+        &nbsp;
+    </div>
+
+</div>
