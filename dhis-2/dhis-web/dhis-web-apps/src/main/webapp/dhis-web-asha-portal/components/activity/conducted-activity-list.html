@@ -2,36 +2,34 @@
     <button type="button" class="btn btn-warning" ng-click="approveAll()">{{'approve_all'| translate}}</button>
     <button type="button" class="btn btn-danger" ng-click="rejectAll()">{{'reject_all'| translate}}</button>
 </div>
-<div class="vertical-spacing">
-    <div ng-repeat="program in activityPrograms" ng-if="(activitiesConducted | filter: {program: program.id}).length > 0">
-        <table class="listTable dhis2-table-striped-border vertical-spacing">
-            <thead>
-                <tr>
-                    <th class="active align-center" colspan="{{stagesById[program.programStages[0].id].programStageDataElements.length - 1}}">
-                        <h3 class="align-center bold">{{program.name}}</h3>
-                    </th>
-                </tr>            
-                <tr>
-                    <th class="active">
-                        {{'date' | translate}}
-                    </th>
-                    <th class="active" ng-repeat="prStDe in stagesById[program.programStages[0].id].programStageDataElements" 
-                        ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id">
-                        {{prStDe.dataElement.name}}
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr ng-repeat="activity in activitiesConducted | filter: {program: program.id}">
-                    <td>
-                        {{activity.eventDate}}
-                    </td>
-                    <td ng-repeat="prStDe in stagesById[program.programStages[0].id].programStageDataElements" 
-                        ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id">
-                        {{activity[prStDe.dataElement.id]}}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+<div ng-repeat="program in activityPrograms" ng-if="(activitiesConducted | filter: {program: program.id}).length > 0">
+    <table class="listTable dhis2-table-striped-border vertical-spacing">
+        <thead>
+            <tr>
+                <th class="active align-center" colspan="{{stagesById[program.programStages[0].id].programStageDataElements.length - 1}}">
+                    <h3 class="align-center bold">{{program.name}}</h3>
+                </th>
+            </tr>            
+            <tr>
+                <th class="active">
+                    {{'date'| translate}}
+                </th>
+                <th class="active" ng-repeat="prStDe in stagesById[program.programStages[0].id].programStageDataElements" 
+                    ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id">
+                    {{prStDe.dataElement.name}}
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="activity in activitiesConducted| filter: {program: program.id}">
+                <td>
+                    {{activity.eventDate}}
+                </td>
+                <td ng-repeat="prStDe in stagesById[program.programStages[0].id].programStageDataElements" 
+                    ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id">
+                    {{activity[prStDe.dataElement.id]}}
+                </td>
+            </tr>
+        </tbody>
+    </table>
 </div>

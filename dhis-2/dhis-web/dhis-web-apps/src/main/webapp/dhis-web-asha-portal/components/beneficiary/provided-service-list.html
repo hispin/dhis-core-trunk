@@ -11,12 +11,15 @@
             </th>
         </tr>                        
     </thead>
-    <tbody id="list">
-        <tr ng-repeat="serviceProvided in servicesProvided| orderBy:sortHeader:reverse | gridFilter:filterText:filterTypes"
-            title="{{'go_to_dashboard'| translate}}">
-            <td ng-show="gridColumn.show"                                            
-                ng-repeat="gridColumn in serviceGridColumns">                                                
-                {{serviceProvided[gridColumn.id]}}                                                
+    <tbody>        
+        <tr ng-repeat-end ng-repeat="serviceProvided in servicesProvided | orderBy:'program'">
+            <td ng-show="gridColumn.show" ng-repeat="gridColumn in serviceGridColumns">                                                
+                <span ng-if="gridColumn.id !== 'program'">
+                    {{serviceProvided[gridColumn.id]}}
+                </span>
+                <span ng-if="gridColumn.id === 'program'">
+                    {{beneficiaryProgramsById[serviceProvided.program].name}}
+                </span>
             </td>                                
         </tr>
     </tbody>        

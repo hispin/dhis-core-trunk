@@ -80,6 +80,8 @@ trackerCapture.controller('BeneficiaryController',
             if(response && response.beneficiaryPrograms && response.commonBenProgram){
                 $scope.beneficiaryPrograms = response.beneficiaryPrograms;
                 $scope.commonBeneficiaryProgram = response.commonBenProgram;
+                
+                $scope.beneficiaryPrograms = orderByFilter($scope.beneficiaryPrograms, '-id');
 
                 angular.forEach($scope.beneficiaryPrograms, function(pr){
                     $scope.beneficiaryProgramsById[pr.id] = pr;
@@ -137,6 +139,7 @@ trackerCapture.controller('BeneficiaryController',
                                 }
                             });
 
+                            $scope.serviceGridColumns.push({name: $translate('program'), id: 'program', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service'), id: 'serviceName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service_date'), id: 'serviceProvisionDate', type: 'date', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('approval_level'), id: $scope.dataElementForLatestApprovalLevel.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
@@ -172,7 +175,7 @@ trackerCapture.controller('BeneficiaryController',
     $scope.$on('beneficiaryRegistration', function(event, args){
         $scope.optionSets = args.optionSets;
         getOwnerDetails();
-    });
+    });    
     
     $scope.registerBeneficiary = function(destination){        
         
@@ -322,13 +325,10 @@ trackerCapture.controller('BeneficiaryController',
                     serviceProvided.programName = $scope.beneficiaryProgramsById[row.program].name; 
                 }
                 serviceProvided.serviceProvisionDate = DateUtils.formatFromApiToUser(row.dueDate);
-                serviceProvided.event = row.event;                               
-                serviceProvided.orgUnitName = row.eventOrgUnitName;                    
-                serviceProvided.followup = row.followup;
+                serviceProvided.event = row.event;
                 serviceProvided.program = row.program;
                 serviceProvided.programStage = row.programStage;
                 serviceProvided.trackedEntietyInstance = row.trackedEntityInstance;
-                serviceProvided.created = DateUtils.formatFromApiToUser(row.registrationDate);
                 
                 angular.forEach(row.dataValues, function(dv){
                     if(dv.dataElement && 
@@ -336,7 +336,7 @@ trackerCapture.controller('BeneficiaryController',
                             $scope.dataElementForServiceOwner && 
                             $scope.dataElementForServiceOwner.id && 
                             dv.dataElement !== $scope.dataElementForServiceOwner.id &&
-                            dv.dataElement !== $scope.dataElementForServiceProvision.id){                        
+                            dv.dataElement !== $scope.dataElementForPaymentSanctioned.id){                        
                         serviceProvided[dv.dataElement] = dv.value;                        
                     }                    
                 });                
@@ -347,7 +347,7 @@ trackerCapture.controller('BeneficiaryController',
 
             //sort services provided by their provision dates - this is default
             $scope.servicesProvided = orderByFilter($scope.servicesProvided, '-provisionDate');
-            $scope.servicesProvided.reverse();
+            //$scope.servicesProvided.reverse();
             
         });
     };
@@ -474,19 +474,19 @@ trackerCapture.controller('BeneficiaryController',
         $scope.beneficiaryEnrollments = [];
         $scope.beneficiaryEnrollmentsByProgram = [];
         $scope.selectedBeneficiary = selectedBeneficiary;
-        if($scope.selectedBeneficiary && $scope.selectedBeneficiary.id){
-            
-            EnrollmentService.getByEntity($scope.selectedBeneficiary.id).then(function(enrollments){
-                angular.forEach(enrollments, function(en){
-                    if($scope.programStageIds.indexOf( en.program ) !== -1){
+        console.log('the beneficiary is:  ', $scope.selectedBeneficiary);
+        
+        if($scope.selectedBeneficiary && $scope.selectedBeneficiary.id){            
+            EnrollmentService.getByEntity($scope.selectedBeneficiary.id).then(function(response){                
+                angular.forEach(response.enrollments, function(en){
+                    if($scope.beneficiaryProgramsById[en.program]){
                         if(en.status === 'ACTIVE'){
                             $scope.beneficiaryEnrollmentsByProgram[en.program] = en;
                             $scope.beneficiaryEnrollments.push(en);
                         }
                     }
                 });
-            });
-           
+            });           
             $scope.showAddNewServiceDiv = true;
         }
     };
@@ -509,9 +509,8 @@ trackerCapture.controller('BeneficiaryController',
             dhis2Event.program = $scope.selectedService.program.id;
             dhis2Event.programStage = $scope.selectedService.service.id;
             dhis2Event.orgUnit = $scope.selectedOrgUnit.id;
-            dhis2Event.status = 'ACTIVE';
-            dhis2Event.dueDate = $scope.selectedService.dueDate;
-            dhis2Event.eventDate = $scope.selectedService.dueDate;
+            dhis2Event.status = 'VISITED';
+            dhis2Event.dueDate = dhis2Event.eventDate = DateUtils.formatFromUserToApi($scope.selectedService.dueDate);
             dhis2Event.dataValues = [];
             $scope.selectedServiceStage = $scope.stagesById[$scope.selectedService.service.id];
             
@@ -520,20 +519,19 @@ trackerCapture.controller('BeneficiaryController',
                 if(prStDe.dataElement.ServiceOwner){
                     dhis2Event.dataValues.push({dataElement: prStDe.dataElement.id, value: $scope.ashaEvent});
                 }
-            }            
+            }
             
             $scope.selectedEnrollment = $scope.beneficiaryEnrollmentsByProgram[$scope.selectedService.program.id];
             if($scope.selectedEnrollment && $scope.selectedEnrollment.enrollment){
                 dhis2Event.enrollment = $scope.selectedEnrollment.enrollment;
                 var dhis2Events = {events: [dhis2Event]};
                 DHIS2EventFactory.create(dhis2Events).then(function(data){
-                    $scope.selectedService = {};
+                    appendNewService(data);
                 });
             }
             else{
                 $scope.selectedEnrollment = {};
-                $scope.selectedEnrollment.dateOfEnrollment = DateUtils.getToday();
-                $scope.selectedEnrollmentdateOfIncident = DateUtils.getToday();
+                $scope.selectedEnrollment.dateOfEnrollment = $scope.selectedEnrollment.dateOfIncident = DateUtils.formatFromUserToApi(DateUtils.getToday());
                 $scope.selectedEnrollment.trackedEntityInstance = $scope.selectedBeneficiary.id;
                 $scope.selectedEnrollment.program = $scope.selectedService.program.id;
                 $scope.selectedEnrollment.status = 'ACTIVE';
@@ -553,12 +551,42 @@ trackerCapture.controller('BeneficiaryController',
                         $scope.selectedEnrollment.enrollment = data.reference;
                         dhis2Event.enrollment = $scope.selectedEnrollment.enrollment;
                         var dhis2Events = {events: [dhis2Event]};
-                        DHIS2EventFactory.create(dhis2Events).then(function(data){
-                            $scope.selectedService = {};
+                        DHIS2EventFactory.create(dhis2Events).then(function(data){                            
+                            appendNewService(data);
                         });
                     }
                 });
             }
         }        
     };
+    
+    function appendNewService(obj){
+
+        if (obj.importSummaries[0].status === 'ERROR') {
+            var dialogOptions = {
+                headerText: 'service_registration_error',
+                bodyText: obj.importSummaries[0].description
+            };
+
+            DialogService.showDialog({}, dialogOptions);
+        }
+        else{
+            var newService = angular.copy($scope.selectedBeneficiary);
+            newService.serviceProvisionDate = $scope.selectedService.dueDate;
+            newService.event = obj.importSummaries[0].reference;
+            newService.program = $scope.selectedService.program.id;
+            newService.programStage = $scope.selectedService.service.id;
+            newService.serviceName = $scope.selectedService.service.name;
+            newService.programName = $scope.selectedService.program.name;
+            newService.trackedEntietyInstance = $scope.selectedBeneficiary.id;
+            
+            if( !$scope.servicesProvided ){
+                $scope.servicesProvided = [];
+            }
+            
+            $scope.servicesProvided.splice($scope.servicesProvided.length,0, newService);
+        }
+        
+        $scope.selectedService = {};
+    }
 });

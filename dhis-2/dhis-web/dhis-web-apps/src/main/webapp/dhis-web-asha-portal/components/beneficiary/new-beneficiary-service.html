@@ -54,6 +54,7 @@
                 placeholder="{{dhis2CalendarFormat.keyDateFormat}}" 
                 ng-rquired="true" 
                 d2-date
+                max-date="0"
                 ng-model="selectedService.dueDate"
                 ng-disabled="!selectedService.service">
          <span ng-if="dueDateInvalid" class="error">{{'required'| translate}}</span>
