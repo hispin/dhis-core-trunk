@@ -8,7 +8,7 @@
                     class="form-control"
                     ng-options="program as program.name for program in activityPrograms | orderBy: 'name'" 
                     ng-disabled="activityPrograms.length < 1">
-                <option value="">{{activityPrograms.length > 0 ? 'please_select_activity' : 'no_actvity_exists'| translate}}</option>
+                <option value="">{{activityPrograms.length > 0 ? 'please_select_activity' : 'no_actvity_program_exists'| translate}}</option>
             </select>
         </div>
         <button class="btn btn-primary trim small-horizonal-spacing" ng-click="addActivity()" ng-disabled="!selectedProgramStage.id">{{'save'| translate}}</button>
