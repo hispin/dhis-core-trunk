@@ -42,6 +42,7 @@ trackerCapture.controller('BeneficiaryController',
         $scope.attributesById = [];
         AttributesFactory.getAll().then(function(atts){
             angular.forEach(atts, function(att){
+                att.allowDataEntry = true;
                 $scope.attributesById[att.id] = att;
             });
             

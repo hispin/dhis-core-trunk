@@ -41,6 +41,7 @@ trackerCapture.controller('OverdueEventsController',
             $scope.attributes = [];  
             $scope.attributesById = [];
             angular.forEach(atts, function(att){
+                att.allowDataEntry = true;
                 $scope.attributesById[att.id] = att;
             });
             CurrentSelection.setAttributesById($scope.attributesById);

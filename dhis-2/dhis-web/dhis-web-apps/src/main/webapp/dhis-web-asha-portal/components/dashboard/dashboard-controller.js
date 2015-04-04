@@ -159,6 +159,7 @@ trackerCapture.controller('DashboardController',
                 $scope.attributesById = [];
                 $scope.attributeIdsByCode = [];
                 angular.forEach(atts, function(att){
+                    att.allowDataEntry = true;
                     $scope.attributesById[att.id] = att;
                     if(att.code){
                         $scope.attributeIdsByCode[att.code] = att.id;
