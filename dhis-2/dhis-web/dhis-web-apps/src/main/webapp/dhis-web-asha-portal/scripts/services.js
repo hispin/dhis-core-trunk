@@ -64,7 +64,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 })
 
 /* current selections */
-.service('PeriodService', function(DateUtils, CalendarService){
+.service('PeriodService', function(DateUtils, CalendarService, $filter){
     
     var calendarSetting = CalendarService.getSetting();    
     
@@ -78,7 +78,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };
     
     this.getPeriods = function(events, stage, enrollment){
-        
+     
         if(!stage){
             return;
         }
@@ -101,15 +101,20 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         else{
 
             var startDate = DateUtils.format( moment(referenceDate, calendarSetting.momentFormat).add(offset, 'days') );
-            var periodOffet = splitDate(DateUtils.getToday()).year - splitDate(startDate).year;
-
+            var periodOffset = splitDate(DateUtils.getToday()).year - splitDate(startDate).year;
+            var eventDateOffSet = moment(referenceDate, calendarSetting.momentFormat).add('d', offset)._d;
+            eventDateOffSet = $filter('date')(eventDateOffSet, calendarSetting.keyDateFormat);        
+            
             //generate availablePeriods
             var pt = new PeriodType();
-            var d2Periods = pt.get(stage.periodType).generatePeriods({offset: periodOffet, filterFuturePeriods: false, reversePeriods: false});
+            var d2Periods = pt.get(stage.periodType).generatePeriods({offset: periodOffset, filterFuturePeriods: false, reversePeriods: false});
             angular.forEach(d2Periods, function(p){
                 p.endDate = DateUtils.formatFromApiToUser(p.endDate);
                 p.startDate = DateUtils.formatFromApiToUser(p.startDate);
-                availablePeriods[p.endDate] = p;
+                
+                if(moment(p.endDate).isAfter(eventDateOffSet)){
+                    availablePeriods[p.endDate] = p;
+                }                
             });                
 
             //get occupied periods
@@ -1625,10 +1630,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                             };
                         if(stage.periodType){
                             var periods = getEventDuePeriod(null, stage, enrollment);
-                            newEvent.dueDate = DateUtils.formatFromUserToApi(periods[0].dueDate);;
+                            newEvent.dueDate = DateUtils.formatFromUserToApi(periods[0].endDate);;
                             newEvent.eventDate = newEvent.dueDate;
-                            //newEvent.periodName = periods[0].name;                            
-                            //newEvent.periods = periods;
                         }
                         else{
                             newEvent.dueDate = DateUtils.formatFromUserToApi(getEventDueDate(null,stage, enrollment));
