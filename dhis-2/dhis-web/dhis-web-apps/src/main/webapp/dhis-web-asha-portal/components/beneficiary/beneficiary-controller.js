@@ -397,7 +397,7 @@ trackerCapture.controller('BeneficiaryController',
                 return;
             }       
  
-            $scope.queryUrl = 'query=' + $scope.searchText.value;                     
+            $scope.queryUrl = 'query=LIKE:' + $scope.searchText.value;                     
         }
         
         if( $scope.selectedSearchMode === $scope.searchMode.attributeBased ){            
