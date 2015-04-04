@@ -19,7 +19,10 @@ trackerCapture.controller('BeneficiaryController',
                 DateUtils,
                 DialogService,
                 Paginator,
+                AshaPortalUtils,
                 CurrentSelection) {
+    
+    $scope.approvalAuthorityLevel = AshaPortalUtils.getApprovalAuthorityLevel();
     
     $scope.selectedService = {};
     
@@ -66,7 +69,8 @@ trackerCapture.controller('BeneficiaryController',
 
         $scope.selectedTei = {};
         $scope.tei = {};
-        var benOwners = CurrentSelection.getBenOrActOwners();        
+        
+        var benOwners = CurrentSelection.getBenOrActOwners();
         $scope.ashaDetails = benOwners.asha;
         $scope.ashaPeriod = benOwners.period.eventDate;
         $scope.ashaEvent = benOwners.period.event;
@@ -107,8 +111,8 @@ trackerCapture.controller('BeneficiaryController',
                             $scope.stages = [];
                             $scope.dataElementForServiceOwner = null;
                             $scope.dataElementForPaymentSanctioned = null;
-                            $scope.dataElementForLatestApprovalLevel = null;
-                            $scope.dataElementForLatestApprovalStatus = null;
+                            $scope.dataElementForCurrentApprovalLevel = null;
+                            $scope.dataElementForCurrentApprovalStatus = null;
                             angular.forEach(stages, function(stage){
                                 if($scope.programStageIds.indexOf( stage.id ) !== -1){                
                                     $scope.stages.push(stage);
@@ -119,8 +123,8 @@ trackerCapture.controller('BeneficiaryController',
                                      i<stage.programStageDataElements.length && 
                                      !$scope.dataElementForServiceOwner || 
                                      !$scope.dataElementForPaymentSanctioned ||
-                                     !$scope.dataElementForLatestApprovalLevel ||
-                                     !$scope.dataElementForLatestApprovalStatus; 
+                                     !$scope.dataElementForCurrentApprovalLevel ||
+                                     !$scope.dataElementForCurrentApprovalStatus; 
                                      i++){
                                     if( stage.programStageDataElements[i] && stage.programStageDataElements[i].dataElement ) {
 
@@ -131,10 +135,10 @@ trackerCapture.controller('BeneficiaryController',
                                             $scope.dataElementForServiceOwner = stage.programStageDataElements[i].dataElement;
                                         }                                    
                                         if( stage.programStageDataElements[i].dataElement.ApprovalLevel ){
-                                            $scope.dataElementForLatestApprovalLevel = stage.programStageDataElements[i].dataElement;
+                                            $scope.dataElementForCurrentApprovalLevel = stage.programStageDataElements[i].dataElement;
                                         }                                    
                                         if( stage.programStageDataElements[i].dataElement.ApprovalStatus ){
-                                            $scope.dataElementForLatestApprovalStatus = stage.programStageDataElements[i].dataElement;
+                                            $scope.dataElementForCurrentApprovalStatus = stage.programStageDataElements[i].dataElement;
                                         }
                                     }
                                 }
@@ -143,8 +147,8 @@ trackerCapture.controller('BeneficiaryController',
                             $scope.serviceGridColumns.push({name: $translate('program'), id: 'program', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service'), id: 'serviceName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service_date'), id: 'serviceProvisionDate', type: 'date', displayInListNoProgram: false, showFilter: false, show: true});
-                            $scope.serviceGridColumns.push({name: $translate('approval_level'), id: $scope.dataElementForLatestApprovalLevel.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
-                            $scope.serviceGridColumns.push({name: $translate('approval_status'), id: $scope.dataElementForLatestApprovalStatus.id, type: 'optionSet', displayInListNoProgram: false, showFilter: false, show: true});
+                            $scope.serviceGridColumns.push({name: $translate('approval_level'), id: $scope.dataElementForCurrentApprovalLevel.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
+                            $scope.serviceGridColumns.push({name: $translate('approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'optionSet', displayInListNoProgram: false, showFilter: false, show: true});
                             
                             $scope.search($scope.searchMode.listAll);
 
@@ -188,12 +192,11 @@ trackerCapture.controller('BeneficiaryController',
         
         if( !$scope.commonBeneficiaryProgram || !$scope.commonBeneficiaryProgram.id){
             var dialogOptions = {
-                headerText: 'program_not_defined',
+                headerText: 'invalid_db_configuration',
                 bodyText: 'common_beneficiary_program_undefined'
             };
 
             DialogService.showDialog({}, dialogOptions);
-            return false;
             return false;
         }
         
@@ -293,64 +296,79 @@ trackerCapture.controller('BeneficiaryController',
     
     $scope.getServicesProvided = function(){        
         $scope.servicesProvided = [];
-        EventReportService.getEventReport($scope.selectedOrgUnit.id, 
-                                          $scope.ouModes[1].name, 
-                                          null, 
-                                          null, 
-                                          null, 
-                                          'ACTIVE',
-                                          'VISITED', 
-                                          $scope.dataElementForServiceOwner && $scope.dataElementForServiceOwner.id ? $scope.dataElementForServiceOwner.id : null, 
-                                          $scope.ashaEvent,
-                                          $scope.pager).then(function(data){            
-            
-            if( data.pager ){
-                $scope.pager = data.pager;
-                $scope.pager.toolBarDisplay = 5;
+        
+        if($scope.dataElementForServiceOwner && $scope.dataElementForServiceOwner.id){
+            EventReportService.getEventReport($scope.selectedOrgUnit.id, 
+                                                $scope.ouModes[1].name, 
+                                                null, 
+                                                null, 
+                                                null, 
+                                                'ACTIVE',
+                                                'VISITED', 
+                                                $scope.dataElementForServiceOwner.id,
+                                                $scope.ashaEvent,
+                                                $scope.pager).then(function(data){            
 
-                Paginator.setPage($scope.pager.page);
-                Paginator.setPageCount($scope.pager.pageCount);
-                Paginator.setPageSize($scope.pager.pageSize);
-                Paginator.setItemCount($scope.pager.total);                    
-            }
+                  if( data.pager ){
+                      $scope.pager = data.pager;
+                      $scope.pager.toolBarDisplay = 5;
 
-            angular.forEach(data.eventRows, function(row){
-                var serviceProvided = {};                    
-                angular.forEach(row.attributes, function(att){
-                    var val = AttributesFactory.formatAttributeValue(att, $scope.attributesById, $scope.optionSets, 'USER');                        
-                    serviceProvided[att.attribute] = val;                        
-                });
+                      Paginator.setPage($scope.pager.page);
+                      Paginator.setPageCount($scope.pager.pageCount);
+                      Paginator.setPageSize($scope.pager.pageSize);
+                      Paginator.setItemCount($scope.pager.total);                    
+                  }
 
-                if($scope.stagesById[row.programStage] && $scope.beneficiaryProgramsById[row.program]){
-                    serviceProvided.serviceName = $scope.stagesById[row.programStage].name;
-                    serviceProvided.programName = $scope.beneficiaryProgramsById[row.program].name; 
-                }
-                serviceProvided.serviceProvisionDate = DateUtils.formatFromApiToUser(row.dueDate);
-                serviceProvided.event = row.event;
-                serviceProvided.program = row.program;
-                serviceProvided.programStage = row.programStage;
-                serviceProvided.trackedEntietyInstance = row.trackedEntityInstance;
-                
-                angular.forEach(row.dataValues, function(dv){
-                    if(dv.dataElement && 
-                            dv.value && 
-                            $scope.dataElementForServiceOwner && 
-                            $scope.dataElementForServiceOwner.id && 
-                            dv.dataElement !== $scope.dataElementForServiceOwner.id &&
-                            dv.dataElement !== $scope.dataElementForPaymentSanctioned.id){                        
-                        serviceProvided[dv.dataElement] = dv.value;                        
-                    }                    
-                });                
-                
-                $scope.servicesProvided.push(serviceProvided);
+                  angular.forEach(data.eventRows, function(row){
+                      var serviceProvided = {};                    
+                      angular.forEach(row.attributes, function(att){
+                          var val = AttributesFactory.formatAttributeValue(att, $scope.attributesById, $scope.optionSets, 'USER');                        
+                          serviceProvided[att.attribute] = val;                        
+                      });
 
-            });
+                      if($scope.stagesById[row.programStage] && $scope.beneficiaryProgramsById[row.program]){
+                          serviceProvided.serviceName = $scope.stagesById[row.programStage].name;
+                          serviceProvided.programName = $scope.beneficiaryProgramsById[row.program].name; 
+                      }
+                      serviceProvided.serviceProvisionDate = DateUtils.formatFromApiToUser(row.dueDate);
+                      serviceProvided.event = row.event;
+                      serviceProvided.program = row.program;
+                      serviceProvided.programStage = row.programStage;
+                      serviceProvided.trackedEntietyInstance = row.trackedEntityInstance;
 
-            //sort services provided by their provision dates - this is default
-            $scope.servicesProvided = orderByFilter($scope.servicesProvided, '-provisionDate');
-            //$scope.servicesProvided.reverse();
-            
-        });
+                      angular.forEach(row.dataValues, function(dv){
+                          if(dv.dataElement && 
+                                  dv.value && 
+                                  $scope.dataElementForServiceOwner && 
+                                  $scope.dataElementForServiceOwner.id && 
+                                  dv.dataElement !== $scope.dataElementForServiceOwner.id &&
+                                  dv.dataElement !== $scope.dataElementForPaymentSanctioned.id){                        
+                              serviceProvided[dv.dataElement] = dv.value;                        
+                          }                    
+                      });                
+
+                      $scope.servicesProvided.push(serviceProvided);
+
+                  });
+
+                  //sort services provided by their provision dates - this is default
+                  $scope.servicesProvided = orderByFilter($scope.servicesProvided, '-provisionDate');
+                  //$scope.servicesProvided.reverse();
+
+              });
+        }
+        else{
+            //invalid db configuration
+            var dialogOptions = {
+                    headerText: 'invalid_db_configuration',
+                    bodyText: $translate('stage_missing_service_owner_config')
+                };
+            DialogService.showDialog({}, dialogOptions);
+            $scope.enrollmentSuccess = false;
+            return;
+        }
+        
+        
     };
     
     $scope.search = function(mode){   
@@ -475,7 +493,6 @@ trackerCapture.controller('BeneficiaryController',
         $scope.beneficiaryEnrollments = [];
         $scope.beneficiaryEnrollmentsByProgram = [];
         $scope.selectedBeneficiary = selectedBeneficiary;
-        console.log('the beneficiary is:  ', $scope.selectedBeneficiary);
         
         if($scope.selectedBeneficiary && $scope.selectedBeneficiary.id){            
             EnrollmentService.getByEntity($scope.selectedBeneficiary.id).then(function(response){                

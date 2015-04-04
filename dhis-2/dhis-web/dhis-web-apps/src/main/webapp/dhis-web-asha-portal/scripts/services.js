@@ -10,7 +10,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     var store = new dhis2.storage.Store({
         name: "dhis2ap",
         adapters: [dhis2.storage.IndexedDBAdapter, dhis2.storage.DomSessionStorageAdapter, dhis2.storage.InMemoryAdapter],
-        objectStores: ['programs', 'programStages', 'trackedEntities', 'trackedEntityForms', 'attributes', 'relationshipTypes', 'optionSets', 'programValidations', 'ouLevels']
+        objectStores: ['dataSets', 'programs', 'programStages', 'trackedEntities', 'trackedEntityForms', 'attributes', 'relationshipTypes', 'optionSets', 'programValidations', 'ouLevels']
     });
     return{
         currentStore: store
@@ -1706,20 +1706,19 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };
 })
 
-.service('AshaPortalUtils', function(){   
+.service('AshaPortalUtils', function(SessionStorageService){   
     return {
         //check for beneficiary registration
-        processForBeneficiaryRegistration: function(stage){            
-            if(stage.attributeValues){
-                for(var i=0; i<stage.attributeValues.length; i++){
-                    if(stage.attributeValues[i].value === 'true' && stage.attributeValues[i].attribute && stage.attributeValues[i].attribute.code === 'BeneficiaryRegistration'){
-                        stage.BeneficiaryRegistration = true;
-                        break;
+        getApprovalAuthorityLevel: function(){
+            var roles = SessionStorageService.get('USER_ROLES');
+            if( roles && roles.attributeValues ){                
+                for(var i=0; i<roles.attributeValues.length; i++){
+                    if(dhis2.validation.isNumber(roles.attributeValues[i].value) && roles.attributeValues[i].attribute && roles.attributeValues[i].attribute.code === 'ApprovalAuthorityLevel'){
+                        return roles.attributeValues[i].value;
                     }
                 }
-            }
-            
-            return stage;
+            }            
+            return 0;
         }
     };
 });

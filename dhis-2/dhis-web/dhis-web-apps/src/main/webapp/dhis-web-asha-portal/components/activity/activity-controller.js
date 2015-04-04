@@ -2,6 +2,7 @@
 
 trackerCapture.controller('ActivityController',
         function($scope,
+                $translate,
                 orderByFilter,
                 ProgramFactory,
                 ProgramStageFactory,
@@ -13,8 +14,11 @@ trackerCapture.controller('ActivityController',
                 DateUtils,
                 DialogService,
                 Paginator,
+                AshaPortalUtils,
                 CurrentSelection) {
-                    
+    
+    $scope.approvalAuthorityLevel = AshaPortalUtils.getApprovalAuthorityLevel();
+    
     $scope.ouModes = [{name: 'SELECTED'}, {name: 'CHILDREN'}, {name: 'DESCENDANTS'}, {name: 'ACCESSIBLE'}];
     $scope.somethingToApprove = false;
     $scope.somethingToReject = false;
@@ -71,8 +75,8 @@ trackerCapture.controller('ActivityController',
                 $scope.stages = [];
                 $scope.dataElementForServiceOwner = null;
                 $scope.dataElementForPaymentSanctioned = null;
-                $scope.dataElementForLatestApprovalLevel = null;
-                $scope.dataElementForLatestApprovalStatus = null;
+                $scope.dataElementForCurrentApprovalLevel = null;
+                $scope.dataElementForCurrentApprovalStatus = null;
                 $scope.dataElementsByStage = [];
                 angular.forEach(stages, function(stage){
                     if($scope.programStageIds.indexOf( stage.id ) !== -1){                       
@@ -89,10 +93,10 @@ trackerCapture.controller('ActivityController',
                                     $scope.dataElementForServiceOwner = stage.programStageDataElements[i].dataElement;
                                 }                                    
                                 else if( stage.programStageDataElements[i].dataElement.ApprovalLevel ){
-                                    $scope.dataElementForLatestApprovalLevel = stage.programStageDataElements[i].dataElement;
+                                    $scope.dataElementForCurrentApprovalLevel = stage.programStageDataElements[i].dataElement;
                                 }                                    
                                 else if( stage.programStageDataElements[i].dataElement.ApprovalStatus ){
-                                    $scope.dataElementForLatestApprovalStatus = stage.programStageDataElements[i].dataElement;
+                                    $scope.dataElementForCurrentApprovalStatus = stage.programStageDataElements[i].dataElement;
                                 }
                                 else{
                                     stage.programStageDataElements[i].displayForDataEntry = true;
@@ -170,45 +174,58 @@ trackerCapture.controller('ActivityController',
     $scope.getActivitiesConducted = function(){
         $scope.activitiesFetched = false;
         $scope.activitiesConducted = [];
-        EventReportService.getEventReport($scope.selectedOrgUnit.id, 
+        
+        if($scope.dataElementForServiceOwner && $scope.dataElementForServiceOwner.id){
+            EventReportService.getEventReport($scope.selectedOrgUnit.id, 
                                           $scope.ouModes[1].name, 
                                           null, 
                                           null, 
                                           null, 
                                           'ACTIVE',
                                           'VISITED', 
-                                          $scope.dataElementForServiceOwner && $scope.dataElementForServiceOwner.id ? $scope.dataElementForServiceOwner.id : null, 
+                                          $scope.dataElementForServiceOwner.id,
                                           $scope.ashaEvent,
                                           $scope.pager).then(function(data){
                                               
-            if( data.pager ){
-                $scope.pager = data.pager;
-                $scope.pager.toolBarDisplay = 5;
+                if( data.pager ){
+                    $scope.pager = data.pager;
+                    $scope.pager.toolBarDisplay = 5;
 
-                Paginator.setPage($scope.pager.page);
-                Paginator.setPageCount($scope.pager.pageCount);
-                Paginator.setPageSize($scope.pager.pageSize);
-                Paginator.setItemCount($scope.pager.total);                    
-            }
+                    Paginator.setPage($scope.pager.page);
+                    Paginator.setPageCount($scope.pager.pageCount);
+                    Paginator.setPageSize($scope.pager.pageSize);
+                    Paginator.setItemCount($scope.pager.total);                    
+                }
 
-            angular.forEach(data.eventRows, function(row){
-                var activityConducted = {};
-                activityConducted.eventDate = DateUtils.formatFromApiToUser(row.dueDate);
-                activityConducted.event = row.event;
-                activityConducted.program = row.program;
-                activityConducted.programStage = row.programStage;
-                
-                angular.forEach(row.dataValues, function(dv){
-                    activityConducted[dv.dataElement] = dv.value;
+                angular.forEach(data.eventRows, function(row){
+                    var activityConducted = {};
+                    activityConducted.eventDate = DateUtils.formatFromApiToUser(row.dueDate);
+                    activityConducted.event = row.event;
+                    activityConducted.program = row.program;
+                    activityConducted.programStage = row.programStage;
+
+                    angular.forEach(row.dataValues, function(dv){
+                        activityConducted[dv.dataElement] = dv.value;
+                    });
+
+                    $scope.activitiesConducted.push(activityConducted);
                 });
-                
-                $scope.activitiesConducted.push(activityConducted);
-            });
 
-            //sort activities by their activity date
-            $scope.activitiesConducted = orderByFilter($scope.activitiesConducted, '-activityDate');
-            
-        });
+                //sort activities by their activity date
+                $scope.activitiesConducted = orderByFilter($scope.activitiesConducted, '-activityDate');
+
+            });
+        }
+        else{
+            //invalid db configuration
+            var dialogOptions = {
+                    headerText: 'invalid_db_configuration',
+                    bodyText: $translate('stage_missing_service_owner_config')
+                };
+            DialogService.showDialog({}, dialogOptions);
+            $scope.enrollmentSuccess = false;
+            return;
+        }        
     };
     
     $scope.cancel = function(){

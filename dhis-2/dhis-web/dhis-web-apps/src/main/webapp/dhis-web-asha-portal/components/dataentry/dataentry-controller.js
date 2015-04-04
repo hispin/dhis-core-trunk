@@ -14,6 +14,7 @@ trackerCapture.controller('DataEntryController',
                 DHIS2EventFactory,
                 OptionSetService,
                 ModalService,
+                DialogService,
                 CurrentSelection,
                 CustomFormService,
                 PeriodService) {
@@ -243,24 +244,40 @@ trackerCapture.controller('DataEntryController',
         $scope.displayCustomForm = !$scope.displayCustomForm;
     };
     
+    function notifyAshaController(mode){
+        if($scope.selectedTei && 
+                $scope.currentPeriod[$scope.currentStage.id] && 
+                $scope.currentPeriod[$scope.currentStage.id].event && 
+                $scope.currentPeriod[$scope.currentStage.id].eventDate){
+            
+           CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: $scope.currentPeriod[$scope.currentStage.id]}); 
+           
+           $timeout(function() { 
+                $rootScope.$broadcast(mode, {optionSets: $scope.optionSets});
+            }, 100);
+        }
+        else{
+            var dialogOptions = {
+                headerText: 'invalid_period',
+                bodyText: 'invalid_period_for_event' + $scope.currentPeriod[$scope.currentStage.id]
+            };
+
+            DialogService.showDialog({}, dialogOptions);
+            return false;
+        }
+    }
+    
     $scope.getDataEntryForm = function(){
         
         $scope.currentStage = $scope.stagesById[$scope.currentEvent.programStage];
         
         if($scope.currentStage.BeneficiaryRegistration){
-            CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: $scope.currentPeriod[$scope.currentStage.id]});
-            $timeout(function() { 
-                $rootScope.$broadcast('beneficiaryRegistration', {optionSets: $scope.optionSets});
-            }, 100);
+            notifyAshaController('beneficiaryRegistration');
         }
         
         if($scope.currentStage.ActivityRegistration){
-            CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: $scope.currentPeriod[$scope.currentStage.id]});
-            $timeout(function() { 
-                $rootScope.$broadcast('activityRegistration', {optionSets: $scope.optionSets});
-            }, 100);
-        }
-        
+            notifyAshaController('activityRegistration');
+        }        
         
         angular.forEach($scope.currentStage.programStageSections, function(section){
             section.open = true;

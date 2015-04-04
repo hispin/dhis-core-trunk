@@ -29,7 +29,7 @@ if( dhis2.tc.memoryOnly ) {
 dhis2.tc.store = new dhis2.storage.Store({
     name: 'dhis2ap',
     adapters: [dhis2.storage.IndexedDBAdapter, dhis2.storage.DomSessionStorageAdapter, dhis2.storage.InMemoryAdapter],
-    objectStores: ['programs', 'programStages', 'trackedEntities', 'trackedEntityForms', 'attributes', 'relationshipTypes', 'optionSets', 'programValidations', 'ouLevels']      
+    objectStores: ['dataSets', 'programs', 'programStages', 'trackedEntities', 'trackedEntityForms', 'attributes', 'relationshipTypes', 'optionSets', 'programValidations', 'ouLevels']      
 });
 
 (function($) {
@@ -133,6 +133,8 @@ function downloadMetaData()
     promise = promise.then( getCalendarSetting );
     promise = promise.then( getRelationships );       
     promise = promise.then( getTrackedEntities );
+    promise = promise.then( getMetaDataSets );
+    promise = promise.then( getDataSets );
     promise = promise.then( getMetaPrograms );     
     promise = promise.then( getPrograms );     
     promise = promise.then( getProgramStages );    
@@ -168,7 +170,7 @@ function getUserRoles()
     var def = $.Deferred();
 
     $.ajax({
-        url: '../api/me.json?fields=id,name,userCredentials[userRoles[id]]',
+        url: '../api/me.json?fields=id,name,attributeValues[value,attribute[id,code]],userCredentials[userRoles[id]]',
         type: 'GET'
     }).done(function(response) {
         SessionStorageService.set('USER_ROLES', response);
@@ -247,6 +249,90 @@ function getTrackedEntities()
     });    
 }
 
+function getMetaDataSets()
+{
+    var def = $.Deferred();
+
+    $.ajax({
+        url: '../api/dataSets.json',
+        type: 'GET',
+        data:'paging=false&fields=id,name'
+    }).done( function(response) {          
+        var dataSets = [];
+        _.each( _.values( response.dataSets ), function ( dataSet ) { 
+            dataSets.push( dataSet );
+        });
+        
+        def.resolve( dataSets );
+    }).fail(function(){
+        def.resolve( null );
+    });
+    
+    return def.promise(); 
+}
+
+function getDataSets( dataSets )
+{
+    if( !dataSets ){
+        return;
+    }
+    
+    var mainDef = $.Deferred();
+    var mainPromise = mainDef.promise();
+
+    var def = $.Deferred();
+    var promise = def.promise();
+
+    var builder = $.Deferred();
+    var build = builder.promise();
+
+    _.each( _.values( dataSets ), function ( dataSet ) {
+        build = build.then(function() {
+            var d = $.Deferred();
+            var p = d.promise();
+            dhis2.tc.store.get('dataSets', dataSet.id).done(function(obj) {
+                if(!obj || obj.version !== dataSet.version) {
+                    promise = promise.then( getDataSet( dataSet.id ) );
+                }
+
+                d.resolve();
+            });
+
+            return p;
+        });
+    });
+
+    build.done(function() {
+        def.resolve();
+
+        promise = promise.done( function () {
+            mainDef.resolve();
+        } );
+    }).fail(function(){
+        mainDef.resolve();
+    });
+
+    builder.resolve();
+
+    return mainPromise;
+}
+
+function getDataSet( id )
+{
+    return function() {
+        return $.ajax( {
+            url: '../api/dataSets.json',
+            type: 'GET',
+            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,dataElements[id,name,code,attributeValues[value,attribute[id,code]]]'
+        }).done( function( response ){
+            
+            _.each( _.values( response.dataSets ), function ( dataSet ) {
+                dhis2.tc.store.set( 'dataSets', dataSet );
+            });         
+        });
+    };
+}
+
 function getMetaPrograms()
 {
     var def = $.Deferred();
@@ -321,7 +407,7 @@ function getProgram( id )
         return $.ajax( {
             url: '../api/programs.json',
             type: 'GET',
-            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,type,version,dataEntryMethod,dateOfEnrollmentDescription,dateOfIncidentDescription,displayIncidentDate,ignoreOverdueEvents,selectEnrollmentDatesInFuture,selectIncidentDatesInFuture,onlyEnrollOnce,externalAccess,displayOnAllOrgunit,registration,relationshipText,relationshipFromA,relatedProgram[id,name],relationshipType[id,name],trackedEntity[id,name,description],userRoles[id,name],attributeValues[value,attribute[id,name,code]],organisationUnits[id,name],userRoles[id,name],programStages[id,name,version,minDaysFromStart,standardInterval,periodType,generatedByEnrollmentDate,reportDateDescription,repeatable,autoGenerateEvent,openAfterEnrollment,reportDateToUse],programTrackedEntityAttributes[displayInList,mandatory,allowFutureDate,trackedEntityAttribute[id,unique]]'
+            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,type,version,dataEntryMethod,dateOfEnrollmentDescription,dateOfIncidentDescription,displayIncidentDate,ignoreOverdueEvents,selectEnrollmentDatesInFuture,selectIncidentDatesInFuture,onlyEnrollOnce,externalAccess,displayOnAllOrgunit,registration,relationshipText,relationshipFromA,relatedProgram[id,name],relationshipType[id,name],trackedEntity[id,name,description],userRoles[id,name],attributeValues[value,attribute[id,code]],organisationUnits[id,name],userRoles[id,name],programStages[id,name,version,minDaysFromStart,standardInterval,periodType,generatedByEnrollmentDate,reportDateDescription,repeatable,autoGenerateEvent,openAfterEnrollment,reportDateToUse],programTrackedEntityAttributes[displayInList,mandatory,allowFutureDate,trackedEntityAttribute[id,unique]]'
         }).done( function( response ){
             
             _.each( _.values( response.programs ), function ( program ) { 
@@ -435,7 +521,7 @@ function getProgramStage( id )
         return $.ajax( {
             url: '../api/programStages.json',
             type: 'GET',
-            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,sortOrder,version,dataEntryForm,captureCoordinates,blockEntryForm,autoGenerateEvent,allowGenerateNextVisit,generatedByEnrollmentDate,reportDateDescription,minDaysFromStart,repeatable,openAfterEnrollment,standardInterval,periodType,reportDateToUse,attributeValues[value,attribute[id,name,code]],programStageSections[id,name,programStageDataElements[dataElement[id]]],programStageDataElements[displayInReports,allowProvidedElsewhere,allowFutureDate,compulsory,dataElement[id,code,name,formName,type,attributeValues[value,attribute[id,name,code]],optionSet[id]]]'
+            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,sortOrder,version,dataEntryForm,captureCoordinates,blockEntryForm,autoGenerateEvent,allowGenerateNextVisit,generatedByEnrollmentDate,reportDateDescription,minDaysFromStart,repeatable,openAfterEnrollment,standardInterval,periodType,reportDateToUse,attributeValues[value,attribute[id,code]],programStageSections[id,name,programStageDataElements[dataElement[id]]],programStageDataElements[displayInReports,allowProvidedElsewhere,allowFutureDate,compulsory,dataElement[id,code,name,formName,type,attributeValues[value,attribute[id,code]],optionSet[id]]]'
         }).done( function( response ){            
             _.each( _.values( response.programStages ), function( programStage ) {
                 programStage = processProgramStage( programStage );
