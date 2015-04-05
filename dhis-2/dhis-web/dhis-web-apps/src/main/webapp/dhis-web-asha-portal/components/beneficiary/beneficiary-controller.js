@@ -147,8 +147,8 @@ trackerCapture.controller('BeneficiaryController',
                             $scope.serviceGridColumns.push({name: $translate('program'), id: 'program', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service'), id: 'serviceName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service_date'), id: 'serviceProvisionDate', type: 'date', displayInListNoProgram: false, showFilter: false, show: true});
-                            $scope.serviceGridColumns.push({name: $translate('approval_level'), id: $scope.dataElementForCurrentApprovalLevel.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
-                            $scope.serviceGridColumns.push({name: $translate('approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'optionSet', displayInListNoProgram: false, showFilter: false, show: true});
+                            $scope.serviceGridColumns.push({name: $translate('current_approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
+                            $scope.serviceGridColumns.push({name: $translate('latest_approval_status'), id: 'latestApprovalStatus', type: 'optionSet', displayInListNoProgram: false, showFilter: false, show: true});
                             
                             $scope.search($scope.searchMode.listAll);
 
@@ -576,6 +576,10 @@ trackerCapture.controller('BeneficiaryController',
                 });
             }
         }        
+    };
+    
+    $scope.saveServiceApproval = function(service){
+        console.log('the service is:  ', service);
     };
     
     function appendNewService(obj){

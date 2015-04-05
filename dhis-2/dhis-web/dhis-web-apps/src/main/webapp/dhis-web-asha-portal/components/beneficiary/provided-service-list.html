@@ -21,10 +21,11 @@
                 <span ng-if="gridColumn.id === 'program'">
                     {{beneficiaryProgramsById[serviceProvided.program].name}}
                 </span>
-                <span ng-if="gridColumn.id === dataElementForCurrentApprovalStatus.id">
-                    <select ng-model="serviceProvided[gridColumn.id]"
+                <span ng-if="gridColumn.id === 'latestApprovalStatus'">
+                    <select ng-model="serviceProvided.latestApprovalStatus"
                             class="form-control-trimmed"
                             ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
+                            ng-change="saveServiceApproval(serviceProvided)"
                             ng-disabled="approvalAuthorityLevel <= 0">
                         <option value="">{{'please_select'| translate}}</option>
                     </select>

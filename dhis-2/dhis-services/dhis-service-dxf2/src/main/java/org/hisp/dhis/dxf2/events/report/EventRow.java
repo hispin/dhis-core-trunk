@@ -65,7 +65,9 @@ public class EventRow
 
     private String enrollment;
     
-    private String eventOrgUnitName;
+    private String eventOrgUnit;
+    
+    private String eventOrgUnitName;    
     
     private String registrationOrgUnit;
     
@@ -190,6 +192,18 @@ public class EventRow
     {
         this.registrationDate = registrationDate;
     }
+    
+    @JsonProperty
+    @JacksonXmlProperty( isAttribute = true )
+    public String getEventOrgUnit()
+    {
+        return eventOrgUnit;
+    }
+
+    public void setEventOrgUnit( String eventOrgUnit )
+    {
+        this.eventOrgUnit = eventOrgUnit;
+    } 
 
     @JsonProperty
     @JacksonXmlProperty( isAttribute = true )

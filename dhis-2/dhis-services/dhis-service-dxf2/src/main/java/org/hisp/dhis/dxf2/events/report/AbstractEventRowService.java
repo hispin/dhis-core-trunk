@@ -88,7 +88,9 @@ public class AbstractEventRowService
             
             eventRow.setEvent( event.getEvent() );            
             eventRow.setProgram( event.getProgram() );
-            eventRow.setProgramStage( event.getProgramStage() );            
+            eventRow.setProgramStage( event.getProgramStage() );
+            eventRow.setEnrollment( event.getEnrollment() );
+            eventRow.setEventOrgUnit( event.getOrgUnit() );
             eventRow.setEventOrgUnitName( event.getOrgUnitName() );
             eventRow.setDueDate( event.getEventDate() != null ? event.getEventDate() : event.getDueDate() );
             eventRow.setFollowup( event.getFollowup() );

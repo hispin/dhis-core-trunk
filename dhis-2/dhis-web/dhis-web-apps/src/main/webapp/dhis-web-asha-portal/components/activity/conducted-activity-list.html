@@ -1,4 +1,4 @@
-<div class="alert alert-warning align-center" ng-if="approvalAuthorityLevel <= 0">{{'lacking_approval_authority' | translate}}</div>
+<div class="alert alert-warning align-center" ng-if="approvalAuthorityLevel <= 0">{{'lacking_approval_authority'| translate}}</div>
 <div class="pull-right vertical-spacing">    
     <button type="button" class="btn btn-warning" ng-click="approveAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'approve_all'| translate}}</button>
     <button type="button" class="btn btn-danger" ng-click="rejectAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'reject_all'| translate}}</button>
@@ -16,8 +16,11 @@
                     {{'date'| translate}}
                 </th>
                 <th class="active" ng-repeat="prStDe in stagesById[program.programStages[0].id].programStageDataElements" 
-                    ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id">
+                    ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id && prStDe.dataElement.id !== dataElementForCurrentApprovalLevel.id">
                     {{prStDe.dataElement.name}}
+                </th>
+                <th>
+                    {{'latest_approval_status' | translate}}
                 </th>
             </tr>
         </thead>
@@ -27,18 +30,16 @@
                     {{activity.eventDate}}
                 </td>
                 <td ng-repeat="prStDe in stagesById[program.programStages[0].id].programStageDataElements" 
-                    ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id">                    
-                    <span ng-if="prStDe.dataElement.id !== dataElementForCurrentApprovalStatus.id">
-                        {{activity[prStDe.dataElement.id]}}
-                    </span>
-                    <span ng-if="prStDe.dataElement.id === dataElementForCurrentApprovalStatus.id">
-                        <select ng-model="activity[prStDe.dataElement.id]"
-                                class="form-control-trimmed"
-                                ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
-                                ng-disabled="approvalAuthorityLevel <= 0 || activity[dataElementForCurrentApprovalStatus.id]">
-                            <option value="">{{'please_select'| translate}}</option>
-                        </select>
-                    </span>
+                    ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id && prStDe.dataElement.id !== dataElementForCurrentApprovalLevel.id">
+                    {{activity[prStDe.dataElement.id]}}
+                </td>
+                <td>
+                    <select ng-model="activity.latestApprovalStatus"
+                            class="form-control-trimmed"
+                            ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
+                            ng-disabled="approvalAuthorityLevel <= 0">
+                        <option value="">{{'please_select'| translate}}</option>
+                    </select>
                 </td>
             </tr>
         </tbody>
