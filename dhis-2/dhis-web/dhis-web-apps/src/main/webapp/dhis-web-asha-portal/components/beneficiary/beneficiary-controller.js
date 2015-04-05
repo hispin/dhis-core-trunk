@@ -148,8 +148,7 @@ trackerCapture.controller('BeneficiaryController',
                             $scope.serviceGridColumns.push({name: $translate('program'), id: 'program', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service'), id: 'serviceName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service_date'), id: 'eventDate', type: 'date', displayInListNoProgram: false, showFilter: false, show: true});
-                            $scope.serviceGridColumns.push({name: $translate('current_approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
-                            $scope.serviceGridColumns.push({name: $translate('latest_approval_status'), id: 'latestApprovalStatus', type: 'optionSet', displayInListNoProgram: false, showFilter: false, show: true});
+                            $scope.serviceGridColumns.push({name: $translate('current_approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});                            
                             
                             $scope.search($scope.searchMode.listAll);
 
@@ -298,7 +297,10 @@ trackerCapture.controller('BeneficiaryController',
     $scope.getServicesProvided = function(){        
         $scope.servicesProvided = [];
         
-        if($scope.dataElementForServiceOwner && $scope.dataElementForServiceOwner.id){
+        if($scope.dataElementForServiceOwner && 
+                $scope.dataElementForServiceOwner.id &&
+                $scope.dataElementForCurrentApprovalLevel && 
+                $scope.dataElementForCurrentApprovalLevel.id){
             EventReportService.getEventReport($scope.selectedOrgUnit.id, 
                                                 $scope.ouModes[1].name, 
                                                 null, 
@@ -310,57 +312,57 @@ trackerCapture.controller('BeneficiaryController',
                                                 $scope.ashaEvent,
                                                 $scope.pager).then(function(data){            
 
-                  if( data.pager ){
-                      $scope.pager = data.pager;
-                      $scope.pager.toolBarDisplay = 5;
+                if( data.pager ){
+                    $scope.pager = data.pager;
+                    $scope.pager.toolBarDisplay = 5;
 
-                      Paginator.setPage($scope.pager.page);
-                      Paginator.setPageCount($scope.pager.pageCount);
-                      Paginator.setPageSize($scope.pager.pageSize);
-                      Paginator.setItemCount($scope.pager.total);                    
-                  }
+                    Paginator.setPage($scope.pager.page);
+                    Paginator.setPageCount($scope.pager.pageCount);
+                    Paginator.setPageSize($scope.pager.pageSize);
+                    Paginator.setItemCount($scope.pager.total);                    
+                }
 
-                  angular.forEach(data.eventRows, function(row){
-                      var serviceProvided = {};                    
-                      angular.forEach(row.attributes, function(att){
-                          var val = AttributesFactory.formatAttributeValue(att, $scope.attributesById, $scope.optionSets, 'USER');                        
-                          serviceProvided[att.attribute] = val;                        
-                      });
+                angular.forEach(data.eventRows, function(row){
+                    var serviceProvided = {};                    
+                    angular.forEach(row.attributes, function(att){
+                        var val = AttributesFactory.formatAttributeValue(att, $scope.attributesById, $scope.optionSets, 'USER');                        
+                        serviceProvided[att.attribute] = val;                        
+                    });
 
-                      if($scope.stagesById[row.programStage] && $scope.beneficiaryProgramsById[row.program]){
-                          serviceProvided.serviceName = $scope.stagesById[row.programStage].name;
-                          serviceProvided.programName = $scope.beneficiaryProgramsById[row.program].name; 
-                      }
-                      
-                      serviceProvided.dueDate = serviceProvided.eventDate = DateUtils.formatFromApiToUser(row.dueDate);
-                      serviceProvided.status = 'VISITED';
-                      serviceProvided.event = row.event;
-                      serviceProvided.enrollment = row.enrollment;
-                      serviceProvided.orgUnit = row.eventOrgUnit;
-                      serviceProvided.program = row.program;
-                      serviceProvided.programStage = row.programStage;
-                      serviceProvided.trackedEntityInstance = row.trackedEntityInstance;
+                    if($scope.stagesById[row.programStage] && $scope.beneficiaryProgramsById[row.program]){
+                        serviceProvided.serviceName = $scope.stagesById[row.programStage].name;
+                        serviceProvided.programName = $scope.beneficiaryProgramsById[row.program].name; 
+                    }
 
-                      angular.forEach(row.dataValues, function(dv){
-                          if(dv.dataElement && 
-                                  dv.value /*&& 
-                                  $scope.dataElementForServiceOwner && 
-                                  $scope.dataElementForServiceOwner.id && 
-                                  dv.dataElement !== $scope.dataElementForServiceOwner.id &&
-                                  dv.dataElement !== $scope.dataElementForPaymentSanctioned.id*/){                        
-                              serviceProvided[dv.dataElement] = dv.value;                        
-                          }                    
-                      });                
+                    serviceProvided.dueDate = serviceProvided.eventDate = DateUtils.formatFromApiToUser(row.dueDate);
+                    serviceProvided.status = 'VISITED';
+                    serviceProvided.event = row.event;
+                    serviceProvided.enrollment = row.enrollment;
+                    serviceProvided.orgUnit = row.eventOrgUnit;
+                    serviceProvided.program = row.program;
+                    serviceProvided.programStage = row.programStage;
+                    serviceProvided.trackedEntityInstance = row.trackedEntityInstance;
 
-                      $scope.servicesProvided.push(serviceProvided);
+                    angular.forEach(row.dataValues, function(dv){
+                        if(dv.dataElement && dv.value){                            
+                            if(dv.dataElement === $scope.dataElementForCurrentApprovalLevel.id){
+                                serviceProvided[dv.dataElement] = new Number(dv.value);
+                            }
+                            else{
+                                serviceProvided[dv.dataElement] = dv.value;
+                            }
+                        }                                            
+                    });                
 
-                  });
+                    $scope.servicesProvided.push(serviceProvided);
 
-                  //sort services provided by their provision dates - this is default
-                  $scope.servicesProvided = orderByFilter($scope.servicesProvided, '-provisionDate');
-                  //$scope.servicesProvided.reverse();
+                });
 
-              });
+                //sort services provided by their provision dates - this is default
+                $scope.servicesProvided = orderByFilter($scope.servicesProvided, '-provisionDate');
+                //$scope.servicesProvided.reverse();
+
+            });
         }
         else{
             //invalid db configuration
@@ -605,9 +607,11 @@ trackerCapture.controller('BeneficiaryController',
                                           $scope.dataElementForCurrentApprovalLevel.id, 
                                           $scope.dataElementForCurrentApprovalStatus.id);                
                 DHIS2EventFactory.update( obj.model ).then(function(){
-                    service[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
+                    service.currentApprovalLevel =  service[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
                     service[$scope.dataElementForCurrentApprovalStatus.id] = service.latestApprovalStatus;
                 });                           
+            }, function(){
+                service.latestApprovalStatus = null;
             });
         }
         

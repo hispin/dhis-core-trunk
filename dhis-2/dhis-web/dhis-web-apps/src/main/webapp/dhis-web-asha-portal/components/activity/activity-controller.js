@@ -208,8 +208,16 @@ trackerCapture.controller('ActivityController',
                     activityConducted.program = row.program;
                     activityConducted.programStage = row.programStage;
                     angular.forEach(row.dataValues, function(dv){
-                        activityConducted[dv.dataElement] = dv.value;
+                        if(dv.dataElement && dv.value){                            
+                            if(dv.dataElement === $scope.dataElementForCurrentApprovalLevel.id){
+                                activityConducted[dv.dataElement] = new Number(dv.value);
+                            }
+                            else{
+                                activityConducted[dv.dataElement] = dv.value;
+                            }
+                        }                                            
                     });
+                    
 
                     $scope.activitiesConducted.push(activityConducted);
                 });
@@ -335,16 +343,19 @@ trackerCapture.controller('ActivityController',
 
             ModalService.showModal({}, modalOptions).then(function(result){
                 
+                console.log('the result:  ', result);
                 var obj = AshaPortalUtils.saveApproval( activity, 
                                           stage, 
                                           $scope.optionSets, 
                                           $scope.dataElementForCurrentApprovalLevel.id, 
                                           $scope.dataElementForCurrentApprovalStatus.id);                
                 DHIS2EventFactory.update( obj.model ).then(function(){
-                    activity[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
-                    activity[$scope.dataElementForCurrentApprovalStatus.id] = activity.latestApprovalStatus;
+                    activity.currentApprovalLevel = activity[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
+                    activity[$scope.dataElementForCurrentApprovalStatus.id] = activity.latestApprovalStatus;                    
                 });                           
-            });
+            }, function(){
+                activity.latestApprovalStatus = null;
+            });            
         }        
     };    
 });

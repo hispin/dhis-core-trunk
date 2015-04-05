@@ -38,7 +38,7 @@
                             class="form-control-trimmed"
                             ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
                             ng-change="saveActivityApproval(activity)"
-                            ng-disabled="approvalAuthorityLevel <= 0">
+                            ng-disabled="approvalAuthorityLevel <= 0 || approvalAuthorityLevel < activity[dataElementForCurrentApprovalLevel.id]">
                         <option value="">{{'please_select'| translate}}</option>
                     </select>
                 </td>
