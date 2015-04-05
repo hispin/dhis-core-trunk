@@ -599,8 +599,7 @@ trackerCapture.controller('BeneficiaryController',
                 bodyText: $translate('proceed_?')
             };
 
-            ModalService.showModal({}, modalOptions).then(function(result){
-                
+            ModalService.showModal({}, modalOptions).then(function(result){                
                 var obj = AshaPortalUtils.saveApproval( service, 
                                           stage, 
                                           $scope.optionSets, 
@@ -613,8 +612,7 @@ trackerCapture.controller('BeneficiaryController',
             }, function(){
                 service.latestApprovalStatus = null;
             });
-        }
-        
+        }        
     };
     
     function appendNewService(obj){

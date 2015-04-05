@@ -342,8 +342,6 @@ trackerCapture.controller('ActivityController',
             };
 
             ModalService.showModal({}, modalOptions).then(function(result){
-                
-                console.log('the result:  ', result);
                 var obj = AshaPortalUtils.saveApproval( activity, 
                                           stage, 
                                           $scope.optionSets, 
