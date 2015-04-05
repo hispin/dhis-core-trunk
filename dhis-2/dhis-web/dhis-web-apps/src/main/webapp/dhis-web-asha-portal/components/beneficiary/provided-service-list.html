@@ -8,26 +8,28 @@
         <button type="button" class="btn btn-danger" ng-click="rejectAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'reject_all'| translate}}</button>
     </span>
 </span>
-
-<table class="listTable dhis2-table-striped-border vertical-spacing">               
+<table class="table table-bordered vertical-spacing">
     <thead>                        
         <tr>
-            <th ng-if="gridColumn.show" ng-repeat="gridColumn in serviceGridColumns">
+            <th class="active">
+                {{'program' | translate}}
+            </th>
+            <th class="active" ng-if="gridColumn.show" ng-repeat="gridColumn in serviceGridColumns">
                 {{gridColumn.name}}
             </th>
-            <th>
+            <th class="active">
                 {{'latest_approval_status'| translate}}
             </th>
         </tr>                        
     </thead>
-    <tbody>        
-        <tr ng-repeat-end ng-repeat="serviceProvided in servicesProvided| orderBy:'program'">
+    <tbody ng-repeat="program in beneficiaryPrograms | orderBy: 'name'" ng-if="(servicesProvided | filter: {program: program.id}).length > 0">
+        <tr ng-repeat="serviceProvided in servicesProvided | filter: {program: program.id} | orderBy: ['trackedEntityInstance', 'serviceName']">
+            <td class="bold" rowspan="{{(servicesProvided | filter: {program: program.id}).length}}" ng-if="$index === 0">
+                {{program.name}}
+            </td>
             <td ng-if="gridColumn.show" ng-repeat="gridColumn in serviceGridColumns">                                                
-                <span ng-if="gridColumn.id !== 'program' && gridColumn.id !== dataElementForServiceOwner.id && gridColumn.id !== dataElementForPaymentSanctioned.id && gridColumn.id !== dataElementForCurrentApprovalLevel.id">
+                <span ng-if="gridColumn.id !== dataElementForServiceOwner.id && gridColumn.id !== dataElementForPaymentSanctioned.id && gridColumn.id !== dataElementForCurrentApprovalLevel.id">
                     {{serviceProvided[gridColumn.id]}}
-                </span>
-                <span ng-if="gridColumn.id === 'program'">
-                    {{beneficiaryProgramsById[serviceProvided.program].name}}
                 </span>
             </td>
             <td>
@@ -36,7 +38,7 @@
                         ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
                         ng-change="saveServiceApproval(serviceProvided)"
                         ng-disabled="(approvalAuthorityLevel <= 0 || approvalAuthorityLevel < serviceProvided[dataElementForCurrentApprovalLevel.id])">
-                    <option value="">{{'please_select'| translate}}</option>
+                    <option value="">{{'[select]'| translate}}</option>
                 </select>
             </td>                                
         </tr>

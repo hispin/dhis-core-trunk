@@ -367,7 +367,7 @@ trackerCapture.controller('ActivityController',
     $scope.generatePaymentSlip = function(){
 
         var modalInstance = $modal.open({
-            templateUrl: 'components/payment/payment-slip.html',
+            templateUrl: 'components/payment/activity-payment-slip.html',
             controller: 'PaymentController',
             windowClass: 'modal-full-window',
             resolve: {
@@ -377,10 +377,10 @@ trackerCapture.controller('ActivityController',
                 orgUnitName: function(){
                     return $scope.orgUnitName;
                 },
-                activityPrograms: function(){
+                programs: function(){
                     return $scope.activityPrograms;
                 },
-                activityProgramsById: function(){
+                programsById: function(){
                     return $scope.activityProgramsById;
                 },
                 stages: function(){

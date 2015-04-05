@@ -3,6 +3,7 @@
 trackerCapture.controller('BeneficiaryController',
         function($scope,
                 $translate,
+                $modal,
                 orderByFilter,
                 ProgramFactory,
                 ProgramStageFactory,
@@ -74,7 +75,7 @@ trackerCapture.controller('BeneficiaryController',
         var benOwners = CurrentSelection.getBenOrActOwners();
         $scope.orgUnitName = benOwners.orgUnitName;
         $scope.ashaDetails = benOwners.asha;
-        $scope.ashaPeriod = benOwners.period.eventDate;
+        $scope.ashaPeriod = benOwners.period;
         $scope.ashaEvent = benOwners.period.event;
         
         ProgramFactory.getBeneficairyPrograms().then(function(response){
@@ -146,7 +147,7 @@ trackerCapture.controller('BeneficiaryController',
                                 }
                             });
 
-                            $scope.serviceGridColumns.push({name: $translate('program'), id: 'program', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
+                            //$scope.serviceGridColumns.push({name: $translate('program'), id: 'program', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service'), id: 'serviceName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service_date'), id: 'eventDate', type: 'date', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('current_approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});                            
@@ -642,7 +643,7 @@ trackerCapture.controller('BeneficiaryController',
             newService.programStage = $scope.selectedService.service.id;
             newService.serviceName = $scope.selectedService.service.name;
             newService.programName = $scope.selectedService.program.name;
-            newService.trackedEntietyInstance = $scope.selectedBeneficiary.id;
+            newService.trackedEntityInstance = $scope.selectedBeneficiary.id;
             
             if( !$scope.servicesProvided ){
                 $scope.servicesProvided = [];
@@ -653,4 +654,48 @@ trackerCapture.controller('BeneficiaryController',
         
         $scope.selectedService = {};
     }
+    
+    $scope.generatePaymentSlip = function(){
+
+        var modalInstance = $modal.open({
+            templateUrl: 'components/payment/service-payment-slip.html',
+            controller: 'PaymentController',
+            windowClass: 'modal-full-window',
+            resolve: {
+                payments: function(){
+                    return $scope.servicesProvided;
+                },
+                orgUnitName: function(){
+                    return $scope.orgUnitName;
+                },
+                programs: function(){
+                    return $scope.beneficiaryPrograms;
+                },
+                programsById: function(){
+                    return $scope.beneficiaryProgramsById;
+                },
+                stages: function(){
+                    return $scope.stages;
+                },
+                stagesById: function(){
+                    return $scope.stagesById;
+                },
+                ashaDetails: function(){
+                    return $scope.ashaDetails;
+                },
+                ashaPeriod: function(){
+                    return $scope.ashaPeriod;
+                },
+                ashaEvent: function(){
+                    return $scope.ashaEvent;
+                },
+                slipType: function(){
+                    return 'SERVICE';
+                }
+            }
+        });
+        
+        modalInstance.result.then(function () {                 
+        });
+    };
 });

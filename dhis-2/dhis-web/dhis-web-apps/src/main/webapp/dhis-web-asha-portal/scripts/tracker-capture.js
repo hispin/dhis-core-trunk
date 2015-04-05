@@ -249,6 +249,21 @@ function getTrackedEntities()
     });    
 }
 
+function processDataSet( dataSet ){
+    if(!dataSet){
+        return;
+    }
+    
+    if(dataSet.attributeValues){
+        for(var i=0; i<dataSet.attributeValues.length; i++){
+            if(dataSet.attributeValues[i].value === 'true' && dataSet.attributeValues[i].attribute && dataSet.attributeValues[i].attribute.code === 'HasPaymentRate'){
+                dataSet[dataSet.attributeValues[i].attribute.code] = true;
+            }
+        }
+    }
+    
+    return dataSet;
+}
 function getMetaDataSets()
 {
     var def = $.Deferred();
@@ -256,10 +271,13 @@ function getMetaDataSets()
     $.ajax({
         url: '../api/dataSets.json',
         type: 'GET',
-        data:'paging=false&fields=id,name'
+        data:'paging=false&fields=id,name,attributeValues[value,attribute[id,code]]'
     }).done( function(response) {          
         var dataSets = [];
         _.each( _.values( response.dataSets ), function ( dataSet ) { 
+            
+            dataSet = processDataSet( dataSet );
+            
             dataSets.push( dataSet );
         });
         
@@ -323,10 +341,11 @@ function getDataSet( id )
         return $.ajax( {
             url: '../api/dataSets.json',
             type: 'GET',
-            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,dataElements[id,name,code,attributeValues[value,attribute[id,code]]]'
+            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,attributeValues[value,attribute[id,code]],dataElements[id,name,code,attributeValues[value,attribute[id,code]]]'
         }).done( function( response ){
             
             _.each( _.values( response.dataSets ), function ( dataSet ) {
+                dataSet = processDataSet( dataSet );
                 dhis2.tc.store.set( 'dataSets', dataSet );
             });         
         });

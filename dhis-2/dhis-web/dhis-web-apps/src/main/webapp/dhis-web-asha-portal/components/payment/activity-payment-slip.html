@@ -34,7 +34,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr ng-repeat="program in activityPrograms | orderBy: 'name'" ng-if="paymentReport[program.id].hasData">
+                <tr ng-repeat="program in programs | orderBy: 'name'" ng-if="paymentReport[program.id].hasData">
                     <td ng-repeat="header in paymentTableHeaders">
                         {{paymentReport[program.id][header.id]}}
                     </td>
@@ -44,7 +44,7 @@
         </table>
     </div>
 </div>
-<div class="modal-footer page">        
-    <button class="btn btn-primary" data-ng-click="print()">{{'print'| translate}}</button>
+<div class="modal-footer page not-printable">        
+    <button class="btn btn-primary" onclick="javascript:window.print()">{{'print'| translate}}</button>
     <button class="btn btn-default" data-ng-click="close()">{{'close'| translate}}</button>
 </div>
