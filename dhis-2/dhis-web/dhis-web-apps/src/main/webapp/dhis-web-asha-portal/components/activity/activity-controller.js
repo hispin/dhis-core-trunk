@@ -3,6 +3,7 @@
 trackerCapture.controller('ActivityController',
         function($scope,
                 $translate,
+                $sce,
                 orderByFilter,
                 ProgramFactory,
                 ProgramStageFactory,
@@ -13,6 +14,7 @@ trackerCapture.controller('ActivityController',
                 EventReportService,
                 DateUtils,
                 DialogService,
+                ModalService,
                 Paginator,
                 AshaPortalUtils,
                 CurrentSelection) {
@@ -201,9 +203,10 @@ trackerCapture.controller('ActivityController',
                     var activityConducted = {};
                     activityConducted.eventDate = DateUtils.formatFromApiToUser(row.dueDate);
                     activityConducted.event = row.event;
+                    activityConducted.status = 'VISITED';
+                    activityConducted.orgUnit = row.eventOrgUnit;
                     activityConducted.program = row.program;
                     activityConducted.programStage = row.programStage;
-
                     angular.forEach(row.dataValues, function(dv){
                         activityConducted[dv.dataElement] = dv.value;
                     });
@@ -271,15 +274,15 @@ trackerCapture.controller('ActivityController',
             }
         });
         
-        /*if(!$scope.valueExists){
+        if(!$scope.valueExists){
             var dialogOptions = {
                 headerText: 'empty_form',
-                bodyText: 'please_fill_at_least_one_dataelement'
+                bodyText: 'fill_at_least_one_dataelement'
             };
 
             DialogService.showDialog({}, dialogOptions);
             return false;
-        }*/
+        }
         
         dataValues.push({dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent});
         var dhis2Event = {
@@ -304,6 +307,7 @@ trackerCapture.controller('ActivityController',
                 
                 //add the new event to the grid                
                 $scope.newActivity.event = data.importSummaries[0].reference;
+                $scope.newActivity.status = 'VISITED';
                 $scope.newActivity.program = $scope.selectedActivityProgram.id;
                 $scope.newActivity.programStage = $scope.selectedProgramStage.id;
                 if( !$scope.activitiesConducted ){
@@ -315,4 +319,32 @@ trackerCapture.controller('ActivityController',
             $scope.cancel();
         });
     };
+    
+    $scope.saveActivityApproval = function(activity){
+        
+        var stage = $scope.stagesById[activity.programStage];
+        
+        if( stage && stage.id ){
+            
+            var modalOptions = {
+                closeButtonText: 'cancel',
+                actionButtonText: 'yes',
+                headerText: activity.latestApprovalStatus,
+                bodyText: $translate('proceed_?')
+            };
+
+            ModalService.showModal({}, modalOptions).then(function(result){
+                
+                var obj = AshaPortalUtils.saveApproval( activity, 
+                                          stage, 
+                                          $scope.optionSets, 
+                                          $scope.dataElementForCurrentApprovalLevel.id, 
+                                          $scope.dataElementForCurrentApprovalStatus.id);                
+                DHIS2EventFactory.update( obj.model ).then(function(){
+                    activity[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
+                    activity[$scope.dataElementForCurrentApprovalStatus.id] = activity.latestApprovalStatus;
+                });                           
+            });
+        }        
+    };    
 });

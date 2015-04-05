@@ -1706,19 +1706,80 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };
 })
 
-.service('AshaPortalUtils', function(SessionStorageService){   
+.service('AshaPortalUtils', function(SessionStorageService, OptionSetService, DateUtils, ModalService, $translate, $q, DHIS2EventFactory){   
+    
+    var approvalLevel = function(){
+        var roles = SessionStorageService.get('USER_ROLES');
+        if( roles && roles.attributeValues ){                
+            for(var i=0; i<roles.attributeValues.length; i++){
+                if(dhis2.validation.isNumber(roles.attributeValues[i].value) && roles.attributeValues[i].attribute && roles.attributeValues[i].attribute.code === 'ApprovalAuthorityLevel'){
+                    return roles.attributeValues[i].value;
+                }
+            }
+        }            
+        return 0;
+    };
     return {
         //check for beneficiary registration
         getApprovalAuthorityLevel: function(){
-            var roles = SessionStorageService.get('USER_ROLES');
-            if( roles && roles.attributeValues ){                
-                for(var i=0; i<roles.attributeValues.length; i++){
-                    if(dhis2.validation.isNumber(roles.attributeValues[i].value) && roles.attributeValues[i].attribute && roles.attributeValues[i].attribute.code === 'ApprovalAuthorityLevel'){
-                        return roles.attributeValues[i].value;
+            return approvalLevel();
+        },
+        saveApproval: function(_event, programStage, optionSets, approvalLevelDe, approvalStatusDe){
+            
+            var event = angular.copy(_event);
+                
+            event[approvalLevelDe] = approvalLevel();
+            event[approvalStatusDe] = event.latestApprovalStatus;
+            var e = {dataValues: [], 
+                event: event.event, 
+                program: event.program, 
+                programStage: event.programStage,
+                orgUnit: event.orgUnit, 
+                status: event.status,
+                eventDate: DateUtils.formatFromUserToApi(event.eventDate)
+            };
+
+            angular.forEach(programStage.programStageDataElements, function(prStDe){
+                if(event[prStDe.dataElement.id]){
+
+                    var value = event[prStDe.dataElement.id];
+
+                    if( value && prStDe.dataElement.type === 'string' && prStDe.dataElement.optionSet && optionSets[prStDe.dataElement.optionSet.id]){
+                        value = OptionSetService.getCode(optionSets[prStDe.dataElement.optionSet.id].options, value);
+                    }                    
+
+                    if( value && prStDe.dataElement.type === 'date'){
+                        value = DateUtils.formatFromUserToApi(value);
                     }
-                }
-            }            
-            return 0;
+
+                    if( prStDe.dataElement.type === 'trueOnly' ){
+                        if(value){
+                            value = 'true';
+                        }
+                        else{
+                            value = '';
+                        }
+                    }
+
+                    var val = {value: value, dataElement: prStDe.dataElement.id};
+
+                    e.dataValues.push(val);
+                }                                
+            });
+
+            if(event.enrollment){
+                e.enrollment = event.enrollment;
+            }
+
+            if(event.dueDate){
+                e.dueDate = event.dueDate;
+            }
+
+            if(event.trackedEntityInstance){
+                e.trackedEntityInstance = event.trackedEntityInstance;
+            }
+            
+            return {model: e, display: event};
         }
     };
 });

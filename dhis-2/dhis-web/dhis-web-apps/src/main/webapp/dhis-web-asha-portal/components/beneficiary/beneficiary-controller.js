@@ -17,6 +17,7 @@ trackerCapture.controller('BeneficiaryController',
                 TEIService,
                 TEIGridService,
                 DateUtils,
+                ModalService,
                 DialogService,
                 Paginator,
                 AshaPortalUtils,
@@ -146,7 +147,7 @@ trackerCapture.controller('BeneficiaryController',
 
                             $scope.serviceGridColumns.push({name: $translate('program'), id: 'program', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service'), id: 'serviceName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
-                            $scope.serviceGridColumns.push({name: $translate('service_date'), id: 'serviceProvisionDate', type: 'date', displayInListNoProgram: false, showFilter: false, show: true});
+                            $scope.serviceGridColumns.push({name: $translate('service_date'), id: 'eventDate', type: 'date', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('current_approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('latest_approval_status'), id: 'latestApprovalStatus', type: 'optionSet', displayInListNoProgram: false, showFilter: false, show: true});
                             
@@ -330,19 +331,23 @@ trackerCapture.controller('BeneficiaryController',
                           serviceProvided.serviceName = $scope.stagesById[row.programStage].name;
                           serviceProvided.programName = $scope.beneficiaryProgramsById[row.program].name; 
                       }
-                      serviceProvided.serviceProvisionDate = DateUtils.formatFromApiToUser(row.dueDate);
+                      
+                      serviceProvided.dueDate = serviceProvided.eventDate = DateUtils.formatFromApiToUser(row.dueDate);
+                      serviceProvided.status = 'VISITED';
                       serviceProvided.event = row.event;
+                      serviceProvided.enrollment = row.enrollment;
+                      serviceProvided.orgUnit = row.eventOrgUnit;
                       serviceProvided.program = row.program;
                       serviceProvided.programStage = row.programStage;
-                      serviceProvided.trackedEntietyInstance = row.trackedEntityInstance;
+                      serviceProvided.trackedEntityInstance = row.trackedEntityInstance;
 
                       angular.forEach(row.dataValues, function(dv){
                           if(dv.dataElement && 
-                                  dv.value && 
+                                  dv.value /*&& 
                                   $scope.dataElementForServiceOwner && 
                                   $scope.dataElementForServiceOwner.id && 
                                   dv.dataElement !== $scope.dataElementForServiceOwner.id &&
-                                  dv.dataElement !== $scope.dataElementForPaymentSanctioned.id){                        
+                                  dv.dataElement !== $scope.dataElementForPaymentSanctioned.id*/){                        
                               serviceProvided[dv.dataElement] = dv.value;                        
                           }                    
                       });                
@@ -579,7 +584,33 @@ trackerCapture.controller('BeneficiaryController',
     };
     
     $scope.saveServiceApproval = function(service){
-        console.log('the service is:  ', service);
+        
+        
+        var stage = $scope.stagesById[service.programStage];
+        
+        if( stage && stage.id ){
+            
+            var modalOptions = {
+                closeButtonText: 'cancel',
+                actionButtonText: 'yes',
+                headerText: service.latestApprovalStatus,
+                bodyText: $translate('proceed_?')
+            };
+
+            ModalService.showModal({}, modalOptions).then(function(result){
+                
+                var obj = AshaPortalUtils.saveApproval( service, 
+                                          stage, 
+                                          $scope.optionSets, 
+                                          $scope.dataElementForCurrentApprovalLevel.id, 
+                                          $scope.dataElementForCurrentApprovalStatus.id);                
+                DHIS2EventFactory.update( obj.model ).then(function(){
+                    service[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
+                    service[$scope.dataElementForCurrentApprovalStatus.id] = service.latestApprovalStatus;
+                });                           
+            });
+        }
+        
     };
     
     function appendNewService(obj){
@@ -594,7 +625,10 @@ trackerCapture.controller('BeneficiaryController',
         }
         else{
             var newService = angular.copy($scope.selectedBeneficiary);
-            newService.serviceProvisionDate = $scope.selectedService.dueDate;
+            newService.eventDate = $scope.selectedService.dueDate;
+            newService.dueDate = $scope.selectedService.dueDate;
+            newService.status = 'VISITED';
+            newService.enrollment = $scope.selectedEnrollment.enrollment;
             newService.event = obj.importSummaries[0].reference;
             newService.program = $scope.selectedService.program.id;
             newService.programStage = $scope.selectedService.service.id;

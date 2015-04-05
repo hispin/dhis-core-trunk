@@ -13,9 +13,9 @@
         </tr>                        
     </thead>
     <tbody>        
-        <tr ng-repeat-end ng-repeat="serviceProvided in servicesProvided| orderBy:'program'">
+        <tr ng-repeat-end ng-repeat="serviceProvided in servicesProvided | orderBy:'program'">
             <td ng-if="gridColumn.show" ng-repeat="gridColumn in serviceGridColumns">                                                
-                <span ng-if="gridColumn.id !== 'program' && gridColumn.id !== dataElementForCurrentApprovalStatus.id">
+                <span ng-if="gridColumn.id !== 'program' && gridColumn.id !== dataElementForCurrentApprovalLevel.id">
                     {{serviceProvided[gridColumn.id]}}
                 </span>
                 <span ng-if="gridColumn.id === 'program'">
