@@ -72,6 +72,7 @@ trackerCapture.controller('BeneficiaryController',
         $scope.tei = {};
         
         var benOwners = CurrentSelection.getBenOrActOwners();
+        $scope.orgUnitName = benOwners.orgUnitName;
         $scope.ashaDetails = benOwners.asha;
         $scope.ashaPeriod = benOwners.period.eventDate;
         $scope.ashaEvent = benOwners.period.event;
@@ -349,6 +350,9 @@ trackerCapture.controller('BeneficiaryController',
                                 serviceProvided[dv.dataElement] = new Number(dv.value);
                             }
                             else{
+                                if(dv.dataElement === $scope.dataElementForCurrentApprovalStatus.id){
+                                    serviceProvided.currentApprovalStatus = dv.value;
+                                }
                                 serviceProvided[dv.dataElement] = dv.value;
                             }
                         }                                            
@@ -547,6 +551,7 @@ trackerCapture.controller('BeneficiaryController',
             }
             
             $scope.selectedEnrollment = $scope.beneficiaryEnrollmentsByProgram[$scope.selectedService.program.id];
+            
             if($scope.selectedEnrollment && $scope.selectedEnrollment.enrollment){
                 dhis2Event.enrollment = $scope.selectedEnrollment.enrollment;
                 var dhis2Events = {events: [dhis2Event]};
@@ -582,7 +587,7 @@ trackerCapture.controller('BeneficiaryController',
                     }
                 });
             }
-        }        
+        }
     };
     
     $scope.saveServiceApproval = function(service){
@@ -608,6 +613,7 @@ trackerCapture.controller('BeneficiaryController',
                 DHIS2EventFactory.update( obj.model ).then(function(){
                     service.currentApprovalLevel =  service[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
                     service[$scope.dataElementForCurrentApprovalStatus.id] = service.latestApprovalStatus;
+                    service.currentApprovalStatus = service.latestApprovalStatus;
                 });                           
             }, function(){
                 service.latestApprovalStatus = null;

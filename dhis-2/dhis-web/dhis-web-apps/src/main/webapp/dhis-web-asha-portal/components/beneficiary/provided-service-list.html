@@ -1,8 +1,13 @@
 <div class="alert alert-warning align-center" ng-if="approvalAuthorityLevel <= 0">{{'lacking_approval_authority'| translate}}</div>
-<div class="pull-right vertical-spacing">    
-    <button type="button" class="btn btn-warning" ng-click="approveAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'approve_all'| translate}}</button>
-    <button type="button" class="btn btn-danger" ng-click="rejectAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'reject_all'| translate}}</button>
-</div>
+<span class="vertical-spacing">
+    <span>        
+        <button type="button" class="btn btn-success" ng-click="generatePaymentSlip()" ng-if="(servicesProvided | filter: {currentApprovalStatus: 'Approved'}).length > 0">{{'payment_slip'| translate}}</button>
+    </span>
+    <span class="pull-right">
+        <button type="button" class="btn btn-warning" ng-click="approveAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'approve_all'| translate}}</button>
+        <button type="button" class="btn btn-danger" ng-click="rejectAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'reject_all'| translate}}</button>
+    </span>
+</span>
 
 <table class="listTable dhis2-table-striped-border vertical-spacing">               
     <thead>                        

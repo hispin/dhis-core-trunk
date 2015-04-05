@@ -250,7 +250,7 @@ trackerCapture.controller('DataEntryController',
                 $scope.currentPeriod[$scope.currentStage.id].event && 
                 $scope.currentPeriod[$scope.currentStage.id].eventDate){
             
-           CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: $scope.currentPeriod[$scope.currentStage.id]}); 
+           CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: $scope.currentPeriod[$scope.currentStage.id], orgUnitName: $scope.currentEvent.orgUnitName}); 
            
            $timeout(function() { 
                 $rootScope.$broadcast(mode, {optionSets: $scope.optionSets});

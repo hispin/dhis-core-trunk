@@ -3,7 +3,7 @@
 trackerCapture.controller('ActivityController',
         function($scope,
                 $translate,
-                $sce,
+                $modal,     
                 orderByFilter,
                 ProgramFactory,
                 ProgramStageFactory,
@@ -18,7 +18,7 @@ trackerCapture.controller('ActivityController',
                 Paginator,
                 AshaPortalUtils,
                 CurrentSelection) {
-    
+                    
     $scope.approvalAuthorityLevel = AshaPortalUtils.getApprovalAuthorityLevel();
     
     $scope.ouModes = [{name: 'SELECTED'}, {name: 'CHILDREN'}, {name: 'DESCENDANTS'}, {name: 'ACCESSIBLE'}];
@@ -55,9 +55,11 @@ trackerCapture.controller('ActivityController',
     function getOwnerDetails(){
         $scope.selectedTei = {};
         $scope.tei = {};
-        var benOwners = CurrentSelection.getBenOrActOwners();        
+        var benOwners = CurrentSelection.getBenOrActOwners();    
+        
+        $scope.orgUnitName = benOwners.orgUnitName;
         $scope.ashaDetails = benOwners.asha;
-        $scope.ashaPeriod = benOwners.period.eventDate;
+        $scope.ashaPeriod = benOwners.period;
         $scope.ashaEvent = benOwners.period.event;
         
         ProgramFactory.getActivityPrograms().then(function(programs){
@@ -174,6 +176,7 @@ trackerCapture.controller('ActivityController',
     };
     
     $scope.getActivitiesConducted = function(){
+        $scope.approvedActivityExists = false;
         $scope.activitiesFetched = false;
         $scope.activitiesConducted = [];
         
@@ -213,6 +216,9 @@ trackerCapture.controller('ActivityController',
                                 activityConducted[dv.dataElement] = new Number(dv.value);
                             }
                             else{
+                                if(dv.dataElement === $scope.dataElementForCurrentApprovalStatus.id){
+                                    activityConducted.currentApprovalStatus = dv.value;
+                                }
                                 activityConducted[dv.dataElement] = dv.value;
                             }
                         }                                            
@@ -349,11 +355,56 @@ trackerCapture.controller('ActivityController',
                                           $scope.dataElementForCurrentApprovalStatus.id);                
                 DHIS2EventFactory.update( obj.model ).then(function(){
                     activity.currentApprovalLevel = activity[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
-                    activity[$scope.dataElementForCurrentApprovalStatus.id] = activity.latestApprovalStatus;                    
+                    activity[$scope.dataElementForCurrentApprovalStatus.id] = activity.latestApprovalStatus;   
+                    activity.currentApprovalStatus = activity.latestApprovalStatus;
                 });                           
             }, function(){
                 activity.latestApprovalStatus = null;
             });            
         }        
-    };    
+    };
+    
+    $scope.generatePaymentSlip = function(){
+
+        var modalInstance = $modal.open({
+            templateUrl: 'components/payment/payment-slip.html',
+            controller: 'PaymentController',
+            windowClass: 'modal-full-window',
+            resolve: {
+                payments: function(){
+                    return $scope.activitiesConducted;
+                },
+                orgUnitName: function(){
+                    return $scope.orgUnitName;
+                },
+                activityPrograms: function(){
+                    return $scope.activityPrograms;
+                },
+                activityProgramsById: function(){
+                    return $scope.activityProgramsById;
+                },
+                stages: function(){
+                    return $scope.stages;
+                },
+                stagesById: function(){
+                    return $scope.stagesById;
+                },
+                ashaDetails: function(){
+                    return $scope.ashaDetails;
+                },
+                ashaPeriod: function(){
+                    return $scope.ashaPeriod;
+                },
+                ashaEvent: function(){
+                    return $scope.ashaEvent;
+                },
+                slipType: function(){
+                    return 'ACTIVITY';
+                }
+            }
+        });
+        
+        modalInstance.result.then(function () {                 
+        });
+    };       
 });

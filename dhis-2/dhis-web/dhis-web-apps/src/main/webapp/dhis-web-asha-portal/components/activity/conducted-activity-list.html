@@ -1,16 +1,21 @@
 <div class="alert alert-warning align-center" ng-if="approvalAuthorityLevel <= 0">{{'lacking_approval_authority'| translate}}</div>
-<div class="pull-right vertical-spacing">    
-    <button type="button" class="btn btn-warning" ng-click="approveAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'approve_all'| translate}}</button>
-    <button type="button" class="btn btn-danger" ng-click="rejectAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'reject_all'| translate}}</button>
-</div>
-<div ng-repeat="program in activityPrograms" ng-if="(activitiesConducted | filter: {program: program.id}).length > 0">
+<span class="vertical-spacing">
+    <span>
+        <button type="button" class="btn btn-success" ng-click="generatePaymentSlip()" ng-if="(activitiesConducted | filter: {currentApprovalStatus: 'Approved'}).length > 0">{{'payment_slip'| translate}}</button>
+    </span>
+    <span class="pull-right">
+        <button type="button" class="btn btn-warning" ng-click="approveAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'approve_all'| translate}}</button>
+        <button type="button" class="btn btn-danger" ng-click="rejectAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'reject_all'| translate}}</button>
+    </span>
+</span>
+<div ng-repeat="program in activityPrograms | orderBy: 'name'" ng-if="(activitiesConducted | filter: {program: program.id}).length > 0">
     <table class="listTable dhis2-table-striped-border vertical-spacing">
         <thead>
             <tr>
                 <th class="active align-center" colspan="{{stagesById[program.programStages[0].id].programStageDataElements.length - 1}}">
                     <h3 class="align-center bold">{{program.name}}</h3>
                 </th>
-            </tr>            
+            </tr>
             <tr>
                 <th class="active">
                     {{'date'| translate}}
