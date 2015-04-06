@@ -61,6 +61,7 @@ trackerCapture.controller('ActivityController',
         $scope.ashaDetails = benOwners.asha;
         $scope.ashaPeriod = benOwners.period;
         $scope.ashaEvent = benOwners.period.event;
+        $scope.paymentRate = benOwners.paymentRate;
         
         ProgramFactory.getActivityPrograms().then(function(programs){
             $scope.activityPrograms = programs;            
@@ -373,6 +374,9 @@ trackerCapture.controller('ActivityController',
             resolve: {
                 payments: function(){
                     return $scope.activitiesConducted;
+                },
+                paymentRate: function(){
+                    return $scope.paymentRate;
                 },
                 orgUnitName: function(){
                     return $scope.orgUnitName;

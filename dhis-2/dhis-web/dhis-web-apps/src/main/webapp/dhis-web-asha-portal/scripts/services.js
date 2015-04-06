@@ -1726,20 +1726,26 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             
             TCStorageService.currentStore.open().done(function(){
                 TCStorageService.currentStore.getAll('dataSets').done(function(dataSets){                    
-                    
-                    if(dataSets && dataSets[0] && dataSets[0].id){
-                        //api/dataValueSets?dataSet=pBOMPrpg1QX&period=201401&orgUnit=DiszpKrYNg8                        
-                        var url = '../api/dataValueSets.json?dataSet=' + dataSets[0].id + '&period=' + period + '&orgUnit=' + orgUnit;
-                        
-                        RemoteDataService.get( url ).then(function(response){
-                            def.resolve( response );
+                    if(dataSets && dataSets[0] && dataSets[0].id){                       
+                        var dataElementByRateCode = [];                    
+                        angular.forEach(dataSets[0].dataElements, function(de){
+                            dataElementByRateCode['"' + de.PaymentRate + '"'] = de;
                         });                        
+                        var url = '../api/dataValueSets.json?dataSet=' + dataSets[0].id + '&period=' + period + '&orgUnit=' + orgUnit;                        
+                        RemoteDataService.get( url ).then(function(response){
+                            
+                            var rateValues = [];                            
+                            angular.forEach(response.dataValues, function(dv){
+                                rateValues[dv.dataElement] = dv.value;
+                            });
+                            
+                            def.resolve( {code: dataElementByRateCode, value: rateValues} );
+                        });
                     }                    
                 });
             });
             
-            return def.promise;
-            
+            return def.promise;            
         },
         getApprovalAuthorityLevel: function(){
             return approvalLevel();

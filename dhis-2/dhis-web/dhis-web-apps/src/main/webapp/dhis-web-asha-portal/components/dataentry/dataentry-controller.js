@@ -255,9 +255,7 @@ trackerCapture.controller('DataEntryController',
             
             AshaPortalUtils.getPaymentRate(year, $scope.selectedOrgUnit.id).then(function(paymentRate){
                 
-                console.log('the payment rates:  ', paymentRate);
-                
-                CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: period, orgUnitName: $scope.currentEvent.orgUnitName}); 
+                CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: period, orgUnitName: $scope.currentEvent.orgUnitName, paymentRate: paymentRate}); 
 
                 $timeout(function() { 
                     $rootScope.$broadcast(mode, {optionSets: $scope.optionSets});

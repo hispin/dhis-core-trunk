@@ -1,4 +1,4 @@
-/* global trackerCapture, angular */
+/* global trackerCapture, angular, dhis2 */
 
 trackerCapture.controller('PaymentController',
         function($scope,
@@ -6,6 +6,7 @@ trackerCapture.controller('PaymentController',
                 $modalInstance,
                 $translate,
                 payments,
+                paymentRate,
                 programs,
                 programsById,
                 stages,
@@ -17,6 +18,7 @@ trackerCapture.controller('PaymentController',
                 slipType) {
 
     $scope.payments = payments;
+    $scope.paymentRate = paymentRate;
     $scope.programs = programs;
     $scope.programsById = programsById;
     $scope.stages = stages;
@@ -32,15 +34,18 @@ trackerCapture.controller('PaymentController',
     $scope.paymentTableHeaders.push({id: 'program', value: $translate('program')});
     
    
-    $scope.paymentReport = []; 
+    $scope.paymentReport = [];     
+    $scope.totalPaymentAmount = new Number(0);
     if(slipType === 'ACTIVITY'){
+        //$scope.totalPaymentAmount = 0;
         angular.forEach($scope.programs, function(program){
             $scope.paymentReport[program.id] = {hasData: false, rate: 'rate', claimed: 0, pending: 0, rejected: 0, approved: 0, sanctioned: 0};
             angular.forEach($filter('filter')($scope.payments, {program: program.id}), function(payment){
                 var obj = $scope.paymentReport[payment.program];
                 $scope.paymentReport[program.id] = {hasData: true, 
                                                         program: $scope.programsById[payment.program].name,
-                                                        rate: obj.rate, 
+                                                        rate: obj.rate,
+                                                        programStageId: payment.programStage,
                                                         claimed: obj.claimed + 1, 
                                                         pending: !payment.currentApprovalStatus ? obj.pending + 1: obj.pending,
                                                         rejected: payment.currentApprovalStatus === 'Rejected' ? obj.rejected + 1 : obj.rejected,
@@ -49,8 +54,20 @@ trackerCapture.controller('PaymentController',
                                                     };
             });
         });
+        
+        for(var key in $scope.paymentReport){            
+            if($scope.paymentReport[key] && $scope.paymentReport[key].hasData){                
+                $scope.paymentReport[key] = calculatePayment( $scope.paymentReport[key] );
+                
+                if( dhis2.validation.isNumber( $scope.paymentReport[key].sanctioned ) ){
+                    $scope.totalPaymentAmount = $scope.totalPaymentAmount + new Number( $scope.paymentReport[key].sanctioned );
+                }
+                
+            }
+        }
     }
     else if (slipType === 'SERVICE'){
+        //$scope.totalPaymentAmount = 0;
         var report = [];
         angular.forEach($scope.stages, function(st){
             report[st.id] = {hasData: false, rate: 'rate', claimed: 0, pending: 0, rejected: 0, approved: 0, sanctioned: 0};
@@ -73,12 +90,24 @@ trackerCapture.controller('PaymentController',
         
         for(var key in report){
             
-            if(report[key] && report[key].hasData){                
-                $scope.paymentReport.push(report[key]);                
+            if(report[key] && report[key].hasData){
+                
+                var r = calculatePayment( report[key] );
+                
+                $scope.paymentReport.push( r );
+                
+                if( dhis2.validation.isNumber( r.sanctioned ) ){
+                    $scope.totalPaymentAmount = $scope.totalPaymentAmount + new Number( r.sanctioned );
+                }                
             }
         }
+        
         $scope.paymentTableHeaders.push({id: 'service', value: $translate('service')});
     }    
+    
+    
+    console.log('the payment rate is:  ', $scope.paymentRate );
+    console.log('total fee:  ', $scope.totalPaymentAmount);
     
     $scope.paymentTableHeaders.push({id: 'rate', value: $translate('rate')});
     $scope.paymentTableHeaders.push({id: 'claimed', value: $translate('claimed')});
@@ -89,5 +118,32 @@ trackerCapture.controller('PaymentController',
     
     $scope.close = function () {
         $modalInstance.close($scope.gridColumns);
-    };    
+    }; 
+    
+    function calculatePayment( obj ){
+        
+        var amount = new Number(obj.approved);
+        if( amount > 0 ){
+            var r = $scope.stagesById[obj.programStageId].PaymentRate;
+            
+            console.log('the rate:  ', r);
+            
+            var rateCode = $scope.paymentRate.code['"' + r + '"'];
+            
+            console.log('the code:  ', rateCode);
+            
+            if( rateCode && rateCode.id && $scope.paymentRate.value[rateCode.id]){
+                var rate = $scope.paymentRate.value[rateCode.id];
+
+                if( dhis2.validation.isNumber(rate)){
+                   rate = new Number(rate);
+                   obj.sanctioned = rate*amount;
+                }
+            }
+            else{
+                obj.sanctioned = $translate('no_rate_defined');
+            }
+        }        
+        return obj;
+    };
 });

@@ -77,6 +77,7 @@ trackerCapture.controller('BeneficiaryController',
         $scope.ashaDetails = benOwners.asha;
         $scope.ashaPeriod = benOwners.period;
         $scope.ashaEvent = benOwners.period.event;
+        $scope.paymentRate = benOwners.paymentRate;
         
         ProgramFactory.getBeneficairyPrograms().then(function(response){
             $scope.beneficiaryProgramsById = [];
@@ -664,6 +665,9 @@ trackerCapture.controller('BeneficiaryController',
             resolve: {
                 payments: function(){
                     return $scope.servicesProvided;
+                },
+                paymentRate: function(){
+                    return $scope.paymentRate;
                 },
                 orgUnitName: function(){
                     return $scope.orgUnitName;
