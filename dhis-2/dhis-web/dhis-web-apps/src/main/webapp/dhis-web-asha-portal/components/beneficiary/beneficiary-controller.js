@@ -147,8 +147,7 @@ trackerCapture.controller('BeneficiaryController',
                                     }
                                 }
                             });
-
-                            //$scope.serviceGridColumns.push({name: $translate('program'), id: 'program', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
+                            
                             $scope.serviceGridColumns.push({name: $translate('service'), id: 'serviceName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service_date'), id: 'eventDate', type: 'date', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('current_approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});                            
@@ -228,7 +227,7 @@ trackerCapture.controller('BeneficiaryController',
             if(response.status === 'SUCCESS'){
                 
                 $scope.tei.trackedEntityInstance = response.reference;
-                $scope.selectedTei.trackedEntityInstance = response.reference;
+                $scope.selectedTei.trackedEntityInstance = $scope.selectedTei.id = response.reference;
                 
                 var enrollment = {};
                 enrollment.trackedEntityInstance = $scope.tei.trackedEntityInstance;
@@ -237,6 +236,7 @@ trackerCapture.controller('BeneficiaryController',
                 enrollment.orgUnit = $scope.selectedOrgUnit.id;
                 enrollment.dateOfEnrollment = $scope.selectedEnrollment.dateOfEnrollment;
                 enrollment.dateOfIncident = $scope.selectedEnrollment.dateOfIncident === '' ? $scope.selectedEnrollment.dateOfEnrollment : $scope.selectedEnrollment.dateOfIncident;
+                enrollment.followup = false;
 
                 EnrollmentService.enroll(enrollment).then(function(data){
                     if(data.status !== 'SUCCESS'){
@@ -251,10 +251,16 @@ trackerCapture.controller('BeneficiaryController',
                     }
                     
                     $scope.showRegistrationDiv = false;
-                    $scope.fetchTei();
                     
-                    if(destination === 'SERVICE'){
-                        $scope.selectedTei.id = $scope.selectedTei.trackedEntityInstance;
+                    if($scope.trackedEntityList.rows.length){
+                        $scope.trackedEntityList.rows.push($scope.selectedTei);
+                    }
+                    else{
+                        $scope.trackedEntityList.rows = [];
+                        $scope.trackedEntityList.rows.push($scope.selectedTei);
+                    }                    
+                    
+                    if(destination === 'SERVICE'){                        
                         $scope.showAddNewService($scope.selectedTei);
                     }
                     
@@ -533,7 +539,8 @@ trackerCapture.controller('BeneficiaryController',
                 $scope.selectedService.program.id && 
                 $scope.selectedService.service &&
                 $scope.selectedService.service.id &&
-                $scope.selectedService.dueDate ){
+                $scope.selectedService.dueDate &&
+                $scope.dataElementForServiceOwner.id){
             
             var dhis2Event = {};            
             dhis2Event.trackedEntityInstance = $scope.selectedBeneficiary.id;
@@ -542,15 +549,8 @@ trackerCapture.controller('BeneficiaryController',
             dhis2Event.orgUnit = $scope.selectedOrgUnit.id;
             dhis2Event.status = 'VISITED';
             dhis2Event.dueDate = dhis2Event.eventDate = DateUtils.formatFromUserToApi($scope.selectedService.dueDate);
-            dhis2Event.dataValues = [];
+            dhis2Event.dataValues = [{dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent}];
             $scope.selectedServiceStage = $scope.stagesById[$scope.selectedService.service.id];
-            
-            for(var i=0; i<$scope.selectedServiceStage.programStageDataElements.length; i++){
-                var prStDe = $scope.selectedServiceStage.programStageDataElements[i];
-                if(prStDe.dataElement.ServiceOwner){
-                    dhis2Event.dataValues.push({dataElement: prStDe.dataElement.id, value: $scope.ashaEvent});
-                }
-            }
             
             $scope.selectedEnrollment = $scope.beneficiaryEnrollmentsByProgram[$scope.selectedService.program.id];
             
@@ -568,6 +568,7 @@ trackerCapture.controller('BeneficiaryController',
                 $scope.selectedEnrollment.program = $scope.selectedService.program.id;
                 $scope.selectedEnrollment.status = 'ACTIVE';
                 $scope.selectedEnrollment.orgUnit = $scope.selectedOrgUnit.id;
+                $scope.selectedEnrollment.followup = false;
                 
                 EnrollmentService.enroll($scope.selectedEnrollment).then(function(data){
                     if(data.status !== 'SUCCESS'){

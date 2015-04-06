@@ -148,6 +148,7 @@ trackerCapture.controller('RegistrationController',
                         enrollment.orgUnit = $scope.selectedOrgUnit.id;
                         enrollment.dateOfEnrollment = $scope.selectedEnrollment.dateOfEnrollment;
                         enrollment.dateOfIncident = $scope.selectedEnrollment.dateOfIncident === '' ? $scope.selectedEnrollment.dateOfEnrollment : $scope.selectedEnrollment.dateOfIncident;
+                        enrollment.followup = false;
 
                         EnrollmentService.enroll(enrollment).then(function(data){
                             if(data.status !== 'SUCCESS'){

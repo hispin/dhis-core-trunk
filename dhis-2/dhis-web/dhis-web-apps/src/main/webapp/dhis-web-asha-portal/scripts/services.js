@@ -587,7 +587,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 })
 
 /* service to deal with TEI registration and update */
-.service('RegistrationService', function(DialogService, TEIService, $q){
+.service('RegistrationService', function(TEIService, $q){
     return {
         registerOrUpdate: function(tei, optionSets, attributesById){
             if(tei){
