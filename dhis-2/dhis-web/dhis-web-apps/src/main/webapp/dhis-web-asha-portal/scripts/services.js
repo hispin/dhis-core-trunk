@@ -1571,6 +1571,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 dummyEvent.periodName = periods[0].name;
                 dummyEvent.eventDate = dummyEvent.dueDate;
                 dummyEvent.periods = periods;
+                dummyEvent.status = 'VISITED';
             }
             else{
                 dummyEvent.dueDate = getEventDueDate(eventsPerStage, programStage, enrollment);

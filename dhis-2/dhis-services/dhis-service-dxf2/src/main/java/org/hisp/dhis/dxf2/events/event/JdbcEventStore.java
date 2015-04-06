@@ -81,6 +81,8 @@ public class JdbcEventStore
         SqlRowSet rowSet = jdbcTemplate.queryForRowSet( sql );
         
         log.debug( "Event query SQL: " + sql );
+        
+        System.out.println("The sql is:  " + sql);
 
         Event event = new Event();
         event.setEvent( "not_valid" );

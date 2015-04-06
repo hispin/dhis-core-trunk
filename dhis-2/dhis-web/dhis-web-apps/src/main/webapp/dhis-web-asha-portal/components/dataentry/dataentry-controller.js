@@ -251,11 +251,11 @@ trackerCapture.controller('DataEntryController',
         var p = period && period.name ? period.name.split(" ") : null;
         var year = p.length === 2 ? p[1] : null; 
         
-        if($scope.selectedTei && period && period.event && period.eventDate && year){            
+        if($scope.selectedTei && period && period.event && period.eventDate && year && $scope.currentEvent.event){            
             
             AshaPortalUtils.getPaymentRate(year, $scope.selectedOrgUnit.id).then(function(paymentRate){
                 
-                CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: period, orgUnitName: $scope.currentEvent.orgUnitName, paymentRate: paymentRate}); 
+                CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: period, orgUnitName: $scope.currentEvent.orgUnitName, paymentRate: paymentRate, ashaEvent: $scope.currentEvent.event}); 
 
                 $timeout(function() { 
                     $rootScope.$broadcast(mode, {optionSets: $scope.optionSets});

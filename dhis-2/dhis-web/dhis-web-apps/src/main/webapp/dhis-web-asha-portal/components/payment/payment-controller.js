@@ -44,7 +44,7 @@ trackerCapture.controller('PaymentController',
                 var obj = $scope.paymentReport[payment.program];
                 $scope.paymentReport[program.id] = {hasData: true, 
                                                         program: $scope.programsById[payment.program].name,
-                                                        rate: obj.rate,
+                                                        rate: getStageRate(payment.programStage),
                                                         programStageId: payment.programStage,
                                                         claimed: obj.claimed + 1, 
                                                         pending: !payment.currentApprovalStatus ? obj.pending + 1: obj.pending,
@@ -78,7 +78,7 @@ trackerCapture.controller('PaymentController',
                                                         service: $scope.stagesById[payment.programStage].name,
                                                         programId: payment.program,
                                                         programStageId: payment.programStage,
-                                                        rate: obj.rate, 
+                                                        rate: getStageRate(payment.programStage), 
                                                         claimed: obj.claimed + 1, 
                                                         pending: !payment.currentApprovalStatus ? obj.pending + 1: obj.pending,
                                                         rejected: payment.currentApprovalStatus === 'Rejected' ? obj.rejected + 1 : obj.rejected,
@@ -103,11 +103,8 @@ trackerCapture.controller('PaymentController',
         }
         
         $scope.paymentTableHeaders.push({id: 'service', value: $translate('service')});
-    }    
+    }
     
-    
-    console.log('the payment rate is:  ', $scope.paymentRate );
-    console.log('total fee:  ', $scope.totalPaymentAmount);
     
     $scope.paymentTableHeaders.push({id: 'rate', value: $translate('rate')});
     $scope.paymentTableHeaders.push({id: 'claimed', value: $translate('claimed')});
@@ -120,30 +117,38 @@ trackerCapture.controller('PaymentController',
         $modalInstance.close($scope.gridColumns);
     }; 
     
+    function getStageRate( stageId ){        
+        
+        var r = $scope.stagesById[stageId].PaymentRate;
+        var rateCode = $scope.paymentRate.code['"' + r + '"'];
+        
+        if( rateCode && rateCode.id && $scope.paymentRate.value[rateCode.id]){
+            var rate = $scope.paymentRate.value[rateCode.id];
+
+            if( dhis2.validation.isNumber(rate)){
+               rate = new Number(rate);               
+               return rate;
+            }
+        }
+        
+        return null;
+    };
+    
     function calculatePayment( obj ){
         
         var amount = new Number(obj.approved);
-        if( amount > 0 ){
-            var r = $scope.stagesById[obj.programStageId].PaymentRate;
-            
-            console.log('the rate:  ', r);
-            
-            var rateCode = $scope.paymentRate.code['"' + r + '"'];
-            
-            console.log('the code:  ', rateCode);
-            
-            if( rateCode && rateCode.id && $scope.paymentRate.value[rateCode.id]){
-                var rate = $scope.paymentRate.value[rateCode.id];
-
-                if( dhis2.validation.isNumber(rate)){
-                   rate = new Number(rate);
-                   obj.sanctioned = rate*amount;
-                }
+        var rate = obj.rate;
+        
+        if( amount > 0 ){                    
+            if( dhis2.validation.isNumber( rate ) ){
+                rate = new Number(rate);
+                obj.sanctioned = rate*amount;
             }
             else{
                 obj.sanctioned = $translate('no_rate_defined');
-            }
-        }        
+            }            
+        }
+        
         return obj;
     };
 });
