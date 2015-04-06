@@ -17,7 +17,8 @@ trackerCapture.controller('DataEntryController',
                 DialogService,
                 CurrentSelection,
                 CustomFormService,
-                PeriodService) {
+                PeriodService,
+                AshaPortalUtils) {
     //Data entry form
     $scope.dataEntryOuterForm = {};
     $scope.displayCustomForm = false;
@@ -245,21 +246,29 @@ trackerCapture.controller('DataEntryController',
     };
     
     function notifyAshaController(mode){
-        if($scope.selectedTei && 
-                $scope.currentPeriod[$scope.currentStage.id] && 
-                $scope.currentPeriod[$scope.currentStage.id].event && 
-                $scope.currentPeriod[$scope.currentStage.id].eventDate){
+        
+        var period = $scope.currentPeriod[$scope.currentStage.id];
+        var p = period && period.name ? period.name.split(" ") : null;
+        var year = p.length === 2 ? p[1] : null; 
+        
+        if($scope.selectedTei && period && period.event && period.eventDate && year){            
             
-           CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: $scope.currentPeriod[$scope.currentStage.id], orgUnitName: $scope.currentEvent.orgUnitName}); 
-           
-           $timeout(function() { 
-                $rootScope.$broadcast(mode, {optionSets: $scope.optionSets});
-            }, 100);
+            AshaPortalUtils.getPaymentRate(year, $scope.selectedOrgUnit.id).then(function(paymentRate){
+                
+                console.log('the payment rates:  ', paymentRate);
+                
+                CurrentSelection.setBenOrActOwners({asha: $scope.selectedTei, period: period, orgUnitName: $scope.currentEvent.orgUnitName}); 
+
+                $timeout(function() { 
+                    $rootScope.$broadcast(mode, {optionSets: $scope.optionSets});
+                }, 100);
+                
+            });            
         }
         else{
             var dialogOptions = {
-                headerText: 'invalid_period',
-                bodyText: 'invalid_period_for_event' + $scope.currentPeriod[$scope.currentStage.id]
+                headerText: 'invalid_db_configuration',
+                bodyText: 'invalid_period_for_event' + period
             };
 
             DialogService.showDialog({}, dialogOptions);

@@ -262,6 +262,22 @@ function processDataSet( dataSet ){
         }
     }
     
+    delete dataSet.attributeValues;
+    
+    if( dataSet.dataElements ){
+        for(var i=0; i<dataSet.dataElements.length; i++){
+            if( dataSet.dataElements[i] && dataSet.dataElements[i].attributeValues ){
+                for(var j=0; j<dataSet.dataElements[i].attributeValues.length; j++){
+                    if(dataSet.dataElements[i].attributeValues[j].value && dataSet.dataElements[i].attributeValues[j].attribute && dataSet.dataElements[i].attributeValues[j].attribute.code === 'PaymentRate'){
+                        dataSet.dataElements[i][dataSet.dataElements[i].attributeValues[j].attribute.code] = dataSet.dataElements[i].attributeValues[j].value;
+                    }
+                }
+            }
+            
+            delete dataSet.dataElements[i].attributeValues;
+        }
+    }
+    
     return dataSet;
 }
 function getMetaDataSets()
@@ -278,7 +294,10 @@ function getMetaDataSets()
             
             dataSet = processDataSet( dataSet );
             
-            dataSets.push( dataSet );
+            if(dataSet.HasPaymentRate){
+                dataSets.push( dataSet );
+            }
+            
         });
         
         def.resolve( dataSets );
@@ -512,11 +531,13 @@ function processProgramStage( stage )
     
     if(stage.attributeValues){
         for(var i=0; i<stage.attributeValues.length; i++){
-            if(stage.attributeValues[i].value === 'true' && stage.attributeValues[i].attribute && stage.attributeValues[i].attribute.code){
-                stage[stage.attributeValues[i].attribute.code] = true;
+            if(stage.attributeValues[i].value && stage.attributeValues[i].attribute && stage.attributeValues[i].attribute.code){
+                stage[stage.attributeValues[i].attribute.code] = stage.attributeValues[i].value === 'true' ? true : stage.attributeValues[i].value;
             }
         }
     }
+    
+    delete stage.attributeValues;
     
     if(stage.programStageDataElements){
         for(var i=0; i<stage.programStageDataElements.length; i++){
@@ -524,16 +545,18 @@ function processProgramStage( stage )
             if(prStDe && prStDe.dataElement && prStDe.dataElement.attributeValues){
                 for(var j=0; j<prStDe.dataElement.attributeValues.length; j++){
                     if(prStDe.dataElement.attributeValues[j].value === 'true' && prStDe.dataElement.attributeValues[j].attribute && prStDe.dataElement.attributeValues[j].attribute.code){
-                        prStDe.dataElement[prStDe.dataElement.attributeValues[j].attribute.code] = true;
+                        prStDe.dataElement[prStDe.dataElement.attributeValues[j].attribute.code] = prStDe.dataElement.attributeValues[j].value === 'true' ? true : prStDe.dataElement.attributeValues[j].value;
                     }
                 }
-            }            
+            }
+            
+            delete prStDe.dataElement.attributeValues;
         }
     }
     
-    return stage;
-    
+    return stage;    
 }
+
 function getProgramStage( id )
 {    
     return function() {

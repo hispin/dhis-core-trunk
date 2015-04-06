@@ -1706,7 +1706,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };
 })
 
-.service('AshaPortalUtils', function(SessionStorageService, OptionSetService, DateUtils, ModalService, $translate, $q, DHIS2EventFactory){   
+.service('AshaPortalUtils', function(SessionStorageService, OptionSetService, DateUtils, TCStorageService, $q, RemoteDataService){   
     
     var approvalLevel = function(){
         var roles = SessionStorageService.get('USER_ROLES');
@@ -1720,7 +1720,27 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         return 0;
     };
     return {
-        //check for beneficiary registration
+        getPaymentRate: function(period, orgUnit){
+            
+            var def  = $q.defer();
+            
+            TCStorageService.currentStore.open().done(function(){
+                TCStorageService.currentStore.getAll('dataSets').done(function(dataSets){                    
+                    
+                    if(dataSets && dataSets[0] && dataSets[0].id){
+                        //api/dataValueSets?dataSet=pBOMPrpg1QX&period=201401&orgUnit=DiszpKrYNg8                        
+                        var url = '../api/dataValueSets.json?dataSet=' + dataSets[0].id + '&period=' + period + '&orgUnit=' + orgUnit;
+                        
+                        RemoteDataService.get( url ).then(function(response){
+                            def.resolve( response );
+                        });                        
+                    }                    
+                });
+            });
+            
+            return def.promise;
+            
+        },
         getApprovalAuthorityLevel: function(){
             return approvalLevel();
         },
