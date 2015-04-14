@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
@@ -228,13 +229,18 @@ public class DefaultExpressionService
     @Transactional
     public Set<DataElement> getDataElementsInExpression( String expression )
     {
-        Set<DataElement> dataElementsInExpression = null;
+        return getDataElementsInExpressionInternal( OPERAND_PATTERN, expression );
+    }
+    
+    private Set<DataElement> getDataElementsInExpressionInternal( Pattern pattern, String expression )
+    {
+        Set<DataElement> dataElements = null;
 
         if ( expression != null )
         {
-            dataElementsInExpression = new HashSet<>();
+            dataElements = new HashSet<>();
 
-            final Matcher matcher = OPERAND_PATTERN.matcher( expression );
+            final Matcher matcher = pattern.matcher( expression );
 
             while ( matcher.find() )
             {
@@ -242,12 +248,12 @@ public class DefaultExpressionService
 
                 if ( dataElement != null )
                 {
-                    dataElementsInExpression.add( dataElement );
+                    dataElements.add( dataElement );
                 }
             }
         }
 
-        return dataElementsInExpression;
+        return dataElements;
     }
     
     @Override
@@ -293,7 +299,7 @@ public class DefaultExpressionService
         
         return groupsInExpression;
     }
-    
+
     @Override
     public Set<String> getDataElementTotalUids( String expression )
     {
@@ -322,7 +328,7 @@ public class DefaultExpressionService
         {
             optionCombosInExpression = new HashSet<>();
 
-            final Matcher matcher = OPERAND_PATTERN.matcher( expression );
+            final Matcher matcher = OPTION_COMBO_OPERAND_PATTERN.matcher( expression );
 
             while ( matcher.find() )
             {
@@ -349,7 +355,7 @@ public class DefaultExpressionService
         {
             operandsInExpression = new HashSet<>();
 
-            final Matcher matcher = OPERAND_PATTERN.matcher( expression );
+            final Matcher matcher = OPTION_COMBO_OPERAND_PATTERN.matcher( expression );
 
             while ( matcher.find() )
             {
@@ -375,6 +381,56 @@ public class DefaultExpressionService
         {
             Set<DataElement> numerator = getDataElementsInExpression( indicator.getNumerator() );
             Set<DataElement> denominator = getDataElementsInExpression( indicator.getDenominator() );
+            
+            if ( numerator != null )
+            {
+                dataElements.addAll( numerator );
+            }
+            
+            if ( denominator != null )
+            {
+                dataElements.addAll( denominator );
+            }
+        }
+        
+        return dataElements;
+    }
+
+    @Override
+    @Transactional
+    public Set<DataElement> getDataElementTotalsInIndicators( Collection<Indicator> indicators )
+    {
+        Set<DataElement> dataElements = new HashSet<>();
+        
+        for ( Indicator indicator : indicators )
+        {
+            Set<DataElement> numerator = getDataElementsInExpressionInternal( DATA_ELEMENT_TOTAL_PATTERN, indicator.getNumerator() );
+            Set<DataElement> denominator = getDataElementsInExpressionInternal( DATA_ELEMENT_TOTAL_PATTERN, indicator.getDenominator() );
+            
+            if ( numerator != null )
+            {
+                dataElements.addAll( numerator );
+            }
+            
+            if ( denominator != null )
+            {
+                dataElements.addAll( denominator );
+            }
+        }
+        
+        return dataElements;
+    }
+
+    @Override
+    @Transactional
+    public Set<DataElement> getDataElementWithOptionCombosInIndicators( Collection<Indicator> indicators )
+    {
+        Set<DataElement> dataElements = new HashSet<>();
+        
+        for ( Indicator indicator : indicators )
+        {
+            Set<DataElement> numerator = getDataElementsInExpressionInternal( OPTION_COMBO_OPERAND_PATTERN, indicator.getNumerator() );
+            Set<DataElement> denominator = getDataElementsInExpressionInternal( OPTION_COMBO_OPERAND_PATTERN, indicator.getDenominator() );
             
             if ( numerator != null )
             {
@@ -620,18 +676,6 @@ public class DefaultExpressionService
 
     @Override
     @Transactional
-    public void explodeAndSubstituteExpressions( Collection<Indicator> indicators, Integer days )
-    {
-        if ( indicators != null && !indicators.isEmpty() )
-        {
-            substituteExpressions( indicators, days );
-
-            explodeExpressions( indicators );
-        }
-    }
-
-    @Override
-    @Transactional
     public void substituteExpressions( Collection<Indicator> indicators, Integer days )
     {
         if ( indicators != null && !indicators.isEmpty() )
@@ -644,36 +688,6 @@ public class DefaultExpressionService
         }                
     }
     
-    @Override
-    @Transactional
-    public void explodeExpressions( Collection<Indicator> indicators )
-    {
-        if ( indicators != null && !indicators.isEmpty() )
-        {
-            Set<String> dataElementTotals = new HashSet<>();
-            
-            for ( Indicator indicator : indicators )
-            {
-                dataElementTotals.addAll( getDataElementTotalUids( indicator.getNumerator() ) );
-                dataElementTotals.addAll( getDataElementTotalUids( indicator.getDenominator() ) );
-            }
-            
-            if ( !dataElementTotals.isEmpty() )
-            {
-                final ListMap<String, String> dataElementMap = dataElementService.getDataElementCategoryOptionComboMap( dataElementTotals );
-                
-                if ( !dataElementMap.isEmpty() )
-                {
-                    for ( Indicator indicator : indicators )
-                    {
-                        indicator.setExplodedNumerator( explodeExpression( indicator.getExplodedNumeratorFallback(), dataElementMap ) );
-                        indicator.setExplodedDenominator( explodeExpression( indicator.getExplodedDenominatorFallback(), dataElementMap ) );
-                    }
-                }
-            }
-        }
-    }
-
     @Override
     @Transactional
     public void explodeValidationRuleExpressions( Collection<ValidationRule> validationRules )

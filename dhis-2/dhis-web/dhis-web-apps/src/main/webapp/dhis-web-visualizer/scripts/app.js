@@ -203,8 +203,8 @@ Ext.onReady( function() {
 			window,
 
 			margin = 1,
-			defaultWidth = 160,
-			defaultHeight = 200;
+			defaultWidth = 200,
+			defaultHeight = 220;
 
 		getStore = function(data) {
 			var config = {};
@@ -267,7 +267,7 @@ Ext.onReady( function() {
 
 		dimension = Ext.create('Ext.ux.form.MultiSelect', {
 			cls: 'ns-toolbar-multiselect-leftright',
-			width: defaultWidth,
+			width: defaultWidth - 50,
 			height: (defaultHeight * 2) + margin,
 			style: 'margin-right:' + margin + 'px; margin-bottom:0px',
 			valueField: 'id',
@@ -280,7 +280,7 @@ Ext.onReady( function() {
 				height: 25,
 				items: {
 					xtype: 'label',
-					text: NS.i18n.dimensions,
+					text: NS.i18n.excluded_dimensions,
 					cls: 'ns-toolbar-multiselect-leftright-label'
 				}
 			},
@@ -309,7 +309,7 @@ Ext.onReady( function() {
 				height: 25,
 				items: {
 					xtype: 'label',
-					text: NS.i18n.series,
+					text: NS.i18n.series_dimensions,
 					cls: 'ns-toolbar-multiselect-leftright-label'
 				}
 			},
@@ -361,7 +361,7 @@ Ext.onReady( function() {
 				height: 25,
 				items: {
 					xtype: 'label',
-					text: NS.i18n.category,
+					text: NS.i18n.category_dimensions,
 					cls: 'ns-toolbar-multiselect-leftright-label'
 				}
 			},
@@ -413,7 +413,7 @@ Ext.onReady( function() {
 				height: 25,
 				items: {
 					xtype: 'label',
-					text: NS.i18n.filter,
+					text: NS.i18n.report_filter,
 					cls: 'ns-toolbar-multiselect-leftright-label'
 				}
 			},
@@ -972,7 +972,7 @@ Ext.onReady( function() {
 				}
 
                 sortOrder.setValue(Ext.isNumber(layout.sortOrder) ? layout.sortOrder : 0);
-                aggregationType.setValue(Ext.isString(layout.aggregationType) ? layout.aggregationType : 'DEFAULT');
+                aggregationType.setValue(Ext.isString(layout.aggregationType) ? layout.aggregationType : 'default');
 
 				// rangeAxisMaxValue
 				if (Ext.isNumber(layout.rangeAxisMaxValue)) {
@@ -3476,10 +3476,10 @@ Ext.onReady( function() {
             onTriggerClick: function() {
 				if (this.getValue()) {
 					this.reset();
-					this.onKeyUp();
+					this.onKeyUpHandler();
 				}
             },
-            onKeyUp: function() {
+            onKeyUpHandler: function() {
                 var value = indicatorGroup.getValue(),
                     store = indicatorAvailableStore;
 
@@ -3490,7 +3490,7 @@ Ext.onReady( function() {
             listeners: {
                 keyup: {
                     fn: function(cmp) {
-                        cmp.onKeyUp();
+                        cmp.onKeyUpHandler();
                     },
                     buffer: 100
                 },
@@ -3714,10 +3714,10 @@ Ext.onReady( function() {
             onTriggerClick: function() {
 				if (this.getValue()) {
 					this.reset();
-					this.onKeyUp();
+					this.onKeyUpHandler();
 				}
             },
-            onKeyUp: function() {
+            onKeyUpHandler: function() {
                 var value = dataElementGroup.getValue(),
                     store = dataElementAvailableStore;
 
@@ -3728,7 +3728,7 @@ Ext.onReady( function() {
             listeners: {
                 keyup: {
                     fn: function(cmp) {
-                        cmp.onKeyUp();
+                        cmp.onKeyUpHandler();
                     },
                     buffer: 100
                 },
@@ -3985,17 +3985,17 @@ Ext.onReady( function() {
             onTriggerClick: function() {
 				if (this.getValue()) {
 					this.reset();
-					this.onKeyUp();
+					this.onKeyUpHandler();
 				}
             },
-            onKeyUp: function() {
+            onKeyUpHandler: function() {
                 var store = dataSetAvailableStore;
                 store.loadPage(this.getValue(), false);
             },
             listeners: {
                 keyup: {
                     fn: function(cmp) {
-                        cmp.onKeyUp();
+                        cmp.onKeyUpHandler();
                     },
                     buffer: 100
                 },
@@ -4206,6 +4206,11 @@ Ext.onReady( function() {
 								},
 								{
 									xtype: 'checkbox',
+									relativePeriodId: 'THIS_WEEK',
+									boxLabel: NS.i18n.this_week
+								},
+								{
+									xtype: 'checkbox',
 									relativePeriodId: 'LAST_WEEK',
 									boxLabel: NS.i18n.last_week
 								},
@@ -4236,6 +4241,11 @@ Ext.onReady( function() {
 									xtype: 'label',
 									text: NS.i18n.quarters,
 									cls: 'ns-label-period-heading'
+								},
+								{
+									xtype: 'checkbox',
+									relativePeriodId: 'THIS_QUARTER',
+									boxLabel: NS.i18n.this_quarter
 								},
 								{
 									xtype: 'checkbox',
@@ -4297,6 +4307,11 @@ Ext.onReady( function() {
 								},
 								{
 									xtype: 'checkbox',
+									relativePeriodId: 'THIS_MONTH',
+									boxLabel: NS.i18n.this_month
+								},
+								{
+									xtype: 'checkbox',
 									relativePeriodId: 'LAST_MONTH',
 									boxLabel: NS.i18n.last_month
 								},
@@ -4330,6 +4345,11 @@ Ext.onReady( function() {
 								},
 								{
 									xtype: 'checkbox',
+									relativePeriodId: 'THIS_SIX_MONTH',
+									boxLabel: NS.i18n.this_sixmonth
+								},
+								{
+									xtype: 'checkbox',
 									relativePeriodId: 'LAST_SIX_MONTH',
 									boxLabel: NS.i18n.last_sixmonth
 								},
@@ -4358,6 +4378,11 @@ Ext.onReady( function() {
 									xtype: 'label',
 									text: NS.i18n.bimonths,
 									cls: 'ns-label-period-heading'
+								},
+								{
+									xtype: 'checkbox',
+									relativePeriodId: 'THIS_BIMONTH',
+									boxLabel: NS.i18n.this_bimonth
 								},
 								{
 									xtype: 'checkbox',
@@ -5105,6 +5130,9 @@ Ext.onReady( function() {
 			var	onSelect,
                 availableStore,
 				selectedStore,
+				dataLabel,
+				dataSearch,
+				dataFilter,
 				available,
 				selected,
 				panel,
@@ -5152,7 +5180,7 @@ Ext.onReady( function() {
 						return;
 					}
 
-					path = '/dimensions/' + dimension.id + '/items' + (filter ? '/query/' + filter : '') + '.json';
+					path = '/dimensions/' + dimension.id + '/items.json' + (filter ? '?filter=name:like:' + filter : '');
 
 					if (noPaging) {
 						params.paging = false;
@@ -5220,6 +5248,75 @@ Ext.onReady( function() {
                 }
 			});
 
+			dataLabel = Ext.create('Ext.form.Label', {
+				text: NS.i18n.available,
+				cls: 'ns-toolbar-multiselect-left-label',
+				style: 'margin-right:5px'
+			});
+
+			dataSearch = Ext.create('Ext.button.Button', {
+				width: 22,
+				height: 22,
+				cls: 'ns-button-icon',
+				style: 'background: url(images/search_14.png) 3px 3px no-repeat',
+				showFilter: function() {
+					dataLabel.hide();
+					this.hide();
+					dataFilter.show();
+					dataFilter.reset();
+				},
+				hideFilter: function() {
+					dataLabel.show();
+					this.show();
+					dataFilter.hide();
+					dataFilter.reset();
+				},
+				handler: function() {
+					this.showFilter();
+				}
+			});
+
+			dataFilter = Ext.create('Ext.form.field.Trigger', {
+				cls: 'ns-trigger-filter',
+				emptyText: 'Filter available..',
+				height: 22,
+				hidden: true,
+				enableKeyEvents: true,
+				fieldStyle: 'height:22px; border-right:0 none',
+				style: 'height:22px',
+				onTriggerClick: function() {
+					if (this.getValue()) {
+						this.reset();
+						this.onKeyUpHandler();
+					}
+				},
+				onKeyUpHandler: function() {
+					var value = this.getValue(),
+						store = availableStore;
+
+					if (Ext.isString(value) || Ext.isNumber(value)) {
+						store.loadPage(value, false, true);
+					}
+				},
+				listeners: {
+					keyup: {
+						fn: function(cmp) {
+							cmp.onKeyUpHandler();
+						},
+						buffer: 100
+					},
+					show: function(cmp) {
+						cmp.focus(false, 50);
+					},
+					focus: function(cmp) {
+						cmp.addCls('ns-trigger-filter-focused');
+					},
+					blur: function(cmp) {
+						cmp.removeCls('ns-trigger-filter-focused');
+					}
+				}
+			});
+
 			available = Ext.create('Ext.ux.form.MultiSelect', {
 				cls: 'ns-toolbar-multiselect-left',
 				width: (ns.core.conf.layout.west_fieldset_width - ns.core.conf.layout.west_width_padding) / 2,
@@ -5227,11 +5324,9 @@ Ext.onReady( function() {
 				displayField: 'name',
 				store: availableStore,
 				tbar: [
-					{
-						xtype: 'label',
-						text: NS.i18n.available,
-						cls: 'ns-toolbar-multiselect-left-label'
-					},
+                    dataLabel,
+                    dataSearch,
+                    dataFilter,
 					'->',
 					{
 						xtype: 'button',
@@ -5739,6 +5834,26 @@ Ext.onReady( function() {
                                         iconCls: 'ns-menu-item-scheme',
                                         handler: function() {
                                             openPlainDataSource(ns.core.init.contextPath + '/api/analytics.csv' + getParamString() + '&outputIdScheme=NAME');
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                text: 'Advanced',
+                                iconCls: 'ns-menu-item-advanced',
+                                menu: [
+                                    {
+                                        text: 'JRXML',
+                                        iconCls: 'ns-menu-item-datasource',
+                                        handler: function() {
+                                            openPlainDataSource(ns.core.init.contextPath + '/api/analytics.jrxml' + getParamString(), true);
+                                        }
+                                    },
+                                    {
+                                        text: 'Raw data SQL',
+                                        iconCls: 'ns-menu-item-datasource',
+                                        handler: function() {
+                                            openPlainDataSource(ns.core.init.contextPath + '/api/analytics/debug/sql' + getParamString(), true);
                                         }
                                     }
                                 ]
@@ -6314,18 +6429,17 @@ Ext.onReady( function() {
 					}
                 },
 				afterrender: function(p) {
-					var liStyle = 'padding:3px 10px; color:#333',
-						html = '';
+					var html = '';
 
-					html += '<div style="padding:20px">';
-					html += '<div style="font-size:14px; padding-bottom:8px">' + NS.i18n.example1 + '</div>';
-					html += '<div style="' + liStyle + '">- ' + NS.i18n.example2 + '</div>';
-					html += '<div style="' + liStyle + '">- ' + NS.i18n.example3 + '</div>';
-					html += '<div style="' + liStyle + '">- ' + NS.i18n.example4 + '</div>';
-					html += '<div style="font-size:14px; padding-top:20px; padding-bottom:8px">' + NS.i18n.example5 + '</div>';
-					html += '<div style="' + liStyle + '">- ' + NS.i18n.example6 + '</div>';
-					html += '<div style="' + liStyle + '">- ' + NS.i18n.example7 + '</div>';
-					html += '<div style="' + liStyle + '">- ' + NS.i18n.example8 + '</div>';
+					html += '<div class="ns-viewport-text" style="padding:20px">';
+					html += '<h3>' + NS.i18n.example1 + '</h3>';
+					html += '<div>- ' + NS.i18n.example2 + '</div>';
+					html += '<div>- ' + NS.i18n.example3 + '</div>';
+					html += '<div>- ' + NS.i18n.example4 + '</div>';
+					html += '<h3 style="padding-top:20px">' + NS.i18n.example5 + '</h3>';
+					html += '<div>- ' + NS.i18n.example6 + '</div>';
+					html += '<div>- ' + NS.i18n.example7 + '</div>';
+					html += '<div>- ' + NS.i18n.example8 + '</div>';
 					html += '</div>';
 
 					p.update(html);
@@ -6676,7 +6790,17 @@ Ext.onReady( function() {
 
 				NS.instances.push(ns);
 
-				ns.core = NS.getCore(init);
+                ns.init = init;
+                ns.alert = function(msg, isAlert) {
+                    if (isAlert) {
+                        alert(msg);
+                    }
+                    else {
+                        console.log(msg);
+                    }
+                };
+
+				ns.core = NS.getCore(ns);
 				extendCore(ns.core);
 
 				dimConf = ns.core.conf.finals.dimension;

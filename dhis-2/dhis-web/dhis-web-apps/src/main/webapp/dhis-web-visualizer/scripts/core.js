@@ -515,8 +515,9 @@ Ext.onReady( function() {
 	DV.isDebug = false;
 	DV.isSessionStorage = ('sessionStorage' in window && window['sessionStorage'] !== null);
 
-	DV.getCore = function(init) {
-        var conf = {},
+	DV.getCore = function(ns) {
+        var init = ns.init,
+            conf = {},
             api = {},
             support = {},
             service = {},
@@ -672,7 +673,7 @@ Ext.onReady( function() {
                 west_fill_accordion_indicator: 56,
                 west_fill_accordion_dataelement: 59,
                 west_fill_accordion_dataset: 31,
-                west_fill_accordion_period: 284,
+                west_fill_accordion_period: 303,
                 west_fill_accordion_organisationunit: 58,
                 west_maxheight_accordion_indicator: 350,
                 west_maxheight_accordion_dataelement: 350,
@@ -722,6 +723,13 @@ Ext.onReady( function() {
                     ok: 'ok.png'
                 }
             };
+
+			conf.report = {
+				digitGroupSeparator: {
+					'comma': ',',
+					'space': ' '
+				}
+			};
 
             conf.url = {
                 analysisFields: [
@@ -1030,6 +1038,12 @@ Ext.onReady( function() {
 						return;
 					}
 
+                    // in and aggregation type
+                    if (objectNameDimensionMap[dimConf.indicator.objectName] && config.aggregationType !== 'DEFAULT') {
+                        ns.alert('Indicators and aggregation types cannot be specified together', true);
+                        return;
+                    }
+
 					return true;
 				};
 
@@ -1256,19 +1270,25 @@ Ext.onReady( function() {
                 return maxLength;
             };
 
-			support.prototype.array.sort = function(array, direction, key) {
-				// accepts [number], [string], [{prop: number}], [{prop: string}]
+			support.prototype.array.sort = function(array, direction, key, emptyFirst) {
+				// supports [number], [string], [{key: number}], [{key: string}], [[string]], [[number]]
 
 				if (!support.prototype.array.getLength(array)) {
 					return;
 				}
 
-				key = key || 'name';
+				key = !!key || Ext.isNumber(key) ? key : 'name';
 
 				array.sort( function(a, b) {
 
 					// if object, get the property values
-					if (Ext.isObject(a) && Ext.isObject(b) && key) {
+					if (Ext.isObject(a) && Ext.isObject(b)) {
+						a = a[key];
+						b = b[key];
+					}
+
+					// if array, get from the right index
+					if (Ext.isArray(a) && Ext.isArray(b)) {
 						a = a[key];
 						b = b[key];
 					}
@@ -1291,7 +1311,15 @@ Ext.onReady( function() {
 						return direction === 'DESC' ? b - a : a - b;
 					}
 
-					return 0;
+                    else if (a === undefined || a === null) {
+                        return emptyFirst ? -1 : 1;
+                    }
+
+                    else if (b === undefined || b === null) {
+                        return emptyFirst ? 1 : -1;
+                    }
+
+					return -1;
 				});
 
 				return array;
@@ -1334,6 +1362,19 @@ Ext.onReady( function() {
 				}
 
 				return null;
+			};
+
+                // number
+			support.prototype.number = {};
+                        
+			support.prototype.number.prettyPrint = function(number, separator) {
+				separator = separator || 'space';
+
+				if (separator === 'none') {
+					return number;
+				}
+
+				return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, conf.report.digitGroupSeparator[separator]);
 			};
 
 				// str
@@ -2179,14 +2220,7 @@ Ext.onReady( function() {
                     addCategoryDimension = false,
                     map = xLayout.dimensionNameItemsMap,
                     dx = dimConf.indicator.dimensionName,
-                    aggTypes = {
-                        'count': 'COUNT',
-                        'sum': 'SUM',
-                        'stddev': 'STDDEV',
-                        'variance': 'VARIANCE',
-                        'min': 'MIN',
-                        'max': 'MAX'
-                    };
+                    aggTypes = ['COUNT', 'SUM', 'STDDEV', 'VARIANCE', 'MIN', 'MAX'];
 
                 for (var i = 0, dimName, items; i < axisDimensionNames.length; i++) {
                     dimName = axisDimensionNames[i];
@@ -2230,7 +2264,7 @@ Ext.onReady( function() {
                 }
 
 				// aggregation type
-				if (xLayout.aggregationType) {
+				if (Ext.Array.contains(aggTypes, xLayout.aggregationType)) {
 					paramString += '&aggregationType=' + xLayout.aggregationType;
 				}
 
@@ -2575,7 +2609,10 @@ Ext.onReady( function() {
                         fields: store.numericFields,
                         minimum: minimum < 0 ? minimum : 0,
                         label: {
-                            renderer: Ext.util.Format.numberRenderer(renderer),
+                            //renderer: Ext.util.Format.numberRenderer(renderer),
+                            renderer: function(v) {
+                                return support.prototype.number.prettyPrint(v);
+                            },
                             style: {},
                             rotate: {}
                         },
@@ -2867,7 +2904,8 @@ Ext.onReady( function() {
                             font: labelFont,
                             fill: labelColor,
                             renderer: function(n) {
-                                return n === '0.0' ? '' : n;
+                                n = n === '0.0' ? '' : n;
+                                return support.prototype.number.prettyPrint(n);
                             }
                         };
                     }
@@ -2957,7 +2995,7 @@ Ext.onReady( function() {
                         renderer: function(si, item) {
                             if (item.value) {
                                 var value = item.value[1] === '0.0' ? '-' : item.value[1];
-                                this.update('<div style="font-size:17px; font-weight:bold">' + value + '</div><div style="font-size:10px">' + si.data[conf.finals.data.domain] + '</div>');
+                                this.update('<div style="font-size:17px; font-weight:bold">' + support.prototype.number.prettyPrint(value) + '</div><div style="font-size:10px">' + si.data[conf.finals.data.domain] + '</div>');
                             }
                         }
                     };

@@ -97,6 +97,9 @@ public class DataQueryParams
     public static final String DISPLAY_NAME_PROGRAM_INDICATOR = "Program indicator";
     public static final String DISPLAY_NAME_LONGITUDE = "Longitude";
     public static final String DISPLAY_NAME_LATITUDE = "Latitude";
+
+    public static final int DE_IN_INDEX = 0;
+    public static final int CO_IN_INDEX = 1;
     
     public static final List<String> DATA_DIMS = Arrays.asList( INDICATOR_DIM_ID, DATAELEMENT_DIM_ID, DATAELEMENT_OPERAND_ID, DATASET_DIM_ID );
     public static final List<String> FIXED_DIMS = Arrays.asList( DATA_X_DIM_ID, INDICATOR_DIM_ID, DATAELEMENT_DIM_ID, DATASET_DIM_ID, PERIOD_DIM_ID, ORGUNIT_DIM_ID );
@@ -412,6 +415,22 @@ public class DataQueryParams
     }
 
     /**
+     * Removes the dimensions with the given identifiers.
+     */
+    public DataQueryParams removeDimensions( String... dimension )
+    {
+        if ( dimension != null )
+        {
+            for ( String dim : dimension )
+            {
+                this.dimensions.remove( new BaseDimensionalObject( dim ) );
+            }
+        }            
+        
+        return this;
+    }
+
+    /**
      * Removes the dimension or filter with the given identifier.
      */
     public DataQueryParams removeDimensionOrFilter( String dimension )
@@ -713,70 +732,6 @@ public class DataQueryParams
     }
 
     /**
-     * Returns a mapping of permutation keys and mappings of data element operands
-     * and values, based on the given mapping of dimension option keys and 
-     * aggregated values.
-     */
-    public Map<String, Map<DataElementOperand, Double>> getPermutationOperandValueMap( Map<String, Double> aggregatedDataMap )
-    {
-        MapMap<String, DataElementOperand, Double> valueMap = new MapMap<>();
-        
-        for ( String key : aggregatedDataMap.keySet() )
-        {
-            List<String> keys = new ArrayList<>( Arrays.asList( key.split( DIMENSION_SEP ) ) );
-            
-            int deInx = getDataElementDimensionIndex();
-            int cocInx = getCategoryOptionComboDimensionIndex();
-            
-            String de = keys.get( deInx );
-            String coc = keys.get( cocInx );
-            
-            ListUtils.removeAll( keys, deInx, cocInx );
-            
-            String permKey = StringUtils.join( keys, DIMENSION_SEP );
-            
-            DataElementOperand operand = new DataElementOperand( de, coc );
-            
-            Double value = aggregatedDataMap.get( key );
-            
-            valueMap.putEntry( permKey, operand, value );            
-        }
-        
-        return valueMap;
-    }
-
-    /**
-     * Returns a mapping of permutations keys (org unit id or null) and mappings
-     * of org unit group and counts, based on the given mapping of dimension option
-     * keys and counts.
-     */
-    public Map<String, Map<String, Integer>> getPermutationOrgUnitGroupCountMap( Map<String, Double> orgUnitCountMap )
-    {
-        MapMap<String, String, Integer> countMap = new MapMap<>();
-        
-        for ( String key : orgUnitCountMap.keySet() )
-        {
-            List<String> keys = new ArrayList<>( Arrays.asList( key.split( DIMENSION_SEP ) ) );
-            
-            // Org unit group always at last index, org unit potentially at first
-            
-            int ougInx = keys.size() - 1;
-            
-            String oug = keys.get( ougInx );
-            
-            ListUtils.removeAll( keys, ougInx );
-
-            String permKey = StringUtils.trimToNull( StringUtils.join( keys, DIMENSION_SEP ) );
-            
-            Integer count = orgUnitCountMap.get( key ).intValue();
-            
-            countMap.putEntry( permKey, oug, count );
-        }
-        
-        return countMap;
-    }
-    
-    /**
      * Retrieves the options for the given dimension identifier. Returns null if
      * the dimension is not present.
      */
@@ -986,6 +941,71 @@ public class DataQueryParams
     // Static methods
     // -------------------------------------------------------------------------
 
+    /**
+     * Populates a mapping of permutation keys and mappings of data element operands
+     * and values based on the given mapping of dimension option keys and 
+     * aggregated values. The data element dimension will be at index 0 and the
+     * category option combo dimension will be at index 1, if category option
+     * combinations is enabled.
+     * 
+     * @param permutationMap the map to populate with permutations.
+     * @param aggregatedDataMap the aggregated data map.
+     * @param cocEnabled indicates whether the given aggregated data map includes
+     *        a category option combination dimension.
+     */
+    public static void putPermutationOperandValueMap( MapMap<String, DataElementOperand, Double> permutationMap, 
+        Map<String, Double> aggregatedDataMap, boolean cocEnabled )
+    {
+        for ( String key : aggregatedDataMap.keySet() )
+        {
+            List<String> keys = new ArrayList<>( Arrays.asList( key.split( DIMENSION_SEP ) ) );
+            
+            String de = keys.get( DE_IN_INDEX );
+            String coc = cocEnabled ? keys.get( CO_IN_INDEX ) : null;
+
+            DataElementOperand operand = new DataElementOperand( de, coc );
+            
+            ListUtils.removeAll( keys, DE_IN_INDEX, ( cocEnabled ? CO_IN_INDEX : -1 ) );
+            
+            String permKey = StringUtils.join( keys, DIMENSION_SEP );
+            
+            Double value = aggregatedDataMap.get( key );
+            
+            permutationMap.putEntry( permKey, operand, value );            
+        }
+    }
+
+    /**
+     * Returns a mapping of permutations keys (org unit id or null) and mappings
+     * of org unit group and counts, based on the given mapping of dimension option
+     * keys and counts.
+     */
+    public static Map<String, Map<String, Integer>> getPermutationOrgUnitGroupCountMap( Map<String, Double> orgUnitCountMap )
+    {
+        MapMap<String, String, Integer> countMap = new MapMap<>();
+        
+        for ( String key : orgUnitCountMap.keySet() )
+        {
+            List<String> keys = new ArrayList<>( Arrays.asList( key.split( DIMENSION_SEP ) ) );
+            
+            // Org unit group always at last index, org unit potentially at first
+            
+            int ougInx = keys.size() - 1;
+            
+            String oug = keys.get( ougInx );
+            
+            ListUtils.removeAll( keys, ougInx );
+
+            String permKey = StringUtils.trimToNull( StringUtils.join( keys, DIMENSION_SEP ) );
+            
+            Integer count = orgUnitCountMap.get( key ).intValue();
+            
+            countMap.putEntry( permKey, oug, count );
+        }
+        
+        return countMap;
+    }
+    
     /**
      * Retrieves the measure criteria from the given string. Criteria are separated
      * by the option separator, while the criterion filter and value are separated
@@ -1529,6 +1549,11 @@ public class DataQueryParams
     // -------------------------------------------------------------------------
     // Get and set helpers for filters
     // -------------------------------------------------------------------------
+    
+    public List<NameableObject> getFilterDataElements()
+    {
+        return getFilterOptions( DATAELEMENT_DIM_ID );
+    }
     
     public List<NameableObject> getFilterPeriods()
     {

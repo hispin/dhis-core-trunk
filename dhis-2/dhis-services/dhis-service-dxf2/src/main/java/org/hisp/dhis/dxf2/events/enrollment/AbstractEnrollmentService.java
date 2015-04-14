@@ -68,8 +68,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -299,6 +301,11 @@ public abstract class AbstractEnrollmentService
             enrollment.setTrackedEntityInstance( programInstance.getEntityInstance().getUid() );
         }
 
+        if ( programInstance.getOrganisationUnit() != null )
+        {
+            enrollment.setOrgUnit( programInstance.getOrganisationUnit().getUid() );
+        }
+
         enrollment.setProgram( programInstance.getProgram().getUid() );
         enrollment.setStatus( EnrollmentStatus.fromInt( programInstance.getStatus() ) );
         enrollment.setDateOfEnrollment( programInstance.getEnrollmentDate() );
@@ -334,10 +341,9 @@ public abstract class AbstractEnrollmentService
     {
         ImportSummary importSummary = new ImportSummary();
 
-        org.hisp.dhis.trackedentity.TrackedEntityInstance entityInstance = getTrackedEntityInstance( enrollment
-            .getTrackedEntityInstance() );
-        TrackedEntityInstance trackedEntityInstance = trackedEntityInstanceService
-            .getTrackedEntityInstance( entityInstance );
+        org.hisp.dhis.trackedentity.TrackedEntityInstance entityInstance = getTrackedEntityInstance( enrollment.getTrackedEntityInstance() );
+        TrackedEntityInstance trackedEntityInstance = trackedEntityInstanceService.getTrackedEntityInstance( entityInstance );
+
         Program program = getProgram( enrollment.getProgram() );
 
         Enrollments enrollments = getEnrollments( program, trackedEntityInstance, EnrollmentStatus.ACTIVE );
@@ -368,7 +374,7 @@ public abstract class AbstractEnrollmentService
             }
         }
 
-        List<ImportConflict> importConflicts = new ArrayList<>();
+        Set<ImportConflict> importConflicts = new HashSet<>();
         importConflicts.addAll( checkAttributes( enrollment ) );
 
         importSummary.setConflicts( importConflicts );
@@ -381,8 +387,11 @@ public abstract class AbstractEnrollmentService
             return importSummary;
         }
 
+        OrganisationUnit organisationUnit = getOrganisationUnit( enrollment.getOrgUnit() );
+        System.err.println( "Enrollment: " + organisationUnit );
+
         ProgramInstance programInstance = programInstanceService.enrollTrackedEntityInstance( enrollment.getEnrollment(), entityInstance, program,
-            enrollment.getDateOfEnrollment(), enrollment.getDateOfIncident(), entityInstance.getOrganisationUnit() );
+            enrollment.getDateOfEnrollment(), enrollment.getDateOfIncident(), organisationUnit );
 
         if ( programInstance == null )
         {
@@ -432,7 +441,7 @@ public abstract class AbstractEnrollmentService
             return importSummary;
         }
 
-        List<ImportConflict> importConflicts = new ArrayList<>();
+        Set<ImportConflict> importConflicts = new HashSet<>();
         importConflicts.addAll( checkAttributes( enrollment ) );
 
         importSummary.setConflicts( importConflicts );
@@ -703,6 +712,18 @@ public abstract class AbstractEnrollmentService
 
         return program;
 
+    }
+
+    private OrganisationUnit getOrganisationUnit( String id )
+    {
+        OrganisationUnit organisationUnit = manager.search( OrganisationUnit.class, id );
+
+        if ( organisationUnit == null )
+        {
+            throw new IllegalArgumentException( "OrganisationUnit does not exist." );
+        }
+
+        return organisationUnit;
     }
 
     private List<ImportConflict> validateAttributeType( Attribute attribute )

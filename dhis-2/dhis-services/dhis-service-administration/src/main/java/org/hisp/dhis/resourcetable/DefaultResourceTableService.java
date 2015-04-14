@@ -28,7 +28,7 @@ package org.hisp.dhis.resourcetable;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import static org.hisp.dhis.dataapproval.DataApprovalLevelService.APPROVAL_LEVEL_UNAPPROVED;
+import static org.hisp.dhis.dataapproval.DataApprovalLevelService.APPROVAL_LEVEL_HIGHEST;
 import static org.hisp.dhis.resourcetable.ResourceTableStore.TABLE_NAME_CATEGORY_OPTION_COMBO_NAME;
 import static org.hisp.dhis.resourcetable.ResourceTableStore.TABLE_NAME_DATA_ELEMENT_STRUCTURE;
 import static org.hisp.dhis.resourcetable.ResourceTableStore.TABLE_NAME_DATE_PERIOD_STRUCTURE;
@@ -57,10 +57,8 @@ import org.hisp.dhis.dataelement.DataElementCategoryCombo;
 import org.hisp.dhis.dataelement.DataElementCategoryOptionCombo;
 import org.hisp.dhis.dataelement.DataElementCategoryService;
 import org.hisp.dhis.dataelement.DataElementGroupSet;
-import org.hisp.dhis.dataelement.DataElementService;
 import org.hisp.dhis.dataset.DataSet;
 import org.hisp.dhis.indicator.IndicatorGroupSet;
-import org.hisp.dhis.indicator.IndicatorService;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.organisationunit.OrganisationUnitGroupSet;
 import org.hisp.dhis.organisationunit.OrganisationUnitService;
@@ -112,20 +110,6 @@ public class DefaultResourceTableService
     public void setCategoryService( DataElementCategoryService categoryService )
     {
         this.categoryService = categoryService;
-    }
-
-    private DataElementService dataElementService;
-
-    public void setDataElementService( DataElementService dataElementService )
-    {
-        this.dataElementService = dataElementService;
-    }
-
-    private IndicatorService indicatorService;
-
-    public void setIndicatorService( IndicatorService indicatorService )
-    {
-        this.indicatorService = indicatorService;
     }
 
     private PeriodService periodService;
@@ -214,18 +198,25 @@ public class DefaultResourceTableService
 
         for ( DataElementCategoryCombo combo : combos )
         {
+            if ( !combo.isValid() )
+            {
+                log.warn( "Ignoring category combo, not valid: " + combo );
+                continue;
+            }
+            
             for ( DataElementCategoryOptionCombo coc : combo.getSortedOptionCombos() )
             {
                 List<Object> values = new ArrayList<>();
 
                 values.add( coc.getId() );
                 values.add( coc.getName() );
+                values.add( coc.isIgnoreApproval() ? APPROVAL_LEVEL_HIGHEST : null );
 
                 batchArgs.add( values.toArray() );
             }
         }
 
-        resourceTableStore.batchUpdate( 2, TABLE_NAME_CATEGORY_OPTION_COMBO_NAME, batchArgs );
+        resourceTableStore.batchUpdate( 3, TABLE_NAME_CATEGORY_OPTION_COMBO_NAME, batchArgs );
 
         log.info( "Category option combo name table generated" );
     }
@@ -302,7 +293,7 @@ public class DefaultResourceTableService
     @Transactional
     public void generateIndicatorGroupSetTable()
     {
-        List<IndicatorGroupSet> groupSets = new ArrayList<>( indicatorService.getAllIndicatorGroupSets() );
+        List<IndicatorGroupSet> groupSets = new ArrayList<>( idObjectManager.getAllNoAcl( IndicatorGroupSet.class ) );
 
         Collections.sort( groupSets, IdentifiableObjectNameComparator.INSTANCE );
 
@@ -369,7 +360,7 @@ public class DefaultResourceTableService
         // Create table
         // ---------------------------------------------------------------------
 
-        Collection<DataElement> dataElements = dataElementService.getAllDataElements();
+        List<DataElement> dataElements = new ArrayList<>( idObjectManager.getAllNoAcl( DataElement.class ) );
 
         resourceTableStore.createDataElementStructure();
 
@@ -386,13 +377,18 @@ public class DefaultResourceTableService
             final DataSet dataSet = dataElement.getDataSet();
             final PeriodType periodType = dataElement.getPeriodType();
 
+            // -----------------------------------------------------------------
+            // Use highest approval level if data set does not require approval,
+            // or null if approval is required.
+            // -----------------------------------------------------------------
+
             values.add( dataElement.getId() );
             values.add( dataElement.getUid() );
             values.add( dataElement.getName() );
             values.add( dataSet != null ? dataSet.getId() : null );
             values.add( dataSet != null ? dataSet.getUid() : null );
             values.add( dataSet != null ? dataSet.getName() : null );
-            values.add( dataSet != null && dataSet.isApproveData() ? APPROVAL_LEVEL_UNAPPROVED : 0 );
+            values.add( dataSet != null && dataSet.isApproveData() ? null : APPROVAL_LEVEL_HIGHEST );
             values.add( periodType != null ? periodType.getId() : null );
             values.add( periodType != null ? periodType.getName() : null );
 

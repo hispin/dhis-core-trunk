@@ -121,6 +121,11 @@ public class EventChart
      * Indicates whether to collapse all data dimensions into a single dimension.
      */
     private boolean collapseDataDimensions;
+
+    /**
+     * Indicates whether to hide n/a data.
+     */
+    private boolean hideNaData;   
     
     // -------------------------------------------------------------------------
     // Analytical properties
@@ -352,6 +357,19 @@ public class EventChart
     public void setCollapseDataDimensions( boolean collapseDataDimensions )
     {
         this.collapseDataDimensions = collapseDataDimensions;
+    }
+
+    @JsonProperty
+    @JsonView( { DetailedView.class, ExportView.class, DimensionalView.class } )
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public boolean isHideNaData()
+    {
+        return hideNaData;
+    }
+
+    public void setHideNaData( boolean hideNaData )
+    {
+        this.hideNaData = hideNaData;
     }
 
     // -------------------------------------------------------------------------

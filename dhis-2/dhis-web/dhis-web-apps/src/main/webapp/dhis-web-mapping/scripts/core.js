@@ -2776,37 +2776,38 @@ Ext.onReady( function() {
 					{id: 'FinancialApril', name: GIS.i18n.financial_april}
 				],
 				relativePeriods: [
+					{id: 'THIS_WEEK', name: GIS.i18n.this_week},
 					{id: 'LAST_WEEK', name: GIS.i18n.last_week},
+					{id: 'THIS_MONTH', name: GIS.i18n.this_month},
 					{id: 'LAST_MONTH', name: GIS.i18n.last_month},
+					{id: 'THIS_BIMONTH', name: GIS.i18n.this_bimonth},
 					{id: 'LAST_BIMONTH', name: GIS.i18n.last_bimonth},
+					{id: 'THIS_QUARTER', name: GIS.i18n.this_quarter},
 					{id: 'LAST_QUARTER', name: GIS.i18n.last_quarter},
+					{id: 'THIS_SIX_MONTH', name: GIS.i18n.this_sixmonth},
 					{id: 'LAST_SIX_MONTH', name: GIS.i18n.last_sixmonth},
 					{id: 'THIS_FINANCIAL_YEAR', name: GIS.i18n.this_financial_year},
 					{id: 'LAST_FINANCIAL_YEAR', name: GIS.i18n.last_financial_year},
 					{id: 'THIS_YEAR', name: GIS.i18n.this_year},
 					{id: 'LAST_YEAR', name: GIS.i18n.last_year}
 				],
-				relativePeriodsMap: {
-					'LAST_WEEK': {id: 'LAST_WEEK', name: GIS.i18n.last_week},
-					'LAST_MONTH': {id: 'LAST_MONTH', name: GIS.i18n.last_month},
-					'LAST_BIMONTH': {id: 'LAST_BIMONTH', name: GIS.i18n.last_bimonth},
-					'LAST_QUARTER': {id: 'LAST_QUARTER', name: GIS.i18n.last_quarter},
-					'LAST_SIX_MONTH': {id: 'LAST_SIX_MONTH', name: GIS.i18n.last_sixmonth},
-					'LAST_FINANCIAL_YEAR': {id: 'LAST_FINANCIAL_YEAR', name: GIS.i18n.last_financial_year},
-					'THIS_YEAR': {id: 'THIS_YEAR', name: GIS.i18n.this_year},
-					'LAST_YEAR': {id: 'LAST_YEAR', name: GIS.i18n.last_year}
-				},
+				relativePeriodsMap: {},
 				integratedRelativePeriodsMap: {
+					'THIS_WEEK': 'THIS_WEEK',
 					'LAST_WEEK': 'LAST_WEEK',
 					'LAST_4_WEEKS': 'LAST_WEEK',
 					'LAST_12_WEEKS': 'LAST_WEEK',
+					'THIS_MONTH': 'THIS_MONTH',
 					'LAST_MONTH': 'LAST_MONTH',
 					'LAST_3_MONTHS': 'LAST_MONTH',
 					'LAST_12_MONTHS': 'LAST_MONTH',
+					'THIS_BIMONTH': 'THIS_BIMONTH',
 					'LAST_BIMONTH': 'LAST_BIMONTH',
 					'LAST_6_BIMONTHS': 'LAST_BIMONTH',
+					'THIS_QUARTER': 'THIS_QUARTER',
 					'LAST_QUARTER': 'LAST_QUARTER',
 					'LAST_4_QUARTERS': 'LAST_QUARTER',
+					'THIS_SIX_MONTH': 'THIS_SIX_MONTH',
 					'LAST_SIX_MONTH': 'LAST_SIX_MONTH',
 					'LAST_2_SIXMONTHS': 'LAST_SIX_MONTH',
 					'LAST_FINANCIAL_YEAR': 'LAST_FINANCIAL_YEAR',
@@ -2816,6 +2817,13 @@ Ext.onReady( function() {
 					'LAST_5_YEARS': 'LAST_YEAR'
 				}
 			};
+
+                // relativePeriodsMap
+            for (var i = 0, obj; i < conf.period.relativePeriods.length; i++) {
+                obj = conf.period.relativePeriods[i];
+
+                conf.period.relativePeriodsMap[obj.id] = obj.name;
+            }
 
             conf.url = {};
 
@@ -2971,7 +2979,7 @@ Ext.onReady( function() {
                 levelOrder = levelOrder || 'ASC';
 
                 // sort
-                organisationUnits = util.array.sort(organisationUnits, levelOrder, 'le');
+                util.array.sort(organisationUnits, levelOrder, 'le');
 
 				for (var i = 0, ou, gpid = '', gppg = ''; i < organisationUnits.length; i++) {
                     ou = organisationUnits[i];
@@ -3040,20 +3048,37 @@ Ext.onReady( function() {
 
 			util.array = {};
 
-			util.array.sort = function(array, direction, key) {
-				// accepts [number], [string], [{prop: number}], [{prop: string}]
+			util.array.getLength = function(array, suppressWarning) {
+				if (!Ext.isArray(array)) {
+					if (!suppressWarning) {
+						console.log('support.prototype.array.getLength: not an array');
+					}
 
-				if (!util.object.getLength(array)) {
-					return array;
+					return null;
 				}
 
-				key = key || 'name';
-                direction = direction || 'ASC';
+				return array.length;
+			};
+
+			util.array.sort = function(array, direction, key, emptyFirst) {
+				// supports [number], [string], [{key: number}], [{key: string}], [[string]], [[number]]
+
+				if (!util.array.getLength(array, true)) {
+					return;
+				}
+
+				key = !!key || Ext.isNumber(key) ? key : 'name';
 
 				array.sort( function(a, b) {
 
 					// if object, get the property values
-					if (Ext.isObject(a) && Ext.isObject(b) && key) {
+					if (Ext.isObject(a) && Ext.isObject(b)) {
+						a = a[key];
+						b = b[key];
+					}
+
+					// if array, get from the right index
+					if (Ext.isArray(a) && Ext.isArray(b)) {
 						a = a[key];
 						b = b[key];
 					}
@@ -3070,13 +3095,20 @@ Ext.onReady( function() {
 							return a < b ? -1 : (a > b ? 1 : 0);
 						}
 					}
-
 					// number
 					else if (Ext.isNumber(a) && Ext.isNumber(b)) {
 						return direction === 'DESC' ? b - a : a - b;
 					}
 
-					return 0;
+                    else if (a === undefined || a === null) {
+                        return emptyFirst ? -1 : 1;
+                    }
+
+                    else if (b === undefined || b === null) {
+                        return emptyFirst ? 1 : -1;
+                    }
+
+					return -1;
 				});
 
 				return array;
@@ -3572,10 +3604,6 @@ Ext.onReady( function() {
 		gis.olmap = GIS.core.getOLMap(gis);
 		gis.layer = GIS.core.getLayers(gis);
 		gis.thematicLayers = [gis.layer.thematic1, gis.layer.thematic2, gis.layer.thematic3, gis.layer.thematic4];
-
-		//if (window.google) {
-			//layers.push(gis.layer.googleStreets, gis.layer.googleHybrid);
-		//}
 
 		layers.push(
 			gis.layer.openStreetMap,

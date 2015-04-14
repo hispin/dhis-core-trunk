@@ -28,13 +28,9 @@ package org.hisp.dhis.commons.action;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-
+import com.opensymphony.xwork2.Action;
 import org.hisp.dhis.common.comparator.IdentifiableObjectNameComparator;
+import org.hisp.dhis.i18n.I18nService;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.organisationunit.OrganisationUnitLevel;
 import org.hisp.dhis.organisationunit.OrganisationUnitService;
@@ -42,11 +38,16 @@ import org.hisp.dhis.user.CurrentUserService;
 import org.hisp.dhis.user.User;
 import org.hisp.dhis.version.Version;
 import org.hisp.dhis.version.VersionService;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.opensymphony.xwork2.Action;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 /**
- * @author mortenoh
+ * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
 public class GetOrganisationUnitTreeAction
     implements Action
@@ -55,26 +56,17 @@ public class GetOrganisationUnitTreeAction
     // Dependencies
     // -------------------------------------------------------------------------
 
+    @Autowired
     private CurrentUserService currentUserService;
 
-    public void setCurrentUserService( CurrentUserService currentUserService )
-    {
-        this.currentUserService = currentUserService;
-    }
-
+    @Autowired
     private OrganisationUnitService organisationUnitService;
 
-    public void setOrganisationUnitService( OrganisationUnitService organisationUnitService )
-    {
-        this.organisationUnitService = organisationUnitService;
-    }
-
+    @Autowired
     private VersionService versionService;
 
-    public void setVersionService( VersionService versionService )
-    {
-        this.versionService = versionService;
-    }
+    @Autowired
+    protected I18nService i18nService;
 
     // -------------------------------------------------------------------------
     // Input & Output
@@ -178,6 +170,8 @@ public class GetOrganisationUnitTreeAction
             rootOrganisationUnits = new ArrayList<>( organisationUnitService.getRootOrganisationUnits() );
         }
 
+        i18nService.internationalise( rootOrganisationUnits );
+
         if ( byName != null )
         {
             List<OrganisationUnit> organisationUnitByName = organisationUnitService.getOrganisationUnitByName( byName );
@@ -197,6 +191,8 @@ public class GetOrganisationUnitTreeAction
                     }
                     while ( (parent = parent.getParent()) != null );
                 }
+
+                i18nService.internationalise( organisationUnits );
 
                 return "partial";
             }
@@ -218,6 +214,8 @@ public class GetOrganisationUnitTreeAction
                 }
             }
 
+            i18nService.internationalise( organisationUnits );
+
             return "partial";
         }
 
@@ -230,13 +228,15 @@ public class GetOrganisationUnitTreeAction
                 organisationUnits.addAll( parent.getChildren() );
             }
 
+            i18nService.internationalise( organisationUnits );
+
             return "partial";
         }
 
         if ( !versionOnly && !rootOrganisationUnits.isEmpty() )
         {
             Integer offlineLevels = getOfflineOrganisationUnitLevels();
-            
+
             for ( OrganisationUnit unit : rootOrganisationUnits )
             {
                 organisationUnits.addAll( organisationUnitService.getOrganisationUnitWithChildren( unit.getId(), offlineLevels ) );
@@ -252,6 +252,7 @@ public class GetOrganisationUnitTreeAction
         }
 
         Collections.sort( rootOrganisationUnits, IdentifiableObjectNameComparator.INSTANCE );
+        i18nService.internationalise( organisationUnits );
 
         return SUCCESS;
     }
@@ -285,12 +286,9 @@ public class GetOrganisationUnitTreeAction
         {
             return null;
         }
-        
-        if ( offlineLevel != null )
-        {
-            return offlineLevel;
-        }
-        
-        return organisationUnitService.getOfflineOrganisationUnitLevels();
+
+        Integer level = offlineLevel != null ? offlineLevel : organisationUnitService.getOfflineOrganisationUnitLevels();
+
+        return level == 1 ? 2 : level;
     }
 }

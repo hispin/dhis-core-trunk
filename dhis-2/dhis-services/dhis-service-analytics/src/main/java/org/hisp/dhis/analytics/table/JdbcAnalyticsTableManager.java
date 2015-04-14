@@ -28,6 +28,7 @@ package org.hisp.dhis.analytics.table;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import static org.hisp.dhis.dataapproval.DataApprovalLevelService.APPROVAL_LEVEL_UNAPPROVED;
 import static org.hisp.dhis.system.util.TextUtils.getQuotedCommaDelimitedString;
 
 import java.util.ArrayList;
@@ -221,6 +222,7 @@ public class JdbcAnalyticsTableManager
             "left join _dataelementstructure des on dv.dataelementid = des.dataelementid " +
             "inner join dataelement de on dv.dataelementid=de.dataelementid " +
             "inner join categoryoptioncombo co on dv.categoryoptioncomboid=co.categoryoptioncomboid " +
+            "inner join _categoryoptioncomboname aon on dv.attributeoptioncomboid=aon.categoryoptioncomboid " +
             "inner join period pe on dv.periodid=pe.periodid " +
             "inner join _periodstructure ps on dv.periodid=ps.periodid " +
             "inner join organisationunit ou on dv.sourceid=ou.organisationunitid " +
@@ -238,10 +240,15 @@ public class JdbcAnalyticsTableManager
         populateAndLog( sql, tableName + ", " + valueType );
     }
 
+    /**
+     * Returns sub-query for approval level. First looks for approval level in
+     * data element resource table which will indicate level 0 (highest) if approval
+     * is not required. Then looks for highest level in dataapproval table.
+     */
     private String getApprovalSubquery()
     {
         String sql = "(" +
-            "select coalesce(min(dal.level), des.datasetapprovallevel) " +
+            "select coalesce(des.datasetapprovallevel, aon.approvallevel, min(dal.level), " + APPROVAL_LEVEL_UNAPPROVED + ") " +
             "from dataapproval da " +
             "inner join dataapprovallevel dal on da.dataapprovallevelid = dal.dataapprovallevelid " +
             "where da.periodid = dv.periodid " +

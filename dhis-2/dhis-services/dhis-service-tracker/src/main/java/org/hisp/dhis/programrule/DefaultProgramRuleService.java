@@ -78,7 +78,13 @@ public class DefaultProgramRuleService
     {
         return programRuleStore.get( id );
     }
-
+    
+    @Override
+    public ProgramRule getProgramRuleByName( String name, Program program )
+    {
+        return programRuleStore.getByName( name, program );
+    }
+    
     @Override
     public Collection<ProgramRule> getAllProgramRule()
     {
@@ -89,5 +95,11 @@ public class DefaultProgramRuleService
     public Collection<ProgramRule> getProgramRule( Program program )
     {
         return programRuleStore.get( program );
+    }
+    
+    @Override
+    public Collection<ProgramRule> getProgramRules( Program program, String key )
+    {
+        return programRuleStore.get( program, key );
     }
 }

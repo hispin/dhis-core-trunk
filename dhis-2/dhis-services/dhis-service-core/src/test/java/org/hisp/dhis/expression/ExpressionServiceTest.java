@@ -63,6 +63,8 @@ import org.hisp.dhis.period.Period;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.google.common.collect.Lists;
+
 /**
  * @author Lars Helge Overland
  */
@@ -267,6 +269,61 @@ public class ExpressionServiceTest
         assertTrue( dataElements.size() == 2 );
         assertTrue( dataElements.contains( dataElementA ) );
         assertTrue( dataElements.contains( dataElementB ) );
+        
+        dataElements = expressionService.getDataElementsInExpression( expressionG );
+
+        assertEquals( 3, dataElements.size() );
+        assertTrue( dataElements.contains( dataElementA ) );
+        assertTrue( dataElements.contains( dataElementB ) );
+        assertTrue( dataElements.contains( dataElementC ) );
+    }
+
+    @Test
+    public void testGetDataElementsInIndicators()
+    {
+        Indicator inA = createIndicator( 'A', null );
+        inA.setNumerator( expressionA );
+        
+        Set<DataElement> dataElements = expressionService.getDataElementsInIndicators( Lists.newArrayList( inA ) );
+
+        assertTrue( dataElements.size() == 2 );
+        assertTrue( dataElements.contains( dataElementA ) );
+        assertTrue( dataElements.contains( dataElementB ) );
+
+        Indicator inG = createIndicator( 'G', null );
+        inG.setNumerator( expressionG );
+        
+        dataElements = expressionService.getDataElementsInIndicators( Lists.newArrayList( inG ) );
+
+        assertEquals( 3, dataElements.size() );
+        assertTrue( dataElements.contains( dataElementA ) );
+        assertTrue( dataElements.contains( dataElementB ) );
+        assertTrue( dataElements.contains( dataElementC ) );
+    }
+
+    @Test
+    public void testGetDataElementTotalsInIndicators()
+    {
+        Indicator inG = createIndicator( 'G', null );
+        inG.setNumerator( expressionG );
+        
+        Set<DataElement> dataElements = expressionService.getDataElementTotalsInIndicators( Lists.newArrayList( inG ) );
+
+        assertEquals( 2, dataElements.size() );
+        assertTrue( dataElements.contains( dataElementB ) );
+        assertTrue( dataElements.contains( dataElementC ) );
+    }
+
+    @Test
+    public void testGetDataElementWithOptionCombosInIndicators()
+    {
+        Indicator inG = createIndicator( 'G', null );
+        inG.setNumerator( expressionG );
+        
+        Set<DataElement> dataElements = expressionService.getDataElementWithOptionCombosInIndicators( Lists.newArrayList( inG ) );
+
+        assertEquals( 1, dataElements.size() );
+        assertTrue( dataElements.contains( dataElementA ) );
     }
 
     @Test
@@ -295,6 +352,24 @@ public class ExpressionServiceTest
 
         assertTrue( operands.contains( operandA ) );
         assertTrue( operands.contains( operandB ) );
+        
+        operands = expressionService.getOperandsInExpression( expressionG );
+
+        assertNotNull( operands );
+        assertEquals( 1, operands.size() );
+
+        assertTrue( operands.contains( operandA ) );
+    }
+
+    @Test
+    public void testGetOptionCombosInExpression()
+    {
+        Set<DataElementCategoryOptionCombo> optionCombos = expressionService.getOptionCombosInExpression( expressionG );
+
+        assertNotNull( optionCombos );
+        assertEquals( 1, optionCombos.size() );
+
+        assertTrue( optionCombos.contains( categoryOptionCombo ) );
     }
 
     @Test

@@ -74,6 +74,12 @@ dhis2.de.storageManager = new StorageManager();
 // Indicates whether current form is multi org unit
 dhis2.de.multiOrganisationUnit = false;
 
+// Indicates whether multi org unit is enabled on instance
+dhis2.de.multiOrganisationUnitEnabled = false;
+
+// Simple object to see if we have tried to fetch children DS for a parent before
+dhis2.de.fetchedDataSets = {};
+
 // "organisationUnits" object inherited from ouwt.js
 
 // Constants
@@ -221,10 +227,28 @@ $( document ).ready( function()
                 
         $.when( dhis2.de.getMultiOrgUnitSetting(), dhis2.de.loadMetaData(), dhis2.de.loadDataSetAssociations() ).done( function() {
         	dhis2.de.setMetaDataLoaded();
-        	organisationUnitSelected( ids, names );
+          organisationUnitSelected( ids, names );
         } );
     } );
 } );
+
+dhis2.de.shouldFetchDataSets = function( ids ) {
+    if( !dhis2.de.multiOrganisationUnitEnabled ) {
+        return false;
+    }
+
+    if( !$.isArray(ids) || ids.length == 0 || (ids.length > 0 && dhis2.de.fetchedDataSets[ids[0]]) ) {
+        return false;
+    }
+
+    var c = organisationUnits[ids[0]].c;
+
+    if( $.isArray(c) && c.length > 0 && dhis2.de.organisationUnitAssociationSetMap[c[0]] ) {
+        return false;
+    }
+
+    return true;
+};
 
 dhis2.de.getMultiOrgUnitSetting = function()
 {
@@ -234,6 +258,7 @@ dhis2.de.getMultiOrgUnitSetting = function()
     async: false,
     type: 'GET',
     success: function( data ) {
+      dhis2.de.multiOrganisationUnitEnabled = data;
       selection.setIncludeChildren(data);
     }
   });
@@ -890,6 +915,14 @@ function organisationUnitSelected( orgUnits, orgUnitNames, children )
 	    return false;
 	}
 
+  if( dhis2.de.shouldFetchDataSets(orgUnits) ) {
+    dhis2.de.fetchDataSets( orgUnits[0] ).always(function() {
+      selection.responseReceived();
+    });
+
+    return false;
+  }
+
 	dhis2.de.currentOrganisationUnitId = orgUnits[0];
     var organisationUnitName = orgUnitNames[0];
 
@@ -993,6 +1026,7 @@ dhis2.de.fetchDataSets = function( ou )
             dhis2.de._updateDataSets(item);
         });
 
+        dhis2.de.fetchedDataSets[ou] = true;
         def.resolve(data);
     });
 

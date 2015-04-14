@@ -52,7 +52,6 @@ import org.hisp.dhis.validation.ValidationRule;
  *
  * @author Margrethe Store
  * @author Lars Helge Overland
- * @version $Id: ExpressionService.java 6461 2008-11-24 11:32:37Z larshelg $
  */
 public interface ExpressionService
 {
@@ -73,6 +72,7 @@ public interface ExpressionService
     final String OPERAND_EXPRESSION = "#\\{(\\w+)\\.?(\\w*)\\}";
     final String OPERAND_UID_EXPRESSION = "(\\w+)\\.?(\\w*)";
     final String DATA_ELEMENT_TOTAL_EXPRESSION = "#\\{(\\w+)\\}";
+    final String OPTION_COMBO_OPERAND_EXPRESSION = "#\\{(\\w+)\\.(\\w+)\\}";
     final String CONSTANT_EXPRESSION = "C\\{(\\w+)\\}";
     final String OU_GROUP_EXPRESSION = "OUG\\{(\\w+)\\}";
     final String DAYS_EXPRESSION = "\\[days\\]";
@@ -80,6 +80,7 @@ public interface ExpressionService
     final Pattern OPERAND_PATTERN = Pattern.compile( OPERAND_EXPRESSION );
     final Pattern OPERAND_UID_PATTERN = Pattern.compile( OPERAND_UID_EXPRESSION );
     final Pattern DATA_ELEMENT_TOTAL_PATTERN = Pattern.compile( DATA_ELEMENT_TOTAL_EXPRESSION );
+    final Pattern OPTION_COMBO_OPERAND_PATTERN = Pattern.compile( OPTION_COMBO_OPERAND_EXPRESSION );
     final Pattern CONSTANT_PATTERN = Pattern.compile( CONSTANT_EXPRESSION );
     final Pattern OU_GROUP_PATTERN = Pattern.compile( OU_GROUP_EXPRESSION );
     final Pattern DAYS_PATTERN = Pattern.compile( DAYS_EXPRESSION );
@@ -172,13 +173,13 @@ public interface ExpressionService
     Set<String> getDataElementTotalUids( String expression );
     
     /**
-     * Returns all DataElements included in the given expression string.
+     * Returns all data elements included in the given expression string.
      * 
      * @param expression the expression string.
-     * @return a Set of DataElements included in the expression string.
+     * @return a set of data elements included in the expression string.
      */
     Set<DataElement> getDataElementsInExpression( String expression );
-    
+
     /**
      * Returns all OrganisationUnitGroups in the numerator and denominator
      * expressions in the given Indicators.
@@ -197,7 +198,8 @@ public interface ExpressionService
     Set<OrganisationUnitGroup> getOrganisationUnitGroupsInExpression( String expression );
     
     /**
-     * Returns all CategoryOptionCombos in the given expression string.
+     * Returns all CategoryOptionCombos in the given expression string. Only 
+     * operands with a category option combo will be included.
      * 
      * @param expression the expression string.
      * @return a Set of CategoryOptionCombos included in the expression string.
@@ -206,8 +208,9 @@ public interface ExpressionService
     
     /**
      * Returns all operands included in an expression string. The operand is on
-     * the form #{data-element-id.category-option combo-id}. Requires that the
-     * expression has been exploded in order to handle data element totals.
+     * the form #{data-element-id.category-option combo-id}. Only operands with
+     * a category option combo will be included. Requires that the expression 
+     * has been exploded in order to handle data element totals.
      * 
      * @param expression The expression string.
      * @return A Set of Operands.
@@ -222,6 +225,24 @@ public interface ExpressionService
      * @return a set of data elements.
      */
     Set<DataElement> getDataElementsInIndicators( Collection<Indicator> indicators );
+
+    /**
+     * Returns all data elements which are present in the numerator and denominator
+     * of the given indicators which represent totals.
+     * 
+     * @param indicators the collection of indicators.
+     * @return a set of data elements.
+     */
+    Set<DataElement> getDataElementTotalsInIndicators( Collection<Indicator> indicators );
+
+    /**
+     * Returns all data elements which are present in the numerator and denominator
+     * of the given indicators which include category option combinations.
+     * 
+     * @param indicators the collection of indicators.
+     * @return a set of data elements.
+     */
+    Set<DataElement> getDataElementWithOptionCombosInIndicators( Collection<Indicator> indicators );
     
     /**
      * Filters indicators from the given collection where the numerator and /
@@ -275,38 +296,8 @@ public interface ExpressionService
     /**
      * Substitutes potential constant and days in the numerator and denominator
      * on all indicators in the given collection.
-     *  
-     * Populates the explodedNumerator and explodedDenominator property on all
-     * indicators in the given collection. This method uses
-     * explodeExpression( String ) internally to generate the exploded expressions.
-     * Replaces references to data element totals with references to all
-     * category option combos in the category combo for that data element.
-     * 
-     * This method will perform better compared to calling explodeExpression( String )
-     * multiple times outside a transactional context as the transactional
-     * overhead is avoided.
-     * 
-     * @param indicators the collection of indicators.
-     * @param days the number of days in aggregation period.
-     */
-    void explodeAndSubstituteExpressions( Collection<Indicator> indicators, Integer days );
-
-    /**
-     * Substitutes potential constant and days in the numerator and denominator
-     * on all indicators in the given collection.
      */
     void substituteExpressions( Collection<Indicator> indicators, Integer days );
-    
-    /**
-     * Populates the explodedNumerator and explodedDenominator property on all
-     * indicators in the given collection. This method uses
-     * explodeExpression( String ) internally to generate the exploded expressions.
-     * Replaces references to data element totals with references to all
-     * category option combos in the category combo for that data element.
-     * 
-     * @param indicators the collection of indicators.
-     */    
-    void explodeExpressions( Collection<Indicator> indicators );
     
     /**
      * Populates the explodedExpression property on the Expression object of all

@@ -1525,15 +1525,7 @@ Ext.onReady( function() {
             },
 			store: Ext.create('Ext.data.Store', {
 				fields: ['id', 'text'],
-				data: [
-					{id: 'COUNT', text: NS.i18n.count},
-					{id: 'AVERAGE', text: NS.i18n.average},
-					{id: 'SUM', text: NS.i18n.sum},
-					{id: 'STDDEV', text: NS.i18n.stddev},
-					{id: 'VARIANCE', text: NS.i18n.variance},
-					{id: 'MIN', text: NS.i18n.min},
-					{id: 'MAX', text: NS.i18n.max}
-				]
+				data: ns.core.conf.aggregationType.data
 			}),
             resetData: function() {
                 this.setDisabled();
@@ -1907,7 +1899,7 @@ Ext.onReady( function() {
                 }
 			}
 		});
-nissa = window;
+
 		return window;
 	};
 
@@ -2233,6 +2225,7 @@ nissa = window;
             showRowSubTotals,
 			showDimensionLabels,
 			hideEmptyRows,
+            hideNaData,
             limit,
             outputType,
             aggregationType,
@@ -2251,7 +2244,7 @@ nissa = window;
 			comboboxWidth = 280,
             comboBottomMargin = 1,
             checkboxBottomMargin = 2,
-            separatorTopMargin = 6,
+            separatorTopMargin = 10,
 			window;
 
         showColTotals = Ext.create('Ext.form.field.Checkbox', {
@@ -2260,14 +2253,14 @@ nissa = window;
 			checked: true
 		});
 
-		showRowTotals = Ext.create('Ext.form.field.Checkbox', {
-			boxLabel: NS.i18n.show_row_totals,
+		showColSubTotals = Ext.create('Ext.form.field.Checkbox', {
+			boxLabel: NS.i18n.show_col_subtotals,
 			style: 'margin-bottom:' + checkboxBottomMargin + 'px',
 			checked: true
 		});
 
-		showColSubTotals = Ext.create('Ext.form.field.Checkbox', {
-			boxLabel: NS.i18n.show_col_subtotals,
+		showRowTotals = Ext.create('Ext.form.field.Checkbox', {
+			boxLabel: NS.i18n.show_row_totals,
 			style: 'margin-top:' + separatorTopMargin + 'px; margin-bottom:' + checkboxBottomMargin + 'px',
 			checked: true
 		});
@@ -2280,12 +2273,17 @@ nissa = window;
 
 		showDimensionLabels = Ext.create('Ext.form.field.Checkbox', {
 			boxLabel: NS.i18n.show_dimension_labels,
-			style: 'margin-top:' + separatorTopMargin + 'px; margin-bottom:' + comboBottomMargin + 'px',
+			style: 'margin-top:' + separatorTopMargin + 'px; margin-bottom:' + checkboxBottomMargin + 'px',
 			checked: true
 		});
 
 		hideEmptyRows = Ext.create('Ext.form.field.Checkbox', {
 			boxLabel: NS.i18n.hide_empty_rows,
+			style: 'margin-top:' + separatorTopMargin + 'px; margin-bottom:' + checkboxBottomMargin + 'px',
+		});
+
+		hideNaData = Ext.create('Ext.form.field.Checkbox', {
+			boxLabel: NS.i18n.hide_na_data,
 			style: 'margin-bottom:' + checkboxBottomMargin + 'px',
 		});
 
@@ -2392,11 +2390,12 @@ nissa = window;
 			style: 'margin-left:14px',
 			items: [
                 showColTotals,
-				showRowTotals,
 				showColSubTotals,
+				showRowTotals,
                 showRowSubTotals,
                 showDimensionLabels,
 				hideEmptyRows,
+                hideNaData,
                 limit,
                 outputType
                 //aggregationType
@@ -2438,6 +2437,7 @@ nissa = window;
                     showRowSubTotals: showRowSubTotals.getValue(),
                     showDimensionLabels: showDimensionLabels.getValue(),
 					hideEmptyRows: hideEmptyRows.getValue(),
+                    hideNaData: hideNaData.getValue(),
                     sortOrder: limit.getSortOrder(),
                     topLimit: limit.getTopLimit(),
 					outputType: outputType.getValue(),
@@ -2456,6 +2456,7 @@ nissa = window;
 				showRowSubTotals.setValue(Ext.isBoolean(layout.showRowSubTotals) ? layout.showRowSubTotals : true);
 				showDimensionLabels.setValue(Ext.isBoolean(layout.showDimensionLabels) ? layout.showDimensionLabels : true);
 				hideEmptyRows.setValue(Ext.isBoolean(layout.hideEmptyRows) ? layout.hideEmptyRows : false);
+				hideNaData.setValue(Ext.isBoolean(layout.hideNaData) ? layout.hideNaData : false);
 				limit.setValues(layout.sortOrder, layout.topLimit);
 				outputType.setValue(Ext.isString(layout.outputType) ? layout.outputType : 'EVENT');
                 //aggregationType.setValue(Ext.isString(layout.aggregationType) ? layout.aggregationType : 'default');
@@ -2543,6 +2544,7 @@ nissa = window;
 					w.showRowSubTotals = showRowSubTotals;
                     w.showDimensionLabels = showDimensionLabels;
 					w.hideEmptyRows = hideEmptyRows;
+                    w.hideNaData = hideNaData;
                     w.limit = limit;
 					w.outputType = outputType;
 					w.showHierarchy = showHierarchy;
@@ -2688,6 +2690,7 @@ nissa = window;
 					showRowTotals: false,
 					showSubTotals: false,
 					hideEmptyRows: false,
+                    hideNaData: false,
                     sortOrder: 0,
                     topLimit: 0,
 					showHierarchy: false,
@@ -4758,6 +4761,11 @@ nissa = window;
                 },
                 {
                     xtype: 'checkbox',
+                    relativePeriodId: rp[rp.push('THIS_WEEK') - 1],
+                    boxLabel: NS.i18n.this_week
+                },
+                {
+                    xtype: 'checkbox',
                     relativePeriodId: rp[rp.push('LAST_WEEK') - 1],
                     boxLabel: NS.i18n.last_week
                 },
@@ -4790,6 +4798,11 @@ nissa = window;
                     xtype: 'label',
                     text: NS.i18n.months,
                     cls: 'ns-label-period-heading'
+                },
+                {
+                    xtype: 'checkbox',
+                    relativePeriodId: rp[rp.push('THIS_MONTH') - 1],
+                    boxLabel: NS.i18n.this_month
                 },
                 {
                     xtype: 'checkbox',
@@ -4829,6 +4842,11 @@ nissa = window;
                 },
                 {
                     xtype: 'checkbox',
+                    relativePeriodId: rp[rp.push('THIS_BIMONTH') - 1],
+                    boxLabel: NS.i18n.this_bimonth
+                },
+                {
+                    xtype: 'checkbox',
                     relativePeriodId: rp[rp.push('LAST_BIMONTH') - 1],
                     boxLabel: NS.i18n.last_bimonth
                 },
@@ -4854,6 +4872,11 @@ nissa = window;
                 },
                 {
                     xtype: 'checkbox',
+                    relativePeriodId: rp[rp.push('THIS_QUARTER') - 1],
+                    boxLabel: NS.i18n.this_quarter
+                },
+                {
+                    xtype: 'checkbox',
                     relativePeriodId: rp[rp.push('LAST_QUARTER') - 1],
                     boxLabel: NS.i18n.last_quarter
                 },
@@ -4876,6 +4899,11 @@ nissa = window;
                     xtype: 'label',
                     text: NS.i18n.sixmonths,
                     cls: 'ns-label-period-heading'
+                },
+                {
+                    xtype: 'checkbox',
+                    relativePeriodId: rp[rp.push('THIS_SIX_MONTH') - 1],
+                    boxLabel: NS.i18n.this_sixmonth
                 },
                 {
                     xtype: 'checkbox',
@@ -7405,6 +7433,7 @@ nissa = window;
 				url += '&columns=' + columnNames.join(';');
 				url += '&rows=' + rowNames.join(';');
 				url += ns.app.layout.hideEmptyRows ? '&hideEmptyRows=true' : '';
+				url += ns.app.layout.hideNaData ? '&hideNaData=true' : '';
 
 				window.open(url, isNewTab ? '_blank' : '_top');
 			}

@@ -27,6 +27,8 @@ Ext.onReady( function() {
 
 		// conf
 		(function() {
+
+            // finals
 			conf.finals = {
 				dimension: {
 					data: {
@@ -116,6 +118,7 @@ Ext.onReady( function() {
 			dimConf.objectNameMap[dimConf.organisationUnit.objectName] = dimConf.organisationUnit;
 			dimConf.objectNameMap[dimConf.dimension.objectName] = dimConf.dimension;
 
+            // period
 			conf.period = {
 				periodTypes: [
 					{id: 'Daily', name: NS.i18n.daily},
@@ -132,13 +135,33 @@ Ext.onReady( function() {
                 relativePeriods: []
 			};
 
+                // aggregation type
+            conf.aggregationType = {
+                data: [
+					{id: 'COUNT', name: NS.i18n.count, text: NS.i18n.count},
+					{id: 'AVERAGE', name: NS.i18n.average, text: NS.i18n.average},
+					{id: 'SUM', name: NS.i18n.sum, text: NS.i18n.sum},
+					{id: 'STDDEV', name: NS.i18n.stddev, text: NS.i18n.stddev},
+					{id: 'VARIANCE', name: NS.i18n.variance, text: NS.i18n.variance},
+					{id: 'MIN', name: NS.i18n.min, text: NS.i18n.min},
+					{id: 'MAX', name: NS.i18n.max, text: NS.i18n.max}
+                ],
+                idNameMap: {}
+            };
+
+            for (var i = 0, obj; i < conf.aggregationType.data.length; i++) {
+                obj = conf.aggregationType.data[i];
+                conf.aggregationType.idNameMap[obj.id] = obj.text;
+            }
+
+            // gui layout
 			conf.layout = {
 				west_width: 452,
 				west_fill: 2,
                 west_fill_accordion_indicator: 56,
                 west_fill_accordion_dataelement: 59,
                 west_fill_accordion_dataset: 31,
-                west_fill_accordion_period: 300,
+                west_fill_accordion_period: 330,
                 west_fill_accordion_organisationunit: 58,
                 west_maxheight_accordion_indicator: 450,
                 west_maxheight_accordion_dataset: 350,
@@ -167,6 +190,7 @@ Ext.onReady( function() {
 				multiselect_fill_reportingrates: 315
 			};
 
+            // report
 			conf.report = {
 				digitGroupSeparator: {
 					'comma': ',',
@@ -184,6 +208,7 @@ Ext.onReady( function() {
 				}
 			};
 
+            // url
             conf.url = {
                 analysisFields: [
                     '*',
@@ -313,6 +338,8 @@ Ext.onReady( function() {
                 // showDimensionLabels: boolean (false)
 
 				// hideEmptyRows: boolean (false)
+
+                // collapseDataDimensions: boolean (false)
 
                 // outputType: string ('EVENT') - 'EVENT', 'TRACKED_ENTITY_INSTANCE', 'ENROLLMENT'
 
@@ -493,6 +520,7 @@ Ext.onReady( function() {
 					layout.showRowSubTotals = Ext.isBoolean(config.rowSubTotals) ? config.rowSubTotals : (Ext.isBoolean(config.showRowSubTotals) ? config.showRowSubTotals : true);
 					layout.showDimensionLabels = Ext.isBoolean(config.showDimensionLabels) ? config.showDimensionLabels : (Ext.isBoolean(config.showDimensionLabels) ? config.showDimensionLabels : true);
 					layout.hideEmptyRows = Ext.isBoolean(config.hideEmptyRows) ? config.hideEmptyRows : false;
+                    layout.hideNaData = Ext.isBoolean(config.hideNaData) ? config.hideNaData : false;
 					layout.outputType = Ext.isString(config.outputType) && !Ext.isEmpty(config.outputType) ? config.outputType : 'EVENT';
 					layout.showHierarchy = Ext.isBoolean(config.showHierarchy) ? config.showHierarchy : false;
 					layout.displayDensity = Ext.isString(config.displayDensity) && !Ext.isEmpty(config.displayDensity) ? config.displayDensity : 'normal';
@@ -1808,6 +1836,10 @@ Ext.onReady( function() {
 					delete layout.hideEmptyRows;
 				}
 
+				if (!layout.hideNaData) {
+					delete layout.hideNaData;
+				}
+
 				if (!layout.showHierarchy) {
 					delete layout.showHierarchy;
 				}
@@ -1902,6 +1934,12 @@ Ext.onReady( function() {
 
                             for (var j = 0, id, fullId, parsedId, displayId; j < response.rows.length; j++) {
                                 id = response.rows[j][i] || emptyId;
+
+                                // hide NA data
+                                if (xLayout.hideNaData && id === emptyId) {
+                                    continue;
+                                }
+
                                 fullId = header.name + id;
                                 parsedId = parseFloat(id);
 
@@ -1946,6 +1984,12 @@ Ext.onReady( function() {
 
                             for (var k = 0, id, fullId, name, isHierarchy; k < response.rows.length; k++) {
                                 id = response.rows[k][i] || emptyId;
+
+                                // hide NA data
+                                if (xLayout.hideNaData && id === emptyId) {
+                                    continue;
+                                }
+
                                 fullId = header.name + id;
                                 isHierarchy = service.layout.isHierarchy(xLayout, response, id);
 
