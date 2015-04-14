@@ -67,6 +67,21 @@ trackerCapture.controller('BeneficiaryController',
         });
     }
     
+    function resetFields(){
+        $scope.teiFetched = false;    
+        $scope.emptySearchText = false;
+        $scope.emptySearchAttribute = false;
+        $scope.showSearchDiv = false;
+        $scope.showRegistrationDiv = false;  
+        $scope.showTrackedEntityDiv = false;
+        $scope.trackedEntityList = null; 
+        $scope.teiCount = null;
+
+        $scope.queryUrl = null;
+        $scope.programUrl = null;
+        $scope.attributeUrl = {url: null, hasValue: false};
+    };
+    
     function getOwnerDetails(){
 
         $scope.selectedTei = {};
@@ -87,6 +102,7 @@ trackerCapture.controller('BeneficiaryController',
             $scope.enrollmentsByProgram = [];
 
             if(response && response.beneficiaryPrograms && response.commonBenProgram){
+                
                 $scope.beneficiaryPrograms = response.beneficiaryPrograms;
                 $scope.commonBeneficiaryProgram = response.commonBenProgram;
                 
@@ -109,7 +125,6 @@ trackerCapture.controller('BeneficiaryController',
                         angular.forEach($scope.gridColumns, function(col){
                             $scope.serviceGridColumns.push(col);
                         });
-
 
                         ProgramStageFactory.getAll().then(function(stages){
                             $scope.stages = [];
@@ -152,30 +167,31 @@ trackerCapture.controller('BeneficiaryController',
                             $scope.serviceGridColumns.push({name: $translate('service_date'), id: 'eventDate', type: 'date', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('current_approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});                            
                             
+                            if(!$scope.dataElementForServiceOwner || 
+                                    !$scope.dataElementForPaymentSanctioned ||
+                                    !$scope.dataElementForCurrentApprovalLevel ||
+                                    !$scope.dataElementForCurrentApprovalStatus){
+                                
+                                
+                                //invalid db configuration
+                                var dialogOptions = {
+                                        headerText: 'invalid_db_configuration',
+                                        bodyText: $translate('stage_missing_service_owner_config')
+                                    };
+                                DialogService.showDialog({}, dialogOptions);
+                                $scope.enrollmentSuccess = false;
+                                return;    
+                            }
+                            
                             $scope.search($scope.searchMode.listAll);
-
+                            
                             $scope.getServicesProvided();
-
+                            
                         });
                     });
                 }
             }
         });
-    };
-    
-    var resetFields = function(){
-        $scope.teiFetched = false;    
-        $scope.emptySearchText = false;
-        $scope.emptySearchAttribute = false;
-        $scope.showSearchDiv = false;
-        $scope.showRegistrationDiv = false;  
-        $scope.showTrackedEntityDiv = false;
-        $scope.trackedEntityList = null; 
-        $scope.teiCount = null;
-
-        $scope.queryUrl = null;
-        $scope.programUrl = null;
-        $scope.attributeUrl = {url: null, hasValue: false};
     };
     
     //listen to current ASHA and reporting period
@@ -280,29 +296,6 @@ trackerCapture.controller('BeneficiaryController',
         });        
     };
     
-    //sortGrid
-    $scope.sortGrid = function(gridHeader){
-        if ($scope.sortColumn && $scope.sortColumn.id === gridHeader.id){
-            $scope.reverse = !$scope.reverse;
-            return;
-        }        
-        $scope.sortColumn = gridHeader;
-        if($scope.sortColumn.valueType === 'date'){
-            $scope.reverse = true;
-        }
-        else{
-            $scope.reverse = false;    
-        }
-    };
-    
-    $scope.d2Sort = function(tei){        
-        if($scope.sortColumn && $scope.sortColumn.valueType === 'date'){            
-            var d = tei[$scope.sortColumn.id];         
-            return DateUtils.getDate(d);
-        }
-        return tei[$scope.sortColumn.id];
-    };
-    
     $scope.getServicesProvided = function(){        
         $scope.servicesProvided = [];
         
@@ -310,6 +303,7 @@ trackerCapture.controller('BeneficiaryController',
                 $scope.dataElementForServiceOwner.id &&
                 $scope.dataElementForCurrentApprovalLevel && 
                 $scope.dataElementForCurrentApprovalLevel.id){
+            
             EventReportService.getEventReport($scope.selectedOrgUnit.id, 
                                                 $scope.ouModes[1].name, 
                                                 null, 
@@ -372,7 +366,6 @@ trackerCapture.controller('BeneficiaryController',
 
                 //sort services provided by their provision dates - this is default
                 $scope.servicesProvided = orderByFilter($scope.servicesProvided, '-provisionDate');
-                //$scope.servicesProvided.reverse();
 
             });
         }
@@ -388,6 +381,209 @@ trackerCapture.controller('BeneficiaryController',
         }
         
         
+    };
+    
+    $scope.addNewService = function(){
+        
+        if( $scope.selectedService.program && 
+                $scope.selectedService.program.id && 
+                $scope.selectedService.service &&
+                $scope.selectedService.service.id &&
+                $scope.selectedService.dueDate &&
+                $scope.dataElementForServiceOwner.id &&
+                $scope.ashaEvent){
+            
+            var dhis2Event = {};            
+            dhis2Event.trackedEntityInstance = $scope.selectedBeneficiary.id;
+            dhis2Event.program = $scope.selectedService.program.id;
+            dhis2Event.programStage = $scope.selectedService.service.id;
+            dhis2Event.orgUnit = $scope.selectedOrgUnit.id;
+            dhis2Event.status = 'VISITED';
+            dhis2Event.dueDate = dhis2Event.eventDate = DateUtils.formatFromUserToApi($scope.selectedService.dueDate);
+            dhis2Event.dataValues = [{dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent}];
+            $scope.selectedServiceStage = $scope.stagesById[$scope.selectedService.service.id];
+            
+            $scope.selectedEnrollment = $scope.beneficiaryEnrollmentsByProgram[$scope.selectedService.program.id];
+            
+            if($scope.selectedEnrollment && $scope.selectedEnrollment.enrollment){
+                dhis2Event.enrollment = $scope.selectedEnrollment.enrollment;
+                var dhis2Events = {events: [dhis2Event]};
+                DHIS2EventFactory.create(dhis2Events).then(function(data){
+                    appendNewService(data);
+                });
+            }
+            else{
+                $scope.selectedEnrollment = {};
+                $scope.selectedEnrollment.dateOfEnrollment = $scope.selectedEnrollment.dateOfIncident = DateUtils.formatFromUserToApi(DateUtils.getToday());
+                $scope.selectedEnrollment.trackedEntityInstance = $scope.selectedBeneficiary.id;
+                $scope.selectedEnrollment.program = $scope.selectedService.program.id;
+                $scope.selectedEnrollment.status = 'ACTIVE';
+                $scope.selectedEnrollment.orgUnit = $scope.selectedOrgUnit.id;
+                $scope.selectedEnrollment.followup = false;
+                
+                EnrollmentService.enroll($scope.selectedEnrollment).then(function(data){
+                    if(data.status !== 'SUCCESS'){
+                        //enrollment has failed
+                        var dialogOptions = {
+                                headerText: 'enrollment_error',
+                                bodyText: data.description
+                            };
+                        DialogService.showDialog({}, dialogOptions);
+                        return;
+                    }
+                    else{
+                        $scope.selectedEnrollment.enrollment = data.reference;
+                        dhis2Event.enrollment = $scope.selectedEnrollment.enrollment;
+                        var dhis2Events = {events: [dhis2Event]};
+                        DHIS2EventFactory.create(dhis2Events).then(function(data){                            
+                            appendNewService(data);
+                        });
+                    }
+                });
+            }
+        }
+        else{
+            //invalid db configuration
+            var dialogOptions = {
+                    headerText: 'missing_config',
+                    bodyText: $translate('stage_missing_service_owner_config')
+                };
+            DialogService.showDialog({}, dialogOptions);
+            $scope.enrollmentSuccess = false;
+            return;
+        }
+    };
+    
+    $scope.saveServiceApproval = function(service){
+        
+        var stage = $scope.stagesById[service.programStage];
+        
+        if( stage && stage.id ){
+            
+            var modalOptions = {
+                closeButtonText: 'cancel',
+                actionButtonText: 'yes',
+                headerText: service.latestApprovalStatus,
+                bodyText: $translate('proceed_?')
+            };
+
+            ModalService.showModal({}, modalOptions).then(function(result){                
+                var obj = AshaPortalUtils.saveApproval( service, 
+                                          stage, 
+                                          $scope.optionSets, 
+                                          $scope.dataElementForCurrentApprovalLevel.id, 
+                                          $scope.dataElementForCurrentApprovalStatus.id);                
+                DHIS2EventFactory.update( obj.model ).then(function(){
+                    service.currentApprovalLevel =  service[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
+                    service[$scope.dataElementForCurrentApprovalStatus.id] = service.latestApprovalStatus;
+                    service.currentApprovalStatus = service.latestApprovalStatus;
+                });                           
+            }, function(){
+                service.latestApprovalStatus = null;
+            });
+        }        
+    };
+    
+    function appendNewService(obj){
+
+        if (obj.importSummaries[0].status === 'ERROR') {
+            var dialogOptions = {
+                headerText: 'service_registration_error',
+                bodyText: obj.importSummaries[0].description
+            };
+
+            DialogService.showDialog({}, dialogOptions);
+        }
+        else{
+            var newService = angular.copy($scope.selectedBeneficiary);
+            newService.eventDate = $scope.selectedService.dueDate;
+            newService.dueDate = $scope.selectedService.dueDate;
+            newService.status = 'VISITED';
+            newService.enrollment = $scope.selectedEnrollment.enrollment;
+            newService.event = obj.importSummaries[0].reference;
+            newService.program = $scope.selectedService.program.id;
+            newService.programStage = $scope.selectedService.service.id;
+            newService.serviceName = $scope.selectedService.service.name;
+            newService.programName = $scope.selectedService.program.name;
+            newService.trackedEntityInstance = $scope.selectedBeneficiary.id;
+            
+            if( !$scope.servicesProvided ){
+                $scope.servicesProvided = [];
+            }
+            
+            $scope.servicesProvided.splice($scope.servicesProvided.length,0, newService);
+        }
+        
+        $scope.selectedService = {};
+    }
+    
+    $scope.generatePaymentSlip = function(){
+
+        var modalInstance = $modal.open({
+            templateUrl: 'components/payment/service-payment-slip.html',
+            controller: 'PaymentController',
+            windowClass: 'modal-full-window',
+            resolve: {
+                payments: function(){
+                    return $scope.servicesProvided;
+                },
+                paymentRate: function(){
+                    return $scope.paymentRate;
+                },
+                orgUnitName: function(){
+                    return $scope.orgUnitName;
+                },
+                programs: function(){
+                    return $scope.beneficiaryPrograms;
+                },
+                programsById: function(){
+                    return $scope.beneficiaryProgramsById;
+                },
+                stages: function(){
+                    return $scope.stages;
+                },
+                stagesById: function(){
+                    return $scope.stagesById;
+                },
+                ashaDetails: function(){
+                    return $scope.ashaDetails;
+                },
+                ashaPeriod: function(){
+                    return $scope.ashaPeriod;
+                },
+                ashaEvent: function(){
+                    return $scope.ashaEvent;
+                },
+                slipType: function(){
+                    return 'SERVICE';
+                }
+            }
+        });
+        
+        modalInstance.result.then(function () {                 
+        });
+    };
+    
+    $scope.sortGrid = function(gridHeader){
+        if ($scope.sortColumn && $scope.sortColumn.id === gridHeader.id){
+            $scope.reverse = !$scope.reverse;
+            return;
+        }        
+        $scope.sortColumn = gridHeader;
+        if($scope.sortColumn.valueType === 'date'){
+            $scope.reverse = true;
+        }
+        else{
+            $scope.reverse = false;    
+        }
+    };
+    
+    $scope.d2Sort = function(tei){        
+        if($scope.sortColumn && $scope.sortColumn.valueType === 'date'){            
+            var d = tei[$scope.sortColumn.id];         
+            return DateUtils.getDate(d);
+        }
+        return tei[$scope.sortColumn.id];
     };
     
     $scope.search = function(mode){   
@@ -531,176 +727,5 @@ trackerCapture.controller('BeneficiaryController',
     $scope.hideAddNewService = function(){
         $scope.showAddNewServiceDiv = false;
         $scope.selectedBeneficiary = null;
-    };
-    
-    $scope.addNewService = function(){
-        
-        if( $scope.selectedService.program && 
-                $scope.selectedService.program.id && 
-                $scope.selectedService.service &&
-                $scope.selectedService.service.id &&
-                $scope.selectedService.dueDate &&
-                $scope.dataElementForServiceOwner.id){
-            
-            var dhis2Event = {};            
-            dhis2Event.trackedEntityInstance = $scope.selectedBeneficiary.id;
-            dhis2Event.program = $scope.selectedService.program.id;
-            dhis2Event.programStage = $scope.selectedService.service.id;
-            dhis2Event.orgUnit = $scope.selectedOrgUnit.id;
-            dhis2Event.status = 'VISITED';
-            dhis2Event.dueDate = dhis2Event.eventDate = DateUtils.formatFromUserToApi($scope.selectedService.dueDate);
-            dhis2Event.dataValues = [{dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent}];
-            $scope.selectedServiceStage = $scope.stagesById[$scope.selectedService.service.id];
-            
-            $scope.selectedEnrollment = $scope.beneficiaryEnrollmentsByProgram[$scope.selectedService.program.id];
-            
-            if($scope.selectedEnrollment && $scope.selectedEnrollment.enrollment){
-                dhis2Event.enrollment = $scope.selectedEnrollment.enrollment;
-                var dhis2Events = {events: [dhis2Event]};
-                DHIS2EventFactory.create(dhis2Events).then(function(data){
-                    appendNewService(data);
-                });
-            }
-            else{
-                $scope.selectedEnrollment = {};
-                $scope.selectedEnrollment.dateOfEnrollment = $scope.selectedEnrollment.dateOfIncident = DateUtils.formatFromUserToApi(DateUtils.getToday());
-                $scope.selectedEnrollment.trackedEntityInstance = $scope.selectedBeneficiary.id;
-                $scope.selectedEnrollment.program = $scope.selectedService.program.id;
-                $scope.selectedEnrollment.status = 'ACTIVE';
-                $scope.selectedEnrollment.orgUnit = $scope.selectedOrgUnit.id;
-                $scope.selectedEnrollment.followup = false;
-                
-                EnrollmentService.enroll($scope.selectedEnrollment).then(function(data){
-                    if(data.status !== 'SUCCESS'){
-                        //enrollment has failed
-                        var dialogOptions = {
-                                headerText: 'enrollment_error',
-                                bodyText: data.description
-                            };
-                        DialogService.showDialog({}, dialogOptions);
-                        return;
-                    }
-                    else{
-                        $scope.selectedEnrollment.enrollment = data.reference;
-                        dhis2Event.enrollment = $scope.selectedEnrollment.enrollment;
-                        var dhis2Events = {events: [dhis2Event]};
-                        DHIS2EventFactory.create(dhis2Events).then(function(data){                            
-                            appendNewService(data);
-                        });
-                    }
-                });
-            }
-        }
-    };
-    
-    $scope.saveServiceApproval = function(service){
-        
-        
-        var stage = $scope.stagesById[service.programStage];
-        
-        if( stage && stage.id ){
-            
-            var modalOptions = {
-                closeButtonText: 'cancel',
-                actionButtonText: 'yes',
-                headerText: service.latestApprovalStatus,
-                bodyText: $translate('proceed_?')
-            };
-
-            ModalService.showModal({}, modalOptions).then(function(result){                
-                var obj = AshaPortalUtils.saveApproval( service, 
-                                          stage, 
-                                          $scope.optionSets, 
-                                          $scope.dataElementForCurrentApprovalLevel.id, 
-                                          $scope.dataElementForCurrentApprovalStatus.id);                
-                DHIS2EventFactory.update( obj.model ).then(function(){
-                    service.currentApprovalLevel =  service[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
-                    service[$scope.dataElementForCurrentApprovalStatus.id] = service.latestApprovalStatus;
-                    service.currentApprovalStatus = service.latestApprovalStatus;
-                });                           
-            }, function(){
-                service.latestApprovalStatus = null;
-            });
-        }        
-    };
-    
-    function appendNewService(obj){
-
-        if (obj.importSummaries[0].status === 'ERROR') {
-            var dialogOptions = {
-                headerText: 'service_registration_error',
-                bodyText: obj.importSummaries[0].description
-            };
-
-            DialogService.showDialog({}, dialogOptions);
-        }
-        else{
-            var newService = angular.copy($scope.selectedBeneficiary);
-            newService.eventDate = $scope.selectedService.dueDate;
-            newService.dueDate = $scope.selectedService.dueDate;
-            newService.status = 'VISITED';
-            newService.enrollment = $scope.selectedEnrollment.enrollment;
-            newService.event = obj.importSummaries[0].reference;
-            newService.program = $scope.selectedService.program.id;
-            newService.programStage = $scope.selectedService.service.id;
-            newService.serviceName = $scope.selectedService.service.name;
-            newService.programName = $scope.selectedService.program.name;
-            newService.trackedEntityInstance = $scope.selectedBeneficiary.id;
-            
-            if( !$scope.servicesProvided ){
-                $scope.servicesProvided = [];
-            }
-            
-            $scope.servicesProvided.splice($scope.servicesProvided.length,0, newService);
-        }
-        
-        $scope.selectedService = {};
-    }
-    
-    $scope.generatePaymentSlip = function(){
-
-        var modalInstance = $modal.open({
-            templateUrl: 'components/payment/service-payment-slip.html',
-            controller: 'PaymentController',
-            windowClass: 'modal-full-window',
-            resolve: {
-                payments: function(){
-                    return $scope.servicesProvided;
-                },
-                paymentRate: function(){
-                    return $scope.paymentRate;
-                },
-                orgUnitName: function(){
-                    return $scope.orgUnitName;
-                },
-                programs: function(){
-                    return $scope.beneficiaryPrograms;
-                },
-                programsById: function(){
-                    return $scope.beneficiaryProgramsById;
-                },
-                stages: function(){
-                    return $scope.stages;
-                },
-                stagesById: function(){
-                    return $scope.stagesById;
-                },
-                ashaDetails: function(){
-                    return $scope.ashaDetails;
-                },
-                ashaPeriod: function(){
-                    return $scope.ashaPeriod;
-                },
-                ashaEvent: function(){
-                    return $scope.ashaEvent;
-                },
-                slipType: function(){
-                    return 'SERVICE';
-                }
-            }
-        });
-        
-        modalInstance.result.then(function () {                 
-        });
-    };
+    };    
 });

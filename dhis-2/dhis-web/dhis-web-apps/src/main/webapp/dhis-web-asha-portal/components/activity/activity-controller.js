@@ -136,8 +136,6 @@ trackerCapture.controller('ActivityController',
         getOwnerDetails();
     });
     
-    //getOwnerDetails();
-    
     //watch for changes in activity program
     $scope.$watch('selectedActivityProgram', function() {   
         $scope.selectedProgramStage = null;
@@ -153,35 +151,12 @@ trackerCapture.controller('ActivityController',
         }
     });   
     
-    //sortGrid
-    $scope.sortGrid = function(gridHeader){
-        if ($scope.sortColumn && $scope.sortColumn.id === gridHeader.id){
-            $scope.reverse = !$scope.reverse;
-            return;
-        }        
-        $scope.sortColumn = gridHeader;
-        if($scope.sortColumn.valueType === 'date'){
-            $scope.reverse = true;
-        }
-        else{
-            $scope.reverse = false;    
-        }
-    };
-    
-    $scope.d2Sort = function(tei){        
-        if($scope.sortColumn && $scope.sortColumn.valueType === 'date'){            
-            var d = tei[$scope.sortColumn.id];         
-            return DateUtils.getDate(d);
-        }
-        return tei[$scope.sortColumn.id];
-    };
-    
     $scope.getActivitiesConducted = function(){
         $scope.approvedActivityExists = false;
         $scope.activitiesFetched = false;
         $scope.activitiesConducted = [];
         
-        if($scope.dataElementForServiceOwner && $scope.dataElementForServiceOwner.id){
+        if($scope.dataElementForServiceOwner && $scope.dataElementForServiceOwner.id && $scope.ashaEvent){
             EventReportService.getEventReport($scope.selectedOrgUnit.id, 
                                           $scope.ouModes[1].name, 
                                           null, 
@@ -265,12 +240,7 @@ trackerCapture.controller('ActivityController',
         $scope.valueExists = false;
         var dataValues = [];
         angular.forEach($scope.selectedProgramStage.programStageDataElements, function(prStDe){
-            if( prStDe.dataElement && 
-                    prStDe.dataElement.id &&
-                    !prStDe.dataElement.PaymentSanctioned && 
-                    !prStDe.dataElement.ServiceOwner && 
-                    !prStDe.dataElement.ApprovalLevel &&
-                    !prStDe.dataElement.ApprovalStatus){
+            if( prStDe.dataElement && prStDe.dataElement.id ){
                 
                 var val = $scope.newActivity[prStDe.dataElement.id];
                 
