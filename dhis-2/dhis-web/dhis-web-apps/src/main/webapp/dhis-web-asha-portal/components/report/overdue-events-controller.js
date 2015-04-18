@@ -65,7 +65,7 @@ trackerCapture.controller('OverdueEventsController',
     $scope.loadPrograms = function(orgUnit) {        
         $scope.selectedOrgUnit = orgUnit;        
         if (angular.isObject($scope.selectedOrgUnit)){
-            ProgramFactory.getProgramsByOU($scope.selectedOrgUnit, $scope.selectedProgram, 'ASHA').then(function(response){
+            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram, 'ASHA').then(function(response){
                 $scope.programs = response.programs;
                 $scope.selectedProgram = response.selectedProgram;
             });

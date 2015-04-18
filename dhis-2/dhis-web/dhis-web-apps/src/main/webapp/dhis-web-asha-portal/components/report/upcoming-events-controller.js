@@ -61,7 +61,7 @@ trackerCapture.controller('UpcomingEventsController',
     $scope.loadPrograms = function(orgUnit) {        
         $scope.selectedOrgUnit = orgUnit;        
         if (angular.isObject($scope.selectedOrgUnit)){
-            ProgramFactory.getProgramsByOU($scope.selectedOrgUnit, $scope.selectedProgram, 'ASHA').then(function(response){
+            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram, 'ASHA').then(function(response){
                 $scope.programs = response.programs;
                 $scope.selectedProgram = response.selectedProgram;
             });
@@ -73,10 +73,16 @@ trackerCapture.controller('UpcomingEventsController',
         $scope.reportFinished = false;
         $scope.reportStarted = false;
         
+        $scope.getSelectedProgram( $scope.selectedProgram );
+    });
+    
+    $scope.getSelectedProgram = function(program){        
+        $scope.selectedProgram = program;
+        
         if (angular.isObject($scope.selectedProgram)){
             $scope.generateGridHeader();
         }
-    });
+    };
     
     $scope.generateReport = function(){
         
@@ -90,6 +96,9 @@ trackerCapture.controller('UpcomingEventsController',
         $scope.reportStarted = true;        
         
         $scope.upcomingEvents = [];
+        
+        console.log('the program is:  ', $scope.selectedProgram);
+        
         EventReportService.getEventReport($scope.selectedOrgUnit.id, 
                                         $scope.selectedOuMode, 
                                         $scope.selectedProgram.id, 

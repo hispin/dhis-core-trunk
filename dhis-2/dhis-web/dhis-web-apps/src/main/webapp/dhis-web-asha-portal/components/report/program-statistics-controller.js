@@ -30,7 +30,7 @@ trackerCapture.controller('ProgramStatisticsController',
     $scope.loadPrograms = function(orgUnit) {        
         $scope.selectedOrgUnit = orgUnit;        
         if (angular.isObject($scope.selectedOrgUnit)){
-            ProgramFactory.getProgramsByOU($scope.selectedOrgUnit, $scope.selectedProgram, 'ASHA').then(function(response){
+            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram, 'ASHA').then(function(response){
                 $scope.programs = response.programs;
                 $scope.selectedProgram = response.selectedProgram;
             });
@@ -42,8 +42,14 @@ trackerCapture.controller('ProgramStatisticsController',
         if( angular.isObject($scope.selectedProgram)){            
             $scope.reportStarted = false;
             $scope.dataReady = false;
+            
+            $scope.getSelectedProgram( $scope.selectedProgram );
         }
     });
+    
+    $scope.getSelectedProgram = function(program){        
+        $scope.selectedProgram = program;        
+    };
     
     $scope.xFunction = function(){
         return function(d) {

@@ -42,6 +42,15 @@
                         <td>
                             <input type="text" class="form-control" selected-org-unit ng-model="selectedOrgUnit.name" value="{{selectedOrgUnit.name || 'please_select'| translate}}" ng-disabled="true">                                                                                        
                         </td>
+                    </tr>                    
+                    <tr>
+                        <td>{{'org_unit_scope'| translate}}</td>
+                        <td>                 
+                            <label><input type="radio" ng-model="selectedOuMode" name="selected" value="SELECTED"> {{'SELECTED'| translate}}</label><br/>
+                            <label><input type="radio" ng-model="selectedOuMode" name="children" value="CHILDREN"> {{'CHILDREN'| translate}}</label><br/>
+                            <label><input type="radio" ng-model="selectedOuMode" name="descendants" value="DESCENDANTS"> {{'DESCENDANTS'| translate}}</label><br/>
+                            <label><input type="radio" ng-model="selectedOuMode" name="accessible" value="ACCESSIBLE"> {{'ACCESSIBLE'| translate}}</label>
+                        </td>
                     </tr>
                     <tr>
                         <td>
@@ -54,15 +63,6 @@
                                     ng-disabled="programs.length < 1">
                                 <option value="">{{programs.length > 0 ? 'please_select_program' : 'no_program_exists'| translate}}</option>
                             </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>{{'org_unit_scope'| translate}}</td>
-                        <td>                 
-                            <label><input type="radio" ng-model="selectedOuMode" name="selected" value="SELECTED"> {{'SELECTED'| translate}}</label><br/>
-                            <label><input type="radio" ng-model="selectedOuMode" name="children" value="CHILDREN"> {{'CHILDREN'| translate}}</label><br/>
-                            <label><input type="radio" ng-model="selectedOuMode" name="descendants" value="DESCENDANTS"> {{'DESCENDANTS'| translate}}</label><br/>
-                            <label><input type="radio" ng-model="selectedOuMode" name="accessible" value="ACCESSIBLE"> {{'ACCESSIBLE'| translate}}</label>
                         </td>
                     </tr>
                     <tr>

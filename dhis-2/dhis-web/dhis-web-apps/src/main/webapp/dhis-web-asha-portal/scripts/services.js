@@ -1036,14 +1036,14 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     return {     
         
         getEventsByStatus: function(entity, orgUnit, program, programStatus){   
-            var promise = $http.get( '../api/events.json?' + 'trackedEntityInstance=' + entity + '&orgUnit=' + orgUnit + '&program=' + program + '&programStatus=' + programStatus  + '&paging=false').then(function(response){
+            var promise = $http.get( '../api/events.json?' + 'trackedEntityInstance=' + entity + '&orgUnit=' + orgUnit + '&program=' + program + '&programStatus=' + programStatus  + '&paging=false&skipMeta=true').then(function(response){
                 return response.data.events;
             });            
             return promise;
         },
         getEventsByProgram: function(entity, program){   
             
-            var url = '../api/events.json?' + 'trackedEntityInstance=' + entity + '&paging=false';            
+            var url = '../api/events.json?' + 'trackedEntityInstance=' + entity + '&paging=false&skipMeta=true';            
             if(program){
                 url = url + '&program=' + program;
             }
@@ -1055,11 +1055,14 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         getByOrgUnitAndProgram: function(orgUnit, ouMode, program, startDate, endDate){
             var url;
             if(startDate && endDate){
-                url = '../api/events.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&program=' + program + '&startDate=' + startDate + '&endDate=' + endDate + '&paging=false';
+                url = '../api/events.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&program=' + program + '&startDate=' + startDate + '&endDate=' + endDate;
             }
             else{
-                url = '../api/events.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&program=' + program + '&paging=false';
+                url = '../api/events.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&program=' + program;
             }
+            
+            url = url + '&paging=false&skipMeta=true';
+            
             var promise = $http.get( url ).then(function(response){
                 return response.data.events;
             });            
@@ -1123,7 +1126,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             var url = '../api/events/eventRows.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&programStatus=' + programStatus + '&eventStatus='+ eventStatus;
             
             if( program ){
-                url = url + + '&program=' + program;
+                url = url + '&program=' + program;
             }
             if( startDate && endDate) {
                 url = url + '&startDate=' + startDate + '&endDate=' + endDate ;
