@@ -104,45 +104,48 @@ trackerCapture.controller('DataEntryController',
     });
     
     $scope.getEvents = function(){
-        DHIS2EventFactory.getEventsByProgram($scope.selectedTei.trackedEntityInstance, $scope.selectedProgram.id).then(function(events){
-            if(angular.isObject(events)){
-                angular.forEach(events, function(dhis2Event){                    
-                    if(dhis2Event.enrollment === $scope.selectedEnrollment.enrollment && dhis2Event.orgUnit){
-                        if(dhis2Event.notes){
-                            dhis2Event.notes = orderByFilter(dhis2Event.notes, '-storedDate');
-                            angular.forEach(dhis2Event.notes, function(note){
-                                note.storedDate = DateUtils.formatToHrsMins(note.storedDate);
-                            });
-                        }
-                    
-                        var eventStage = $scope.stagesById[dhis2Event.programStage];
-                        if(angular.isObject(eventStage)){
+        
+        var events = CurrentSelection.getSelectedTeiEvents();            
+        events = $filter('filter')(events, {program: $scope.selectedProgram.id});
+        if( events ){
+            angular.forEach(events, function(dhis2Event){                    
+                if(dhis2Event.enrollment === $scope.selectedEnrollment.enrollment && dhis2Event.orgUnit){
+                    if(dhis2Event.notes){
+                        dhis2Event.notes = orderByFilter(dhis2Event.notes, '-storedDate');
+                        angular.forEach(dhis2Event.notes, function(note){
+                            note.storedDate = DateUtils.formatToHrsMins(note.storedDate);
+                        });
+                    }
 
-                            dhis2Event.name = eventStage.name; 
-                            dhis2Event.reportDateDescription = eventStage.reportDateDescription;
-                            dhis2Event.dueDate = DateUtils.formatFromApiToUser(dhis2Event.dueDate);
-                            dhis2Event.sortingDate = dhis2Event.dueDate;
+                    var eventStage = $scope.stagesById[dhis2Event.programStage];
+                    if(angular.isObject(eventStage)){
 
-                            if(dhis2Event.eventDate){
-                                dhis2Event.eventDate = DateUtils.formatFromApiToUser(dhis2Event.eventDate);
-                                dhis2Event.sortingDate = dhis2Event.eventDate;
-                                dhis2Event.editingNotAllowed = dhis2Event.orgUnit !== $scope.selectedOrgUnit.id;
-                            }                       
+                        dhis2Event.name = eventStage.name; 
+                        dhis2Event.reportDateDescription = eventStage.reportDateDescription;
+                        dhis2Event.dueDate = DateUtils.formatFromApiToUser(dhis2Event.dueDate);
+                        dhis2Event.sortingDate = dhis2Event.dueDate;
 
-                            dhis2Event.statusColor = EventUtils.getEventStatusColor(dhis2Event);
-                            dhis2Event = processEvent(dhis2Event, eventStage);
-                            $scope.eventsByStage[dhis2Event.programStage].push(dhis2Event);
-                            
-                            if($scope.currentStage && $scope.currentStage.id === dhis2Event.programStage){
-                                $scope.currentEvent = dhis2Event;                                
-                                $scope.showDataEntry($scope.currentEvent, true);
-                            }
+                        if(dhis2Event.eventDate){
+                            dhis2Event.eventDate = DateUtils.formatFromApiToUser(dhis2Event.eventDate);
+                            dhis2Event.sortingDate = dhis2Event.eventDate;
+                            dhis2Event.editingNotAllowed = dhis2Event.orgUnit !== $scope.selectedOrgUnit.id;
+                        }                       
+
+                        dhis2Event.statusColor = EventUtils.getEventStatusColor(dhis2Event);
+                        dhis2Event = processEvent(dhis2Event, eventStage);
+                        $scope.eventsByStage[dhis2Event.programStage].push(dhis2Event);
+
+                        if($scope.currentStage && $scope.currentStage.id === dhis2Event.programStage){
+                            $scope.currentEvent = dhis2Event;                                
+                            $scope.showDataEntry($scope.currentEvent, true);
                         }
                     }
-                });
-            }
-            sortEventsByStage();                        
-        });          
+                }
+            });
+        }
+        
+        sortEventsByStage();
+        
     };
     
     $scope.enableRescheduling = function(){

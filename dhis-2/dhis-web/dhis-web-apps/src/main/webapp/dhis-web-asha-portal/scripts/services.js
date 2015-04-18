@@ -1295,6 +1295,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     this.ruleMetadata = null;
     this.sortedTeiIds = [];
     this.benOrActOwners = null;
+    this.selectedTeiEvents = null;
     
     this.set = function(currentSelection){  
         this.currentSelection = currentSelection;        
@@ -1364,6 +1365,13 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };
     this.getBenOrActOwners = function(){
         return this.benOrActOwners;
+    };
+    
+    this.setSelectedTeiEvents = function(selectedTeiEvents){
+        this.selectedTeiEvents = selectedTeiEvents;
+    };
+    this.getSelectedTeiEvents = function(){
+        return this.selectedTeiEvents;
     };
 })
 
