@@ -57,15 +57,15 @@
 
         <!--beneficiary service registration area begins-->
         <div class='col-sm-8 bordered-div'>
-            <h1 class="align-center">{{'services_provided'| translate}}</h1>
-            <div class="row" ng-if="servicesProvided.length > 0">
-                <div class="col-sm-12" ng-include="'components/beneficiary/provided-service-list.html'"></div>  
-            </div>
             <div class='alert alert-warning' ng-if="!servicesProvided.length > 0 && !showAddNewServiceDiv">{{'no_service_provided'| translate}}</div>
             <div class='vertical-spacing alert alert-info' ng-if="!showAddNewServiceDiv">{{'select_beneficiary_to_add_new_service'| translate}}</div>
+            <h1 class="align-center" ng-if="!servicesProvided.length > 0">{{'services_provided'| translate}}</h1>                       
             <div class="row" ng-if="showAddNewServiceDiv">
                 <div class="col-sm-12" ng-include="'components/beneficiary/new-beneficiary-service.html'"></div> 
-            </div>                        
+            </div>
+            <div class="row" ng-if="servicesProvided.length > 0">
+                <div class="col-sm-12" ng-include="'components/beneficiary/provided-service-list.html'"></div>  
+            </div> 
         </div>
         <!--beneficiary service registration area ends-->
     </div>

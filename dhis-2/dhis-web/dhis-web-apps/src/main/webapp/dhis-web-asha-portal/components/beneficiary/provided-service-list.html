@@ -1,11 +1,11 @@
-<div class="alert alert-warning align-center" ng-if="approvalAuthorityLevel <= 0">{{'lacking_approval_authority'| translate}}</div>
+<div class="alert alert-warning align-center" ng-if="!showAddNewServiceDiv && approvalAuthorityLevel <= 0">{{'lacking_approval_authority'| translate}}</div>
 <span class="vertical-spacing">
     <span>        
-        <button type="button" class="btn btn-success" ng-click="generatePaymentSlip()" ng-if="(servicesProvided | filter: {currentApprovalStatus: 'Approved'}).length > 0">{{'payment_slip'| translate}}</button>
+        <button type="button" class="btn btn-success" ng-click="generatePaymentSlip()" ng-if="!showAddNewServiceDiv && (servicesProvided | filter: {currentApprovalStatus: 'Approved'}).length > 0">{{'payment_slip'| translate}}</button>
     </span>
     <span class="pull-right">
-        <button type="button" class="btn btn-warning" ng-click="approveAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'approve_all'| translate}}</button>
-        <button type="button" class="btn btn-danger" ng-click="rejectAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'reject_all'| translate}}</button>
+        <button type="button" class="btn btn-warning" ng-click="approveAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="!showAddNewServiceDiv && approvalAuthorityLevel > 0">{{'approve_all'| translate}}</button>
+        <button type="button" class="btn btn-danger" ng-click="rejectAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="!showAddNewServiceDiv && approvalAuthorityLevel > 0">{{'reject_all'| translate}}</button>
     </span>
 </span>
 <table class="table table-bordered vertical-spacing">
@@ -37,7 +37,7 @@
                         class="form-control-trimmed"
                         ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
                         ng-change="saveServiceApproval(serviceProvided)"
-                        ng-disabled="(approvalAuthorityLevel <= 0 || approvalAuthorityLevel < serviceProvided[dataElementForCurrentApprovalLevel.id])">
+                        ng-disabled="showAddNewServiceDiv || (approvalAuthorityLevel <= 0 || approvalAuthorityLevel < serviceProvided[dataElementForCurrentApprovalLevel.id])">
                     <option value="">{{'[select]'| translate}}</option>
                 </select>
             </td>                                
