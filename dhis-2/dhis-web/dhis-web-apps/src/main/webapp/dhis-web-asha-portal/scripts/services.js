@@ -1117,14 +1117,16 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 .factory('EventReportService', function($http, $q) {   
     
     return {        
-        getEventReport: function(orgUnit, ouMode, program, startDate, endDate, programStatus, eventStatus, dataElement, dataValue, pager){ 
-            var pgSize = pager ? pager.pageSize : 50;
-        	var pg = pager ? pager.page : 1;
-            pgSize = pgSize > 1 ? pgSize  : 1;
-            pg = pg > 1 ? pg : 1; 
+        getEventReport: function(orgUnit, ouMode, program, startDate, endDate, programStatus, eventStatus, dataElement, dataValue, paging, pager){              
             
-            var url = '../api/events/eventRows.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&programStatus=' + programStatus + '&eventStatus='+ eventStatus;
+            var url = '../api/events/eventRows.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode; // + '&programStatus=' + programStatus + '&eventStatus='+ eventStatus;
             
+            if(programStatus){
+                url = url + '&programStatus=' + programStatus;
+            }
+            if(eventStatus){
+                url = url + '&eventStatus=' + eventStatus;
+            }            
             if( program ){
                 url = url + '&program=' + program;
             }
@@ -1136,7 +1138,17 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 url = url + '&queryDataElement=' + dataElement + '&queryDataValue=' + dataValue ;
             }
             
-            url = url + '&pageSize=' + pgSize + '&page=' + pg;
+            if(paging){
+                var pgSize = pager ? pager.pageSize : 50;
+        	var pg = pager ? pager.page : 1;
+                pgSize = pgSize > 1 ? pgSize  : 1;
+                pg = pg > 1 ? pg : 1;                
+                url = url + '&pageSize=' + pgSize + '&page=' + pg;
+            }
+            else{
+                url = url + '&paging=false';
+            }
+            
             var promise = $http.get( url ).then(function(response){
                 return response.data;
             });            

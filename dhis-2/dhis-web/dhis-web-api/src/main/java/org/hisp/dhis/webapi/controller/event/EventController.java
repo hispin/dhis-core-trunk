@@ -263,14 +263,7 @@ public class EventController
         EventSearchParams params = eventService.getFromUrl( program, null, programStatus, false, 
             orgUnit, ouMode, null, startDate, endDate, null, queryDataElement, queryDataValue, null, null, null, null );
         
-        EventRows eventRows = eventRowService.getEventRows( params );
-
-        if ( options.hasPaging() )
-        {
-            Pager pager = new Pager( options.getPage(), eventRows.getEventRows().size(), options.getPageSize() );
-            eventRows.setPager( pager );
-            eventRows.setEventRows( PagerUtils.pageCollection( eventRows.getEventRows(), pager ) );
-        }
+        EventRows eventRows = eventRowService.getEventRows( params );        
 
         model.addAttribute( "model", eventRows );
         model.addAttribute( "viewClass", options.getViewClass( "detailed" ) );

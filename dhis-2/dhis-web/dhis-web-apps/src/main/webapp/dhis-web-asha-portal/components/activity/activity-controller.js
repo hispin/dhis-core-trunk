@@ -166,17 +166,8 @@ trackerCapture.controller('ActivityController',
                                           'VISITED', 
                                           $scope.dataElementForServiceOwner.id,
                                           $scope.ashaEvent,
-                                          $scope.pager).then(function(data){
-                                              
-                if( data.pager ){
-                    $scope.pager = data.pager;
-                    $scope.pager.toolBarDisplay = 5;
-
-                    Paginator.setPage($scope.pager.page);
-                    Paginator.setPageCount($scope.pager.pageCount);
-                    Paginator.setPageSize($scope.pager.pageSize);
-                    Paginator.setItemCount($scope.pager.total);                    
-                }
+                                          false,
+                                          null).then(function(data){
 
                 angular.forEach(data.eventRows, function(row){
                     var activityConducted = {};

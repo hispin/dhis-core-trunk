@@ -1,4 +1,4 @@
-package org.hisp.dhis.dxf2.events.event;
+package org.hisp.dhis.dxf2.events.report;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -28,17 +28,12 @@ package org.hisp.dhis.dxf2.events.event;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.util.List;
-
-import org.hisp.dhis.dxf2.events.report.EventRow;
-import org.hisp.dhis.organisationunit.OrganisationUnit;
+import org.hisp.dhis.dxf2.events.event.EventSearchParams;
 
 /**
- * @author Morten Olav Hansen <mortenoh@gmail.com>
+ * @author Abyot Asalefew Gizaw <abyota@gmail.com>
  */
-public interface EventStore
+public interface TrackedEntityInstanceRowService
 {
-    List<Event> getEvents( EventSearchParams params, List<OrganisationUnit> organisationUnits );
-
-    List<EventRow> getEventRows( EventSearchParams params, List<OrganisationUnit> organisationUnits );
+    EventRows getEventRows( EventSearchParams params );
 }

@@ -31,11 +31,10 @@ package org.hisp.dhis.dxf2.events.report;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.hisp.dhis.common.IdentifiableObjectManager;
-import org.hisp.dhis.dxf2.events.event.Event;
 import org.hisp.dhis.dxf2.events.event.EventSearchParams;
 import org.hisp.dhis.dxf2.events.event.EventService;
 import org.hisp.dhis.dxf2.events.event.Events;
+import org.hisp.dhis.dxf2.events.event.Event;
 import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstanceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,51 +53,42 @@ public class AbstractEventRowService
     private EventService eventService;
 
     @Autowired
-    private IdentifiableObjectManager manager;
-
-    @Autowired
     private TrackedEntityInstanceService trackedEntityInstanceService;
 
     @Override
     public EventRows getEventRows( EventSearchParams params )
     {
+
+        /*EventRows eventRows = eventService.getEventRows( params );
+
+        return eventRows;*/
+        
         List<EventRow> eventRowList = new ArrayList<EventRow>();
         EventRows eventRows = new EventRows();
         
         Events events = eventService.getEvents( params );
 
         for ( Event event : events.getEvents() )
-        {       
-        	EventRow eventRow = new EventRow();
-        	
+        {
             if ( event.getTrackedEntityInstance() != null )
-            {            	
+            {
                 TrackedEntityInstance tei = trackedEntityInstanceService.getTrackedEntityInstance( event.getTrackedEntityInstance() );
+                
+                EventRow eventRow = new EventRow();
                 eventRow.setTrackedEntityInstance( event.getTrackedEntityInstance() );
                 eventRow.setAttributes( tei.getAttributes() );
-                eventRow.setRegistrationOrgUnit( tei.getOrgUnit() );
-                eventRow.setRegistrationDate( tei.getCreated() );                
+                eventRow.setEvent( event.getEvent() );
+                eventRow.setProgram( event.getProgram() );
+                eventRow.setProgramStage( event.getProgramStage() );  
+                eventRow.setOrgUnitName( event.getOrgUnitName() );
+                eventRow.setDueDate( event.getDueDate() );
+                eventRow.setFollowup( event.getFollowup() );
+                eventRowList.add( eventRow );
             }
-            
-            if ( event.getEvent() != null )
-            {            	
-            	Event ev = eventService.getEvent( event.getEvent() );
-            	eventRow.setDataValues( ev.getDataValues() );
-            }
-            
-            eventRow.setEvent( event.getEvent() );            
-            eventRow.setProgram( event.getProgram() );
-            eventRow.setProgramStage( event.getProgramStage() );
-            eventRow.setEnrollment( event.getEnrollment() );
-            eventRow.setEventOrgUnit( event.getOrgUnit() );
-            eventRow.setEventOrgUnitName( event.getOrgUnitName() );
-            eventRow.setDueDate( event.getEventDate() != null ? event.getEventDate() : event.getDueDate() );
-            eventRow.setFollowup( event.getFollowup() );
-            eventRowList.add( eventRow );
         }
 
         eventRows.setEventRows( eventRowList );
-
+        
         return eventRows;
     }
 }

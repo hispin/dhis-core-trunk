@@ -50,6 +50,9 @@ var trackerCapture = angular.module('trackerCapture',
     }).when('/upcoming-events',{
         templateUrl:'components/report/upcoming-events.html',
         controller: 'UpcomingEventsController'
+    }).when('/payment-advise',{
+        templateUrl:'components/payment/payment-advise.html',
+        controller: 'PaymentAdviseController'
     }).otherwise({
         redirectTo : '/'
     });  
