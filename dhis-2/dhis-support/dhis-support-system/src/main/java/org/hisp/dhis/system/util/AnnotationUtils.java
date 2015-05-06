@@ -1,4 +1,4 @@
-package org.hisp.dhis.system.collection;
+package org.hisp.dhis.system.util;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -28,50 +28,43 @@ package org.hisp.dhis.system.collection;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Lars Helge Overland
  */
-public class SetBuilder<E>
+public class AnnotationUtils
 {
-    private Set<E> set;
-    
-    public SetBuilder()
+    /**
+     * Returns methods on the given target object which are annotated with the
+     * annotation of the given class.
+     * 
+     * @param target the target object.
+     * @param annotationType the annotation class type.
+     * @return a list of methods annotated with the given annotation.
+     */
+    public static List<Method> getAnnotatedMethods( Object target, Class<? extends Annotation> annotationType )
     {
-        set = new HashSet<>();
-    }
-    
-    public SetBuilder<E> add( E element )
-    {
-        set.add( element );
-        return this;
-    }
-    
-    @SafeVarargs
-    public final SetBuilder<E> add( final E... elements )
-    {
-        for ( E element : elements )
+        final List<Method> methods = new ArrayList<>();
+        
+        if ( target == null || annotationType == null )
         {
-            set.add( element );
+            return methods;
         }
         
-        return this;
-    }
-    
-    public SetBuilder<E> addAll( Collection<? extends E> collection )
-    {
-        set.addAll( collection );
-        return this;
-    }
-    
-    /**
-     * Returns an immutable Set based on the content of the builder.
-     */
-    public Set<E> build()
-    {
-        return new HashSet<>( set );
+        for ( Method method : target.getClass().getMethods() )
+        {
+            Annotation a = org.springframework.core.annotation.AnnotationUtils.findAnnotation( method, annotationType );
+            
+            if ( a != null )
+            {
+                methods.add( method );
+            }
+        }
+        
+        return methods;
     }
 }

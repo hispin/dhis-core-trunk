@@ -41,7 +41,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class TableCreator
     extends AbstractStartupRoutine
 {
-    private Log log = LogFactory.getLog( TableCreator.class );
+    private static final Log log = LogFactory.getLog( TableCreator.class );
     
     // -------------------------------------------------------------------------
     // Dependencies
@@ -62,14 +62,10 @@ public class TableCreator
     {
         aggregatedDataValueService.createDataMart();
         
-        createSilently( "CREATE INDEX messageconversation_lastmessage ON messageconversation (lastmessage)", "messageconversation_lastmessage" );
-        createSilently( "CREATE INDEX interpretation_lastupdated ON interpretation (lastupdated)", "interpretation_lastupdated" );
+        createSilently( "create unique index dataapproval_unique on dataapproval(datasetid,periodid,organisationunitid,attributeoptioncomboid,dataapprovallevelid)", "dataapproval_unique" );
+        createSilently( "create index in_datavalueaudit on datavalueaudit(dataelementid,periodid,organisationunitid,categoryoptioncomboid,attributeoptioncomboid)", "in_datavalueaudit" );
     }
-
-    // -------------------------------------------------------------------------
-    // Supportive methods
-    // -------------------------------------------------------------------------
-
+    
     private void createSilently( final String sql, final String name )
     {
         try

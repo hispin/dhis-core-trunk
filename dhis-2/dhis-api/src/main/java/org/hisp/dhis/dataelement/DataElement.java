@@ -515,6 +515,17 @@ public class DataElement
     {
         return legendSet != null;
     }
+
+    // -------------------------------------------------------------------------
+    // Helper getters
+    // -------------------------------------------------------------------------
+
+    @JsonProperty
+    @JsonView( { DetailedView.class } )
+    public boolean isOptionSetValue()
+    {
+        return optionSet != null;
+    }
     
     // -------------------------------------------------------------------------
     // Getters and setters
@@ -745,6 +756,7 @@ public class DataElement
                 categoryCombo = dataElement.getCategoryCombo();
                 url = dataElement.getUrl();
                 optionSet = dataElement.getOptionSet();
+                commentOptionSet = dataElement.getCommentOptionSet();
             }
             else if ( strategy.isMerge() )
             {
@@ -757,6 +769,7 @@ public class DataElement
                 categoryCombo = dataElement.getCategoryCombo() == null ? categoryCombo : dataElement.getCategoryCombo();
                 url = dataElement.getUrl() == null ? url : dataElement.getUrl();
                 optionSet = dataElement.getOptionSet() == null ? optionSet : dataElement.getOptionSet();
+                commentOptionSet = dataElement.getCommentOptionSet() == null ? commentOptionSet : dataElement.getCommentOptionSet();
             }
 
             groups.clear();

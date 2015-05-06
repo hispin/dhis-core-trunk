@@ -131,8 +131,6 @@ public class TableAlteror
 
         executeSql( "UPDATE programstage SET reportDateDescription='Report date' WHERE reportDateDescription is null" );
 
-        executeSql( "CREATE INDEX programstageinstance_executiondate ON programstageinstance (executiondate)" );
-
         executeSql( "UPDATE programstage SET autoGenerateEvent=true WHERE autoGenerateEvent is null" );
 
         executeSql( "UPDATE program SET generatedByEnrollmentDate=false WHERE generatedByEnrollmentDate is null" );
@@ -143,8 +141,6 @@ public class TableAlteror
 
         executeSql( "ALTER TABLE program DROP COLUMN maxDaysAllowedInputData" );
 
-        executeSql( "ALTER TABLE period modify periodid int AUTO_INCREMENT" );
-        
         executeSql( "UPDATE program SET programstage_dataelements=false WHERE displayInReports is null" );
 
         executeSql( "ALTER TABLE programvalidation DROP COLUMN leftside" );
@@ -302,12 +298,17 @@ public class TableAlteror
         executeSql( "ALTER TABLE program_attributes DROP COLUMN allowdateinfuture" );
         executeSql( "UPDATE program_attributes SET allowFutureDate='false' WHERE allowFutureDate is null" );
 
-        executeSql( "ALTER TABLE period ALTER COLUMN periodid DROP DEFAULT" );
         executeSql( "DROP SEQUENCE period_periodid_seq" );
         executeSql( "ALTER TABLE programstagesection DROP CONSTRAINT programstagesection_name_key" );
         
         executeSql( "update eventreport set collapsedatadimensions = false where collapsedatadimensions is null" );
         executeSql( "update eventchart set collapsedatadimensions = false where collapsedatadimensions is null" );
+
+        executeSql( "ALTER TABLE programindicator ALTER description TYPE text" );
+        executeSql( "ALTER TABLE programindicator ALTER expression TYPE text" );
+        executeSql( "ALTER TABLE programstage ALTER description TYPE text" );
+        
+        executeSql( "drop index index_patientdatavalue" );
         
         updateProgramStageList();
         updateProgramAttributeList();

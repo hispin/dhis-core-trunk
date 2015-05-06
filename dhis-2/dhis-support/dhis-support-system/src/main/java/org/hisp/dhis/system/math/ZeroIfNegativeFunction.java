@@ -1,4 +1,4 @@
-package org.hisp.dhis.system.comparator;
+package org.hisp.dhis.system.math;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -28,20 +28,25 @@ package org.hisp.dhis.system.comparator;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.io.File;
-import java.util.Comparator;
-
 /**
- * @author Tran Thanh Tri
- * @version $Id: FileNameComparator.java 24-02-2010 $
+ * JEP function which returns the value if the argument is a zero or positive 
+ * number, 0 otherwise.
+ * 
+ * @author Lars Helge Overland
  */
-public class FileNameComparator
-    implements Comparator<File>
+public class ZeroIfNegativeFunction
+    extends UnaryDoubleFunction
 {
+    public static final String NAME = "zing";
+    
+    public ZeroIfNegativeFunction()
+    {
+        super();
+    }
 
     @Override
-    public int compare( File arg0, File arg1 )
+    public Double eval( double arg )
     {
-        return arg0.getName().compareToIgnoreCase( arg1.getName() );
+        return Math.max( 0d, arg );
     }
 }

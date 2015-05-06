@@ -29,6 +29,7 @@ package org.hisp.dhis.dataanalysis;
  */
 
 import java.util.Collection;
+import java.util.Date;
 
 import org.hisp.dhis.dataelement.DataElement;
 import org.hisp.dhis.organisationunit.OrganisationUnit;

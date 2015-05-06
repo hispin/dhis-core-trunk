@@ -168,7 +168,7 @@ function getUserRoles()
     var def = $.Deferred();
 
     $.ajax({
-        url: '../api/me.json?fields=id,name,userCredentials[userRoles[id]]',
+        url: '../api/me.json?fields=id,name,userCredentials[userRoles[id,authorities]]',
         type: 'GET'
     }).done(function(response) {
         SessionStorageService.set('USER_ROLES', response);
@@ -682,7 +682,7 @@ function getAttribute( id )
         return $.ajax( {
             url: '../api/trackedEntityAttributes.json',
             type: 'GET',
-            data: 'filter=id:eq:' + id +'&paging=false&fields=id,name,code,version,description,valueType,confidential,inherit,sortOrderInVisitSchedule,sortOrderInListNoProgram,displayOnVisitSchedule,displayInListNoProgram,unique,optionSet[id,version]'
+            data: 'filter=id:eq:' + id +'&paging=false&fields=id,name,code,version,description,valueType,optionSetValue,confidential,inherit,sortOrderInVisitSchedule,sortOrderInListNoProgram,displayOnVisitSchedule,displayInListNoProgram,unique,optionSet[id,version]'
         }).done( function( response ){            
             _.each( _.values( response.trackedEntityAttributes ), function( teAttribute ) {
                 dhis2.tc.store.set( 'attributes', teAttribute );

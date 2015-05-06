@@ -1,4 +1,4 @@
-package org.hisp.dhis.statistics;
+package org.hisp.dhis.oust.action;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -28,64 +28,47 @@ package org.hisp.dhis.statistics;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.util.Map;
-
-import org.hisp.dhis.DhisSpringTest;
-import org.hisp.dhis.common.Objects;
-import org.hisp.dhis.dataelement.DataElementService;
-import org.junit.Test;
+import com.opensymphony.xwork2.Action;
+import org.hisp.dhis.organisationunit.OrganisationUnit;
+import org.hisp.dhis.oust.manager.SelectionTreeManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
- * @author Lars Helge Overland
- * @version $Id$
+ * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
-public class StatisticsProviderTest
-    extends DhisSpringTest
+public class GetUserCountAction
+    implements Action
 {
-    @Autowired
-    private StatisticsProvider statisticsProvider;
+    // -------------------------------------------------------------------------
+    // Dependencies
+    // -------------------------------------------------------------------------
 
     @Autowired
-    private DataElementService dataElementService;
+    private SelectionTreeManager selectionTreeManager;
 
     // -------------------------------------------------------------------------
-    // Fixture
+    // Input & Output
+    // -------------------------------------------------------------------------
+
+    private int userCount = 0;
+
+    public int getUserCount()
+    {
+        return userCount;
+    }
+
+    // -------------------------------------------------------------------------
+    // Action implementation
     // -------------------------------------------------------------------------
 
     @Override
-    public void setUpTest()
+    public String execute() throws Exception
     {
-        dataElementService.addDataElement( createDataElement( 'A' ) );
-        dataElementService.addDataElement( createDataElement( 'B' ) );
-        dataElementService.addDataElement( createDataElement( 'C' ) );
+        for ( OrganisationUnit organisationUnit : selectionTreeManager.getReloadedSelectedOrganisationUnits() )
+        {
+            userCount += organisationUnit.getUsers().size();
+        }
 
-        dataElementService.addDataElementGroup( createDataElementGroup( 'A' ) );
-        dataElementService.addDataElementGroup( createDataElementGroup( 'B' ) );
-    }
-
-    // -------------------------------------------------------------------------
-    // Tests
-    // -------------------------------------------------------------------------
-
-    @Test
-    public void testGetDataElementObjectCount()
-    {
-        Map<Objects, Integer> counts = statisticsProvider.getObjectCounts();
-
-        assertNotNull( counts );
-        assertEquals( new Integer( 3 ), counts.get( Objects.DATAELEMENT ) );
-    }
-
-    @Test
-    public void testGetDataElementGroupObjectCounts()
-    {
-        Map<Objects, Integer> counts = statisticsProvider.getObjectCounts();
-
-        assertNotNull( counts );
-        assertEquals( new Integer( 2 ), counts.get( Objects.DATAELEMENTGROUP ) );
+        return SUCCESS;
     }
 }

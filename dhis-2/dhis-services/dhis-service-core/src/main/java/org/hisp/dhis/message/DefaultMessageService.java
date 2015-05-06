@@ -313,13 +313,15 @@ public class DefaultMessageService
 
         MessageConversation mc = messageConversationStore.getByUid( uid );
 
-        if( mc == null )
+        if ( mc == null )
         {
             return null;
         }
 
-        mc.setFollowUp( mc.isFollowUp( currentUserService.getCurrentUser() ) );
-        mc.setRead( mc.isRead( currentUserService.getCurrentUser() ) );
+        User user = currentUserService.getCurrentUser();
+
+        mc.setFollowUp( mc.isFollowUp( user ) );
+        mc.setRead( mc.isRead( user ) );
 
         return messageConversationStore.getByUid( uid );
     }

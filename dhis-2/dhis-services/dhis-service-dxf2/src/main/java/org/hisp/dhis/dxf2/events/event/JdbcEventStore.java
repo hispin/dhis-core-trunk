@@ -79,18 +79,17 @@ public class JdbcEventStore
         List<Event> events = new ArrayList<>();
 
         String sql = buildSql( params, organisationUnits );
-
+        
         SqlRowSet rowSet = jdbcTemplate.queryForRowSet( sql );
 
         log.debug( "Event query SQL: " + sql );
 
-        System.out.println( "The sql is:  " + sql );
-
         Event event = new Event();
+        
         event.setEvent( "not_valid" );
 
         Set<String> notes = new HashSet<>();
-
+        
         IdSchemes idSchemes = ObjectUtils.firstNonNull( params.getIdSchemes(), new IdSchemes() );
 
         while ( rowSet.next() )
@@ -105,15 +104,12 @@ public class JdbcEventStore
                 event = new Event();
 
                 event.setEvent( rowSet.getString( "psi_uid" ) );
-                event.setTrackedEntityInstance( rowSet.getString( "pa_uid" ) );
+                event.setTrackedEntityInstance( rowSet.getString( "tei_uid" ) );
                 event.setStatus( EventStatus.valueOf( rowSet.getString( "psi_status" ) ) );
 
-                event.setProgram( IdSchemes.getValue( rowSet.getString( "p_uid" ), rowSet.getString( "p_code" ),
-                    idSchemes.getProgramIdScheme() ) );
-                event.setProgramStage( IdSchemes.getValue( rowSet.getString( "ps_uid" ), rowSet.getString( "ps_code" ),
-                    idSchemes.getProgramStageIdScheme() ) );
-                event.setOrgUnit( IdSchemes.getValue( rowSet.getString( "ou_uid" ), rowSet.getString( "ou_code" ),
-                    idSchemes.getOrgUnitIdScheme() ) );
+                event.setProgram( IdSchemes.getValue( rowSet.getString( "p_uid" ), rowSet.getString( "p_code" ), idSchemes.getProgramIdScheme() ) );
+                event.setProgramStage( IdSchemes.getValue( rowSet.getString( "ps_uid" ), rowSet.getString( "ps_code" ), idSchemes.getProgramStageIdScheme() ) );
+                event.setOrgUnit( IdSchemes.getValue( rowSet.getString( "ou_uid" ), rowSet.getString( "ou_code" ), idSchemes.getOrgUnitIdScheme() ) );
 
                 if ( rowSet.getInt( "p_type" ) != Program.SINGLE_EVENT_WITHOUT_REGISTRATION )
                 {
@@ -169,8 +165,7 @@ public class JdbcEventStore
                 DataValue dataValue = new DataValue();
                 dataValue.setValue( rowSet.getString( "pdv_value" ) );
                 dataValue.setProvidedElsewhere( rowSet.getBoolean( "pdv_providedelsewhere" ) );
-                dataValue.setDataElement( IdSchemes.getValue( rowSet.getString( "de_uid" ),
-                    rowSet.getString( "de_code" ), idSchemes.getDataElementIdScheme() ) );
+                dataValue.setDataElement( IdSchemes.getValue( rowSet.getString( "de_uid" ), rowSet.getString( "de_code" ), idSchemes.getDataElementIdScheme() ) );
 
                 dataValue.setStoredBy( rowSet.getString( "pdv_storedby" ) );
 
@@ -191,7 +186,7 @@ public class JdbcEventStore
 
         return events;
     }
-
+    
     @Override
     public List<EventRow> getEventRows( EventSearchParams params, List<OrganisationUnit> organisationUnits )
     {
@@ -286,167 +281,231 @@ public class JdbcEventStore
         return eventRows;
     }
 
+
+    public int getEventCount( EventSearchParams params, List<OrganisationUnit> organisationUnits )
+    {
+        String sql = getEventSelectQuery( params, organisationUnits );
+        
+        sql = sql.replaceFirst( "select .*? from", "select count(*) from" );
+
+        log.info( "Event query count SQL: " + sql );
+
+        return jdbcTemplate.queryForObject( sql, Integer.class );
+    }
+    
+    /**
+     * Query is based on three sub queries on event, data value and comment, which 
+     * are joined using program stage instance id. The purpose of the separate
+     * queries is to be able to page properly on events.
+     */
     private String buildSql( EventSearchParams params, List<OrganisationUnit> organisationUnits )
+    {
+        String sql = "select * from (";
+        
+        sql += getEventSelectQuery( params, organisationUnits );
+        
+        sql += getEventPagingQuery( params );
+        
+        sql += ") as event left join (";
+        
+        sql += getDataValueQuery();
+        
+        sql += ") as dv on event.psi_id=dv.pdv_id left join (";
+        
+        sql += getCommentQuery();
+        
+        sql += ") as cm on event.psi_id=cm.psic_id ";
+        
+        sql += "order by psi_uid desc ";
+        
+        return sql;
+    }
+    
+    private String getEventSelectQuery( EventSearchParams params, List<OrganisationUnit> organisationUnits )
     {
         List<Integer> orgUnitIds = getIdList( organisationUnits );
 
-        Integer trackedEntityInstanceId = null;
-
-        if ( params.getTrackedEntityInstance() != null )
-        {
-            org.hisp.dhis.trackedentity.TrackedEntityInstance entityInstance = entityInstanceService
-                .getTrackedEntityInstance( params.getTrackedEntityInstance().getTrackedEntityInstance() );
-
-            if ( entityInstance != null )
-            {
-                trackedEntityInstanceId = entityInstance.getId();
-            }
-        }
-
         SqlHelper hlp = new SqlHelper();
-
-        String sql = "select pa.uid as tei_uid, pi.uid as pi_uid, pi.status as pi_status, pi.followup as pi_followup, p.uid as p_uid, p.code as p_code, "
-            + "p.type as p_type, ps.uid as ps_uid, ps.code as ps_code, ps.capturecoordinates as ps_capturecoordinates, pa.uid as pa_uid, "
-            + "psi.uid as psi_uid, psi.status as psi_status, ou.uid as ou_uid, ou.code as ou_code, ou.name as ou_name, "
-            + "psi.executiondate as psi_executiondate, psi.duedate as psi_duedate, psi.completeduser as psi_completeduser, "
-            + "psi.longitude as psi_longitude, psi.latitude as psi_latitude, psi.created as psi_created, psi.lastupdated as psi_lastupdated, "
-            + "psinote.trackedentitycommentid as psinote_id, psinote.commenttext as psinote_value, "
-            + "psinote.createddate as psinote_storeddate, psinote.creator as psinote_storedby, "
-            + "pdv.value as pdv_value, pdv.storedby as pdv_storedby, pdv.providedelsewhere as pdv_providedelsewhere, de.uid as de_uid, de.code as de_code "
-            + "pav.value as pav_value, ta.uid as ta_uid, ta.name as ta_name, ta.valuetype as ta_valuetype "
-            + "from program p "
-            + "left join programstage ps on ps.programid=p.programid "
-            + "left join programstageinstance psi on ps.programstageid=psi.programstageid "
-            + "left join programinstance pi on pi.programinstanceid=psi.programinstanceid "
-            + "left join programstageinstancecomments psic on psi.programstageinstanceid=psic.programstageinstanceid "
-            + "left join trackedentitycomment psinote on psic.trackedentitycommentid=psinote.trackedentitycommentid ";
+        
+        String sql = "";
+        
+        String generalFilterSql = "";
+        
+        String dataElementFilterSql = "";
+        
+        sql +=
+            "select psi.programstageinstanceid as psi_id, psi.uid as psi_uid, psi.status as psi_status, psi.executiondate as psi_executiondate, psi.duedate as psi_duedate, psi.completeduser as psi_completeduser, " +
+            "psi.longitude as psi_longitude, psi.latitude as psi_latitude, psi.created as psi_created, psi.lastupdated as psi_lastupdated, " +
+            "pi.uid as pi_uid, pi.status as pi_status, pi.followup as pi_followup, p.uid as p_uid, p.code as p_code, " +
+            "p.type as p_type, ps.uid as ps_uid, ps.code as ps_code, ps.capturecoordinates as ps_capturecoordinates, " +
+            "ou.uid as ou_uid, ou.code as ou_code, ou.name as ou_name, tei.uid as tei_uid " +
+            "from programstageinstance psi " +
+            "inner join programinstance pi on pi.programinstanceid=psi.programinstanceid " +
+            "inner join program p on p.programid=pi.programid " +
+            "inner join programstage ps on ps.programstageid=psi.programstageid " +
+            "left join trackedentityinstance tei on tei.trackedentityinstanceid=pi.trackedentityinstanceid ";            
 
         if ( params.getEventStatus() == null || EventStatus.isExistingEvent( params.getEventStatus() ) )
         {
-            sql += "left join organisationunit ou on (psi.organisationunitid=ou.organisationunitid) ";
+            generalFilterSql += "left join organisationunit ou on (psi.organisationunitid=ou.organisationunitid) ";
         }
         else
         {
-            sql += "left join trackedentityinstance tei on tei.trackedentityinstanceid=pi.trackedentityinstanceid "
-                + "left join organisationunit ou on (tei.organisationunitid=ou.organisationunitid) ";
+            generalFilterSql += "left join organisationunit ou on (tei.organisationunitid=ou.organisationunitid) ";
         }
-
-        sql += "left join trackedentitydatavalue pdv on psi.programstageinstanceid=pdv.programstageinstanceid "
-            + "left join dataelement de on pdv.dataelementid=de.dataelementid "
-            + "left join trackedentityattributevalue pav on pi.trackedentityinstanceid = pav.trackedentityinstanceid "
-            + "left join trackedentityattribute ta on pav.trackedentityattributeid = ta.trackedentityattributeid "
-            + "left join trackedentityinstance pa on pa.trackedentityinstanceid=pi.trackedentityinstanceid ";
-
-        if ( trackedEntityInstanceId != null )
+                
+        if ( params.getTrackedEntityInstance() != null )
         {
-            sql += hlp.whereAnd() + " pa.trackedentityinstanceid=" + trackedEntityInstanceId + " ";
+            generalFilterSql += hlp.whereAnd() + " tei.trackedentityinstanceid=" + params.getTrackedEntityInstance().getId() + " ";
         }
 
         if ( params.getProgram() != null )
         {
-            sql += hlp.whereAnd() + " p.programid = " + params.getProgram().getId() + " ";
+            generalFilterSql += hlp.whereAnd() + " p.programid = " + params.getProgram().getId() + " ";
         }
 
         if ( params.getProgramStage() != null )
         {
-            sql += hlp.whereAnd() + " ps.programstageid = " + params.getProgramStage().getId() + " ";
+            generalFilterSql += hlp.whereAnd() + " ps.programstageid = " + params.getProgramStage().getId() + " ";
         }
 
         if ( params.getProgramStatus() != null )
         {
-            sql += hlp.whereAnd() + " pi.status = " + params.getProgramStatus().getValue() + " ";
+            generalFilterSql += hlp.whereAnd() + " pi.status = " + params.getProgramStatus().getValue() + " ";
         }
 
         if ( params.getFollowUp() != null )
         {
-            sql += hlp.whereAnd() + " pi.followup is " + (params.getFollowUp() ? "true" : "false") + " ";
+            generalFilterSql += hlp.whereAnd() + " pi.followup is " + ( params.getFollowUp() ? "true" : "false" ) + " ";
         }
-
+        
         if ( params.getLastUpdated() != null )
         {
-            sql += hlp.whereAnd() + " psi.lastupdated > '" + DateUtils.getLongDateString( params.getLastUpdated() )
-                + "' ";
+            generalFilterSql += hlp.whereAnd() + " psi.lastupdated > '" + DateUtils.getLongDateString( params.getLastUpdated() ) + "' ";
         }
 
         if ( params.getEventStatus() == null || EventStatus.isExistingEvent( params.getEventStatus() ) )
         {
             if ( orgUnitIds != null && !orgUnitIds.isEmpty() )
             {
-                sql += hlp.whereAnd() + " psi.organisationunitid in (" + getCommaDelimitedString( orgUnitIds ) + ") ";
+                generalFilterSql += hlp.whereAnd() + " psi.organisationunitid in (" + getCommaDelimitedString( orgUnitIds ) + ") ";
             }
 
             if ( params.getStartDate() != null )
             {
-                sql += hlp.whereAnd() + " psi.executiondate >= '" + getMediumDateString( params.getStartDate() ) + "' ";
+                generalFilterSql += hlp.whereAnd() + " psi.executiondate >= '" + getMediumDateString( params.getStartDate() ) + "' ";
             }
 
             if ( params.getEndDate() != null )
             {
-                sql += hlp.whereAnd() + " psi.executiondate <= '" + getMediumDateString( params.getEndDate() ) + "' ";
+                generalFilterSql += hlp.whereAnd() + " psi.executiondate <= '" + getMediumDateString( params.getEndDate() ) + "' ";
             }
         }
         else
         {
             if ( orgUnitIds != null && !orgUnitIds.isEmpty() )
             {
-                sql += hlp.whereAnd() + " tei.organisationunitid in (" + getCommaDelimitedString( orgUnitIds ) + ") ";
+                generalFilterSql += hlp.whereAnd() + " tei.organisationunitid in (" + getCommaDelimitedString( orgUnitIds ) + ") ";
             }
 
             if ( params.getStartDate() != null )
             {
-                sql += hlp.whereAnd() + " psi.duedate >= '" + getMediumDateString( params.getStartDate() ) + "' ";
+                generalFilterSql += hlp.whereAnd() + " psi.duedate >= '" + getMediumDateString( params.getStartDate() ) + "' ";
             }
 
             if ( params.getEndDate() != null )
             {
-                sql += hlp.whereAnd() + " psi.duedate <= '" + getMediumDateString( params.getEndDate() ) + "' ";
+                generalFilterSql += hlp.whereAnd() + " psi.duedate <= '" + getMediumDateString( params.getEndDate() ) + "' ";
             }
 
             if ( params.getEventStatus() == EventStatus.VISITED )
             {
-                sql = "and psi.status = '" + EventStatus.ACTIVE.name() + "' and psi.executiondate is not null ";
+                generalFilterSql = "and psi.status = '" + EventStatus.ACTIVE.name() + "' and psi.executiondate is not null ";
             }
             else if ( params.getEventStatus() == EventStatus.COMPLETED )
             {
-                sql = "and psi.status = '" + EventStatus.COMPLETED.name() + "' ";
+                generalFilterSql = "and psi.status = '" + EventStatus.COMPLETED.name() + "' ";
             }
             else if ( params.getEventStatus() == EventStatus.SCHEDULE )
             {
-                sql += "and psi.executiondate is null and date(now()) <= date(psi.duedate) and psi.status = '"
-                    + EventStatus.SCHEDULE.name() + "' ";
+                generalFilterSql += "and psi.executiondate is null and date(now()) <= date(psi.duedate) and psi.status = '" + 
+                    EventStatus.SCHEDULE.name() + "' ";
             }
             else if ( params.getEventStatus() == EventStatus.OVERDUE )
             {
-                sql += "and psi.executiondate is null and date(now()) > date(psi.duedate) and psi.status = '"
-                    + EventStatus.SCHEDULE.name() + "' ";
+                generalFilterSql += "and psi.executiondate is null and date(now()) > date(psi.duedate) and psi.status = '" + 
+                    EventStatus.SCHEDULE.name() + "' ";
             }
             else
             {
-                sql += "and psi.status = '" + params.getEventStatus().name() + "' ";
+                generalFilterSql += "and psi.status = '" + params.getEventStatus().name() + "' ";
             }
         }
-
+        
         if ( params.getQueryDataElement() != null )
         {
-            sql += hlp.whereAnd() + " de.uid = '" + params.getQueryDataElement() + "' ";
+            generalFilterSql += hlp.whereAnd() + " de.uid = '" + params.getQueryDataElement() + "' ";
         }
 
         if ( params.getQueryDataValue() != null )
         {
-            sql += hlp.whereAnd() + " pdv.value = '" + params.getQueryDataValue() + "' ";
+            generalFilterSql += hlp.whereAnd() + " pdv.value = '" + params.getQueryDataValue() + "' ";
+        }
+        
+        
+        if ( params.getQueryDataElement() != null && params.getQueryDataValue() != null)
+        {
+            dataElementFilterSql += 
+                "select psi.programstageinstanceid as psi_id " +
+                    "from programstageinstance psi " +
+                    "inner join programinstance pi on pi.programinstanceid=psi.programinstanceid " +
+                    "inner join program p on p.programid=pi.programid " +
+                    "inner join programstage ps on ps.programstageid=psi.programstageid " +
+                    "left join trackedentityinstance tei on tei.trackedentityinstanceid=pi.trackedentityinstanceid ";
+            
+            dataElementFilterSql += generalFilterSql;
+            
+            sql += hlp.whereAnd() + " psi.programstageinstanceid in (" + dataElementFilterSql + ") ";
+        } 
+        
+        else{
+            sql += generalFilterSql;
         }
 
-        sql += " order by psi.lastupdated desc ";
+        return sql;
+    }
 
-        // ---------------------------------------------------------------------
-        // Paging
-        // ---------------------------------------------------------------------
+    private String getEventPagingQuery( EventSearchParams params )
+    {
+        String sql = " ";
 
         if ( params.isPaging() )
         {
-            sql += "limit " + params.getPageSizeWithDefault() + " offset " + params.getOffset();
+            sql += "limit " + params.getPageSizeWithDefault() + " offset " + params.getOffset() + " ";
         }
 
+        return sql;
+    }
+    
+    private String getDataValueQuery()
+    {
+        String sql =
+            "select pdv.programstageinstanceid as pdv_id, pdv.value as pdv_value, pdv.storedby as pdv_storedby, pdv.providedelsewhere as pdv_providedelsewhere, " +
+            "de.uid as de_uid, de.code as de_code " +
+            "from trackedentitydatavalue pdv " +
+            "inner join dataelement de on pdv.dataelementid=de.dataelementid ";
+        
+        return sql;
+    }
+    
+    private String getCommentQuery()
+    {
+        String sql =
+            "select psic.programstageinstanceid as psic_id, psinote.trackedentitycommentid as psinote_id, psinote.commenttext as psinote_value, " +
+            "psinote.createddate as psinote_storeddate, psinote.creator as psinote_storedby " +
+            "from programstageinstancecomments psic " +
+            "inner join trackedentitycomment psinote on psic.trackedentitycommentid=psinote.trackedentitycommentid ";
+        
         return sql;
     }
 }

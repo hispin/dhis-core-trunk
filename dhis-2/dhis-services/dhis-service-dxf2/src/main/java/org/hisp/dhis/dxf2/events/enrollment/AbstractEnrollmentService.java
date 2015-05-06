@@ -388,7 +388,6 @@ public abstract class AbstractEnrollmentService
         }
 
         OrganisationUnit organisationUnit = getOrganisationUnit( enrollment.getOrgUnit() );
-        System.err.println( "Enrollment: " + organisationUnit );
 
         ProgramInstance programInstance = programInstanceService.enrollTrackedEntityInstance( enrollment.getEnrollment(), entityInstance, program,
             enrollment.getDateOfEnrollment(), enrollment.getDateOfIncident(), organisationUnit );
@@ -465,11 +464,11 @@ public abstract class AbstractEnrollmentService
 
         if ( programInstance.getStatus() != enrollment.getStatus().getValue() )
         {
-            if ( enrollment.getStatus().equals( EnrollmentStatus.CANCELLED ) )
+            if ( EnrollmentStatus.CANCELLED == enrollment.getStatus() )
             {
                 programInstanceService.cancelProgramInstanceStatus( programInstance );
             }
-            else if ( enrollment.getStatus().equals( EnrollmentStatus.COMPLETED ) )
+            else if ( EnrollmentStatus.COMPLETED == enrollment.getStatus() )
             {
                 programInstanceService.completeProgramInstanceStatus( programInstance );
             }
@@ -767,14 +766,13 @@ public abstract class AbstractEnrollmentService
         {
             if ( userService.getUserCredentialsByUsername( attribute.getValue() ) == null )
             {
-                importConflicts.add( new ImportConflict( "Attribute.value",
-                    "Value is not pointing to a valid username." ) );
+                importConflicts.add( new ImportConflict( "Attribute.value", "Value is not pointing to a valid username." ) );
             }
         }
         else if ( TrackedEntityAttribute.TYPE_OPTION_SET.equals( teAttribute.getValueType() )
-            && !teAttribute.getOptionSet().getOptions().contains( attribute.getValue() ) )
+            && !teAttribute.getOptionSet().getOptionCodes().contains( attribute.getValue() ) )
         {
-            importConflicts.add( new ImportConflict( "Attribute.value", "Value is not pointing to a valid option." ) );
+            importConflicts.add( new ImportConflict( "Attribute.value", "Value is not pointing to a valid option code." ) );
         }
 
         return importConflicts;

@@ -44,25 +44,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 /**
  * @author markusbekken
  */
-
+@JacksonXmlRootElement( localName = "programRule", namespace = DxfNamespaces.DXF_2_0 )
 public class ProgramRule
     extends BaseIdentifiableObject
 {
-    private static final long serialVersionUID = -2807997671779497354L;
+    /**
+     * The description of the program rule
+     */
+    private String description;
     
     /**
      * The program that the rule belongs to
      */
     private Program program;
-    
-    /**
-     * The program that the rule belongs to
-     */
-    private String description;
     
     /**
      * The programStage that the rule belongs to
@@ -99,7 +98,7 @@ public class ProgramRule
     {
         this();
         this.name = name;
-        this.setDescription( description );
+        this.description = description;
         this.program = program;
         this.programStage = programStage;
         this.programRuleActions = programRuleActions;
@@ -111,6 +110,18 @@ public class ProgramRule
     // Getters and setters
     // -------------------------------------------------------------------------
 
+    @JsonProperty
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public String getDescription()
+    {
+        return description;
+    }
+
+    public void setDescription( String description )
+    {
+        this.description = description;
+    }
+    
     @JsonProperty
     @JsonSerialize( as = BaseIdentifiableObject.class )
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
@@ -174,18 +185,6 @@ public class ProgramRule
         this.priority = priority;
     }
 
-    @JsonProperty
-    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
-    public String getDescription()
-    {
-        return description;
-    }
-
-    public void setDescription( String description )
-    {
-        this.description = description;
-    }
-    
     @Override
     public void mergeWith( IdentifiableObject other, MergeStrategy strategy )
     {

@@ -25,10 +25,7 @@
 	});
 	
 	var i18n_add_source_field = '$encoder.jsEscape( $i18n.getString( "add_source_field" ) , "'" )';
-	var i18n_display_text = '$encoder.jsEscape( $i18n.getString( "display_text" ) , "'" )';
-	var i18n_shows_a_key_data_box = '$encoder.jsEscape( $i18n.getString( "shows_a_key_data_box" ) , "'" )';
 	var i18n_hide_field = '$encoder.jsEscape( $i18n.getString( "hide_field" ) , "'" )';
-	var i18n_assign_variable = '$encoder.jsEscape( $i18n.getString( "assign_variable" ) , "'" )';
 	var i18n_show_warning = '$encoder.jsEscape( $i18n.getString( "show_warning" ) , "'" )';
 	var i18n_show_error = '$encoder.jsEscape( $i18n.getString( "show_error" ) , "'" )';
 	var i18n_this_field_is_required = '$encoder.jsEscape( $i18n.getString( "this_field_is_required" ) , "'")';
@@ -46,112 +43,130 @@
 <input type='hidden' id='programLocalId' name='programLocalId' value="$programRule.program.id" />
 <input type='hidden' id='programRuleId' name='programRuleId' value="$programRule.uid" />
 
-<table width="70%">
-	<col width="10%">
-	<col width="40%">
-	<col width="25%">
-	<col width="25%">
+<table class="mainPageTable">
+	<col width="50%">
+	<col width="50%">
 	<thead>
       <tr>
-        <th colspan="4">$i18n.getString( "program_rule_details" )</th>
+        <th>$i18n.getString( "program_rule_details" )</th>
       </tr>
     </thead>
     
 	<tbody>
 		<tr>
-			<td><label for="name">$i18n.getString( "name" ) <em title="$i18n.getString( "required" )" class="required">*</em></label></td>
-			<td colspan='3'><input type="text" id="name" name="name" style="width:98%" value='$programRule.name' ></td>
-		</tr>	
-		
-		<tr>
-			<td><label for="description">$i18n.getString( "description" ) <em title="$i18n.getString( "required" )" class="required">*</em></label></td>
-			<td colspan='3'><input type="text" id="description" name="description" style="width:98%" value='$programRule.description' /></td>
-		</tr>
-		
-		<tr>
-			<th colspan="2">1. $i18n.getString("source_fields")</th>
-			<th colspan="2">2. $i18n.getString("expression_evaluate_the_source_fields") <em title="$i18n.getString( "required" )" class="required">*</em></th>
-		</tr>
-		<tr>
-			<td colspan='2'>
-				<fieldset style="height:100%;">
-					<div style="height:80px;border:1px solid black; overflow: auto;">
-						<table id='sourceFieldList' style="height:80px;width:100%" >
-							<col width="50%" />
-							<col width="50%" />
-							#set($idx = 0 )
-							#foreach($ruleVariable in $ruleVariables)
-								#set( $json_Data='{"name":"' + $ruleVariable.name + '"'
-									+ ',"sourceType":"' + $ruleVariable.sourceType + '"'
-									+ ',"dataElement":{ "id":"' + $ruleVariable.dataElement.id + '"}'
-									+ ',"program":{"id":"' + $ruleVariable.program.id + '"}'
-									+ ',"programStage":{"id":"' + "$!ruleVariable.programStage.id" + '"}}' )
-								#set($clazz = "listAlternateRow")
-								#if( $idx % 2 == 0 )
-									#set($clazz = "listRow")
-								#end		
-								#set($idx = $idx + 1 )
-								<tr class="$clazz" jsonData='$json_Data' id="$ruleVariable.uid">
-									<td>$encoder.htmlEncode($ruleVariable.dataElement.displayName)</td>
-									<td><input type='button' deId='$ruleVariable.dataElement.uid' realValue='$ruleVariable.name' value='$$ruleVariable.name' style='width:150px;' onclick='insertVariable(this)'/></td>
-								</tr>
-							#end
-						</table>
-					</div><br>
-					<input type="button" id="addMoreVariableBtn" value="+ $i18n.getString('add_source_field')" onclick="javascript:addSourceFieldForm();"/>
-				</fieldset>
-			</td>			
-			<td colspan='2'>
-				<fieldset>
-					<textarea size="10" id='condition' name='condition' style="width:98%;border:none">$programRule.condition</textarea>
-				</fieldset>
-			</td>
-		</tr>
-		
-		<tr>
-			<th colspan="3">3. $i18n.getString("actions_that_is_executed_when_expression_is_true") <em title="$i18n.getString( "required" )" class="required">*</em>
-			</th>
 			<td>
-				<input type="hidden" id="hasAction" name="hasAction" class="{validate:{required:true}}" >
-			</td>
+				<table width="100%">
+					<tr>
+						<td><label for="name">$i18n.getString( "name" ) <em title="$i18n.getString( "required" )" class="required">*</em></label></td>
+						<td><input type="text" id="name" name="name" value="$programRule.name" style="width:98%" ></td>
+					</tr>					
+					<tr>
+						<td><label for="description">$i18n.getString( "description" ) <em title="$i18n.getString( "required" )" class="required">*</em></label></td>
+						<td><input type="text" id="description" name="description" value="$programRule.description" style="width:98%" /></td>
+					</tr>
+				</table>
+			</td>	
+			<td></td>
 		</tr>
 		<tr>
-			<td colspan="4">
-				<table width="100%">
-					<col width="20%">
-					<col width="60%">
-					<col width="20%">
-					<tbody id='actionTB'>
+			<th>1. $i18n.getString("source_fields")</th>
+			<th>2. $i18n.getString("expression_evaluate_the_source_fields") <em title="$i18n.getString( "required" )" class="required">*</em></th>
+		</tr>
+		<tr>
+			<td>
+				
+				<div style="height:180px; border:1px solid black; overflow-y: auto;">
+					<table id='sourceFieldList' style="height:100px;width:100%" >
+						<col width="50%" />
+						<col width="50%" />
 						#set($idx = 0 )
-						#foreach( $action in $programRule.programRuleActions )
-						
-							#set($clazz = "class='listAlternateRow'")
+						#foreach($ruleVariable in $ruleVariables)
+							#set( $json_Data='{"name":"' + $ruleVariable.name + '"'
+								+ ',"sourceType":"' + $ruleVariable.sourceType + '"'
+								+ ',"dataElement":{ "id":"' + $ruleVariable.dataElement.id + '"}'
+								+ ',"program":{"id":"' + $ruleVariable.program.id + '"}'
+								+ ',"programStage":{"id":"' + "$!ruleVariable.programStage.id" + '"}}' )
+							#set($clazz = "listAlternateRow")
 							#if( $idx % 2 == 0 )
-								#set($clazz = "class='listRow'")
+								#set($clazz = "listRow")
 							#end		
 							#set($idx = $idx + 1 )
-							
-							<tr $clazz id="$action.uid">								
-								<td>
-									<select class='actionList' style='width:100%'>
-										<option value='DISPLAYTEXT' #if($action.programRuleActionType=='DISPLAYTEXT') selected #end>$i18n.getString("display_text")</option>
-										<option value='DISPLAYKEYVALUEPAIR' #if($action.programRuleActionType=='DISPLAYKEYVALUEPAIR') selected #end>$i18n.getString("shows_a_key_data_box")</option>
-										<option value='HIDEFIELD' #if($action.programRuleActionType=='HIDEFIELD') selected #end>$i18n.getString("hide_field")</option>
-										<option value='ASSIGNVARIABLE' #if($action.programRuleActionType=='ASSIGNVARIABLE') selected #end>$i18n.getString("assign_variable")</option>
-										<option value='SHOWWARNING' #if($action.programRuleActionType=='SHOWWARNING') selected #end>$i18n.getString("show_warning")</option>
-										<option value='SHOWERROR' #if($action.programRuleActionType=='SHOWERROR') selected #end>$i18n.getString("show_error")</option>
-									</select>
-								</td>
-								<td><input type='text' class='content' style='width:97%;' value='$encoder.htmlEncode($action.content)'/></td>
-								<td>
-									<select class='actionDEs' style='width:100%;'>
-										<option value="$programRule.dataElement.uid">$encoder.htmlEncode($action.dataElement.displayName)</option>
-									</select>
-								</td>
-								<td><input type='button' value='-' onclick='javascript:removeActionRow(this)';></td>
+							<tr class="$clazz" jsonData='$json_Data' id="$ruleVariable.uid">
+								<td>$!encoder.htmlEncode($ruleVariable.dataElement.displayName)</td>
+								<td><input type='button' deId='$ruleVariable.dataElement.uid' realValue='$ruleVariable.name' value='#{$ruleVariable.name}' style='width:100%;' onclick='insertVariable(this)'/></td>
 							</tr>
 						#end
-						</tbody>
+					</table>
+				</div>
+				<br>
+				<input type="button" id="addMoreVariableBtn" value="+ $i18n.getString('add_source_field')" onclick="javascript:addSourceFieldForm();"/>
+			</td>			
+			<td>
+				<fieldset style="width:95%;">
+					<textarea size="10" id='condition' name='condition' style="width:98%;border:none;height:150px;">$programRule.condition</textarea>
+				</fieldset>
+				<br>								
+				<input type='button' class="small-button" onclick='insertVariable( this );' value="+" />
+				<input type='button' class="small-button" onclick='insertVariable( this );' value="-" />
+				<input type='button' class="small-button" onclick='insertVariable( this );' value="*" />
+				<input type='button' class="small-button" onclick='insertVariable( this);' value="/" />
+				<input type='button' class="small-button" onclick='insertVariable( this );' value="%" />
+				&nbsp;&nbsp;&nbsp;						
+				<input type='button' class="small-button" onclick='insertVariable( this );' value=">" />
+				<input type='button' class="small-button" onclick='insertVariable( this );' value=">=" />
+				<input type='button' class="small-button" onclick='insertVariable( this );' value="<" />
+				<input type='button' class="small-button" onclick='insertVariable( this );' value="<=" />
+				<input type='button' class="small-button" onclick='insertVariable( this );' value="==" />
+				<input type='button' class="small-button" onclick='insertVariable( this );' value="!=" />
+				&nbsp;&nbsp;&nbsp;
+				<input type='button' class="small-button" onclick='insertOperator( "!" );' value="!" />
+				<input type='button' class="small-button" onclick='insertOperator( "&&" );' value="&&" />
+				<input type='button' class="small-button" onclick='insertOperator( "||" );' value="||" />
+			</td>
+		</tr>
+		
+		<tr>
+			<th colspan="2">3. $i18n.getString("actions_that_is_executed_when_expression_is_true") <em title="$i18n.getString( "required" )" class="required">*</em>
+			</th>
+		</tr>
+		<tr>
+			<td><input type="hidden" id="hasAction" name="hasAction" class="{validate:{required:true}}" ></td>
+		</tr>
+		<tr>
+			<td colspan="2">
+				<table width="100%">
+					<col width="30%">
+					<col width="40%">
+					<col width="30%">
+					<tbody id='actionTB'>
+						 #set($idx = 0 )
+						 #foreach( $action in $programRule.programRuleActions )
+						 
+								 #set($clazz = "class='listAlternateRow'")
+								 #if( $idx % 2 == 0 )
+										 #set($clazz = "class='listRow'")
+								 #end            
+								 #set($idx = $idx + 1 )
+								 
+								 <tr $clazz id="$action.uid">                                                            
+									 <td>
+										 <select class='actionList' style='width:100%'>
+												 <option value='HIDEFIELD' #if($action.programRuleActionType=='HIDEFIELD') selected #end>$i18n.getString("hide_field")</option>
+												 <option value='SHOWWARNING' #if($action.programRuleActionType=='SHOWWARNING') selected #end>$i18n.getString("show_warning")</option>
+												 <option value='SHOWERROR' #if($action.programRuleActionType=='SHOWERROR') selected #end>$i18n.getString("show_error")</option>
+										 </select>
+									 </td>
+									 <td><input type='text' class='content' style='width:97%;' value='$encoder.htmlEncode($action.content)'/></td>
+									 <td>
+										 <select class='actionDEs' style='width:100%;'>
+											 <option value="$programRule.dataElement.uid">$encoder.htmlEncode($action.dataElement.displayName)</option>
+										 </select>
+									 </td>
+									 <td><input type='button' value='-' class='small-button' onclick='javascript:removeActionRow(this)';></td>
+								 </tr>
+						 #end
+					</tbody>
+					<tr>
 						<td><input type="button" value="+ $i18n.getString('add_more_action')" onclick="addMoreAction();"></td>
 					</tr>
 				</table>
@@ -162,7 +177,7 @@
 <br>
 <table>
 	<tr>
-		<td colspan='3'>
+		<td colspan='2'>
 			<input type="submit" value="$i18n.getString( 'update' )" style="width:10em">
 			<input type="button" value="$i18n.getString( 'cancel' )" onclick="window.location.href='programRule.action?id=$programRule.program.id'" style="width:10em">
 		</td>

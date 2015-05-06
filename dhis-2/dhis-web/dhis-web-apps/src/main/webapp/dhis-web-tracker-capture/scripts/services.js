@@ -433,8 +433,9 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 })
 
 /* Factory for fetching OrgUnit */
-.factory('OrgUnitFactory', function($http) {    
-    var orgUnit, orgUnitPromise, rootOrgUnitPromise, myOrgUnitsPromise;    
+.factory('OrgUnitFactory', function($http, SessionStorageService) {    
+    var orgUnit, orgUnitPromise, rootOrgUnitPromise;
+    var roles = SessionStorageService.get('USER_ROLES');
     return {
         get: function(uid){            
             if( orgUnit !== uid ){
@@ -444,28 +445,29 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 });
             }
             return orgUnitPromise;
-        },        
-        getRoot: function(){
+        },    
+        getSearchTreeRoot: function(){
             if(!rootOrgUnitPromise){
-                rootOrgUnitPromise = $http.get( '../api/organisationUnits.json?filter=level:eq:1&fields=id,name,children[id,name,children[id,name]]&paging=false' ).then(function(response){
+                
+                var url = '../api/me.json?fields=organisationUnits[id,name,children[id,name,children[id,name]]]&paging=false';
+                
+                if( roles && roles.userCredentials && roles.userCredentials.userRoles && roles.userCredentials.userRoles.authorities ){
+                    if( roles.userCredentials.userRoles.authorities.indexOf('ALL') !== -1 || 
+                            roles.userCredentials.userRoles.authorities.indexOf('F_TRACKED_ENTITY_INSTANCE_SEARCH_IN_ALL_ORGUNITS') !== -1 ){                        
+                        url = '../api/organisationUnits.json?filter=level:eq:1&fields=id,name,children[id,name,children[id,name]]&paging=false';                        
+                    }
+                }                
+                rootOrgUnitPromise = $http.get( url ).then(function(response){
                     return response.data;
                 });
             }
             return rootOrgUnitPromise;
-        },
-        getMine: function(){
-            if(!myOrgUnitsPromise){
-                myOrgUnitsPromise = $http.get('../api/me/organisationUnits').then(function(response){
-                    return response.data;
-                });
-            }
-            return myOrgUnitsPromise;
         }
     }; 
 })
 
 /* service to deal with TEI registration and update */
-.service('RegistrationService', function(DialogService, TEIService, $q){
+.service('RegistrationService', function(TEIService, $q){
     return {
         registerOrUpdate: function(tei, optionSets, attributesById){
             if(tei){
@@ -530,13 +532,13 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             return promise;
         },
         getByEntity: function( entity ){
-            var promise = $http.get(  '../api/enrollments.json?trackedEntityInstance=' + entity ).then(function(response){
+            var promise = $http.get(  '../api/enrollments.json?trackedEntityInstance=' + entity + '&paging=false').then(function(response){
                 return convertFromApiToUser(response.data);
             });
             return promise;
         },
         getByEntityAndProgram: function( entity, program ){
-            var promise = $http.get(  '../api/enrollments.json?trackedEntityInstance=' + entity + '&program=' + program ).then(function(response){
+            var promise = $http.get(  '../api/enrollments.json?trackedEntityInstance=' + entity + '&program=' + program + '&paging=false').then(function(response){
                 return convertFromApiToUser(response.data);
             });
             return promise;
@@ -648,7 +650,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         get: function(entityUid, optionSets, attributesById){
             var promise = $http.get( '../api/trackedEntityInstances/' +  entityUid + '.json').then(function(response){
                 var tei = response.data;
-                angular.forEach(tei.attributes, function(att){
+                angular.forEach(tei.attributes, function(att){                    
                     if(attributesById[att.attribute]){
                         att.displayName = attributesById[att.attribute].name;
                     }
@@ -678,7 +680,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 var pg = pager ? pager.page : 1;
                 pgSize = pgSize > 1 ? pgSize  : 1;
                 pg = pg > 1 ? pg : 1;
-                url = url + '&pageSize=' + pgSize + '&page=' + pg;
+                url = url + '&pageSize=' + pgSize + '&page=' + pg + '&totalPages=true';
             }
             else{
                 url = url + '&paging=false';
@@ -889,8 +891,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                             val = DateUtils.formatFromUserToApi(val);
                         }                        
                     }
-                    if(type === 'optionSet' && 
-                            attsById[att.attribute] && 
+                    if(attsById[att.attribute] && 
+                            attsById[att.attribute].optionSetValue && 
                             attsById[att.attribute].optionSet && 
                             attsById[att.attribute].optionSet.id && 
                             optionSets[attsById[att.attribute].optionSet.id]){
@@ -997,7 +999,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         	var pg = pager ? pager.page : 1;
             pgSize = pgSize > 1 ? pgSize  : 1;
             pg = pg > 1 ? pg : 1; 
-            var url = '../api/events/eventRows.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&program=' + program + '&programStatus=' + programStatus + '&eventStatus='+ eventStatus + '&pageSize=' + pgSize + '&page=' + pg;
+            var url = '../api/events/eventRows.json?' + 'orgUnit=' + orgUnit + '&ouMode='+ ouMode + '&program=' + program + '&programStatus=' + programStatus + '&eventStatus='+ eventStatus;
             if(startDate && endDate){
                 url = url + '&startDate=' + startDate + '&endDate=' + endDate ;
             }
@@ -1159,6 +1161,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     this.attributesById = null;
     this.ouLevels = null;
     this.sortedTeiIds = [];
+    this.selectedTeiEvents = null;
     
     this.set = function(currentSelection){  
         this.currentSelection = currentSelection;        
@@ -1200,6 +1203,13 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     };
     this.getSortedTeiIds = function(){
         return this.sortedTeiIds;
+    };
+    
+    this.setSelectedTeiEvents = function(selectedTeiEvents){
+        this.selectedTeiEvents = selectedTeiEvents;
+    };
+    this.getSelectedTeiEvents = function(){
+        return this.selectedTeiEvents;
     };
 })
 
@@ -1250,7 +1260,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                                 var val = row[i];
                                 
                                 if(attributes[grid.headers[i].name] && 
-                                        attributes[grid.headers[i].name].valueType === 'optionSet' && 
+                                        attributes[grid.headers[i].name].optionSetValue && 
                                         optionSets &&    
                                         attributes[grid.headers[i].name].optionSet &&
                                         optionSets[attributes[grid.headers[i].name].optionSet.id] ){
@@ -1461,8 +1471,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                                 program: program.id,
                                 programStage: stage.id,
                                 orgUnit: orgUnit.id,
-                                enrollment: enrollment.enrollment,                                
-                                status: 'SCHEDULE'
+                                enrollment: enrollment.enrollment
                             };
                         if(stage.periodType){
                             var periods = getEventDuePeriod(null, stage, enrollment);
@@ -1482,6 +1491,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                             }
                         }
 
+                        newEvent.status = newEvent.eventDate ? 'ACTIVE' : 'SCHEDULE';
+                        
                         dhis2Events.events.push(newEvent);    
                     }
                 });
@@ -1505,7 +1516,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 if(dhis2Event[prStDe.dataElement.id]){                    
                     var value = dhis2Event[prStDe.dataElement.id];
                     
-                    if( value && prStDe.dataElement.type === 'string' && prStDe.dataElement.optionSet && optionSets[prStDe.dataElement.optionSet.id]){
+                    if( value && prStDe.dataElement.optionSetValue && prStDe.dataElement.optionSet && optionSets[prStDe.dataElement.optionSet.id]){
                         value = OptionSetService.getCode(optionSets[prStDe.dataElement.optionSet.id].options, value);
                     }                    
                     if( value && prStDe.dataElement.type === 'date'){

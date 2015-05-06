@@ -1,4 +1,4 @@
-package org.hisp.dhis.system.debug;
+package org.hisp.dhis.system.log;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -28,11 +28,13 @@ package org.hisp.dhis.system.debug;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-public interface Debugger
-{
+/**
+ * @author Lars Helge Overland
+ */
+public interface LogConfigInitializer
+{    
     /**
-     * Will perform a select query including the key, can be used to look up order
-     * of events in database logs.
+     * Initializes log configuration.
      */
-    void markDbLog( String key );
+    void initConfig();
 }

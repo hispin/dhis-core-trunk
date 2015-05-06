@@ -28,22 +28,8 @@ package org.hisp.dhis.webapi.controller.event;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.hisp.dhis.common.IdentifiableObjectManager;
 import org.hisp.dhis.common.OrganisationUnitSelectionMode;
-import org.hisp.dhis.common.Pager;
-import org.hisp.dhis.common.PagerUtils;
 import org.hisp.dhis.dataelement.DataElement;
 import org.hisp.dhis.dataelement.DataElementService;
 import org.hisp.dhis.dxf2.common.IdSchemes;
@@ -75,7 +61,6 @@ import org.hisp.dhis.user.CurrentUserService;
 import org.hisp.dhis.webapi.utils.ContextUtils;
 import org.hisp.dhis.webapi.webdomain.WebOptions;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -84,6 +69,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -131,6 +127,59 @@ public class EventController
     // READ
     // -------------------------------------------------------------------------
 
+    @RequestMapping( value = "", method = RequestMethod.GET )
+    @PreAuthorize( "hasRole('ALL') or hasRole('F_TRACKED_ENTITY_DATAVALUE_ADD')" )
+    public String getEvents(
+        @RequestParam( required = false ) String program,
+        @RequestParam( required = false ) String programStage,
+        @RequestParam( required = false ) ProgramStatus programStatus,
+        @RequestParam( required = false ) Boolean followUp,
+        @RequestParam( required = false ) String trackedEntityInstance,
+        @RequestParam( required = false ) String orgUnit,
+        @RequestParam( required = false ) OrganisationUnitSelectionMode ouMode,
+        @RequestParam( required = false ) Date startDate,
+        @RequestParam( required = false ) Date endDate,
+        @RequestParam( required = false ) EventStatus status,
+        @RequestParam( required = false ) Date lastUpdated,
+        @RequestParam( required = false ) boolean skipMeta,
+        @RequestParam( required = false ) Integer page,
+        @RequestParam( required = false ) Integer pageSize,
+        @RequestParam( required = false ) boolean totalPages,
+        @RequestParam( required = false ) boolean skipPaging,
+        @RequestParam( required = false ) String attachment,
+        @RequestParam Map<String, String> parameters, IdSchemes idSchemes, Model model, HttpServletResponse response, HttpServletRequest request )
+    {
+        WebOptions options = new WebOptions( parameters );
+
+        EventSearchParams params = eventService.getFromUrl( program, programStage, programStatus, followUp, orgUnit, ouMode,
+            trackedEntityInstance, startDate, endDate, status, lastUpdated, idSchemes, page, pageSize, totalPages, skipPaging );
+
+        Events events = eventService.getEvents( params );
+
+        if ( options.hasLinks() )
+        {
+            for ( Event event : events.getEvents() )
+            {
+                event.setHref( ContextUtils.getRootPath( request ) + RESOURCE_PATH + "/" + event.getEvent() );
+            }
+        }
+
+        if ( !skipMeta && params.getProgram() != null )
+        {
+            events.setMetaData( getMetaData( params.getProgram() ) );
+        }
+
+        model.addAttribute( "model", events );
+        model.addAttribute( "viewClass", options.getViewClass( "detailed" ) );
+
+        if ( !StringUtils.isEmpty( attachment ) )
+        {
+            response.addHeader( "Content-Disposition", "attachment; filename=" + attachment );
+        }
+
+        return "events";
+    }
+
     @RequestMapping( value = "", method = RequestMethod.GET, produces = { "application/csv", "application/csv+gzip", "text/csv" } )
     @PreAuthorize( "hasRole('ALL') or hasRole('F_TRACKED_ENTITY_DATAVALUE_ADD')" )
     public void getCsvEvents(
@@ -141,30 +190,23 @@ public class EventController
         @RequestParam( required = false ) String trackedEntityInstance,
         @RequestParam( required = false ) String orgUnit,
         @RequestParam( required = false ) OrganisationUnitSelectionMode ouMode,
-        @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date startDate,
-        @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date endDate,
+        @RequestParam( required = false ) Date startDate,
+        @RequestParam( required = false ) Date endDate,
         @RequestParam( required = false ) EventStatus status,
-        @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date lastUpdated,
+        @RequestParam( required = false ) Date lastUpdated,
         @RequestParam( required = false ) Integer page,
         @RequestParam( required = false ) Integer pageSize,
+        @RequestParam( required = false ) boolean totalPages,
+        @RequestParam( required = false ) boolean skipPaging,
         @RequestParam( required = false ) String attachment,
         @RequestParam( required = false, defaultValue = "false" ) boolean skipHeader,
         @RequestParam Map<String, String> parameters,
         IdSchemes idSchemes, Model model, HttpServletResponse response, HttpServletRequest request ) throws IOException
     {
-        WebOptions options = new WebOptions( parameters );
+        EventSearchParams params = eventService.getFromUrl( program, programStage, programStatus, followUp, orgUnit, ouMode,
+            trackedEntityInstance, startDate, endDate, status, lastUpdated, idSchemes, page, pageSize, totalPages, skipPaging );
 
-        EventSearchParams params = eventService.getFromUrl( program, programStage, programStatus, followUp, orgUnit, ouMode, 
-            trackedEntityInstance, startDate, endDate, status, null, null, lastUpdated, idSchemes, page, pageSize );
-        
         Events events = eventService.getEvents( params );
-
-        if ( options.hasPaging() )
-        {
-            Pager pager = new Pager( options.getPage(), events.getEvents().size(), options.getPageSize() );
-            events.setPager( pager );
-            events.setEvents( PagerUtils.pageCollection( events.getEvents(), pager ) );
-        }
 
         OutputStream outputStream = response.getOutputStream();
         response.setContentType( "application/csv" );
@@ -186,64 +228,6 @@ public class EventController
         response.getOutputStream().close();
     }
 
-    @RequestMapping( value = "", method = RequestMethod.GET )
-    @PreAuthorize( "hasRole('ALL') or hasRole('F_TRACKED_ENTITY_DATAVALUE_ADD')" )
-    public String getEvents(
-        @RequestParam( required = false ) String program,
-        @RequestParam( required = false ) String programStage,
-        @RequestParam( required = false ) ProgramStatus programStatus,
-        @RequestParam( required = false ) Boolean followUp,
-        @RequestParam( required = false ) String trackedEntityInstance,
-        @RequestParam( required = false ) String orgUnit,
-        @RequestParam( required = false ) OrganisationUnitSelectionMode ouMode,
-        @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date startDate,
-        @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date endDate,
-        @RequestParam( required = false ) EventStatus status,
-        @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date lastUpdated,
-        @RequestParam( required = false ) Integer page,
-        @RequestParam( required = false ) Integer pageSize,
-        @RequestParam( required = false ) boolean skipMeta,
-        @RequestParam( required = false ) String attachment,
-        @RequestParam Map<String, String> parameters, IdSchemes idSchemes, Model model, HttpServletResponse response, HttpServletRequest request )
-    {
-        WebOptions options = new WebOptions( parameters );
-
-        EventSearchParams params = eventService.getFromUrl( program, programStage, programStatus, followUp, orgUnit, ouMode, 
-            trackedEntityInstance, startDate, endDate, status, null, null, lastUpdated, idSchemes, page, pageSize );
-        
-        Events events = eventService.getEvents( params );
-
-        if ( options.hasLinks() )
-        {
-            for ( Event event : events.getEvents() )
-            {
-                event.setHref( ContextUtils.getRootPath( request ) + RESOURCE_PATH + "/" + event.getEvent() );
-            }
-        }
-
-        if ( options.hasPaging() )
-        {
-            Pager pager = new Pager( options.getPage(), events.getEvents().size(), options.getPageSize() );
-            events.setPager( pager );
-            events.setEvents( PagerUtils.pageCollection( events.getEvents(), pager ) );
-        }
-
-        if ( !skipMeta && params.getProgram() != null )
-        {
-            events.setMetaData( getMetaData( params.getProgram() ) );
-        }
-
-        model.addAttribute( "model", events );
-        model.addAttribute( "viewClass", options.getViewClass( "detailed" ) );
-
-        if ( !StringUtils.isEmpty( attachment ) )
-        {
-            response.addHeader( "Content-Disposition", "attachment; filename=" + attachment );
-        }
-
-        return "events";
-    }
-
     @RequestMapping( value = "/eventRows", method = RequestMethod.GET )
     @PreAuthorize( "hasRole('ALL') or hasRole('F_TRACKED_ENTITY_DATAVALUE_ADD')" )
     public String getEventRows(
@@ -252,18 +236,18 @@ public class EventController
         @RequestParam( required = false ) OrganisationUnitSelectionMode ouMode,
         @RequestParam( required = false ) ProgramStatus programStatus,
         @RequestParam( required = false ) EventStatus eventStatus,
-        @RequestParam( required = false ) String queryDataElement,
-        @RequestParam( required = false ) String queryDataValue,
-        @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date startDate,
-        @RequestParam( required = false ) @DateTimeFormat( pattern = "yyyy-MM-dd" ) Date endDate,
+        @RequestParam( required = false ) Date startDate,
+        @RequestParam( required = false ) Date endDate,
+        @RequestParam( required = false ) boolean totalPages,
+        @RequestParam( required = false ) boolean skipPaging,
         @RequestParam Map<String, String> parameters, Model model, HttpServletRequest request )
     {
         WebOptions options = new WebOptions( parameters );
-        
-        EventSearchParams params = eventService.getFromUrl( program, null, programStatus, false, 
-            orgUnit, ouMode, null, startDate, endDate, null, queryDataElement, queryDataValue, null, null, null, null );
-        
-        EventRows eventRows = eventRowService.getEventRows( params );        
+
+        EventSearchParams params = eventService.getFromUrl( program, null, programStatus, null,
+            orgUnit, ouMode, null, startDate, endDate, eventStatus, null, null, null, null, totalPages, skipPaging );
+
+        EventRows eventRows = eventRowService.getEventRows( params );
 
         model.addAttribute( "model", eventRows );
         model.addAttribute( "viewClass", options.getViewClass( "detailed" ) );

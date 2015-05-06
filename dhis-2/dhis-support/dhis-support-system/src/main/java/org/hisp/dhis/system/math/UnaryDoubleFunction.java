@@ -1,4 +1,4 @@
-package org.hisp.dhis.system.debug;
+package org.hisp.dhis.system.math;
 
 /*
  * Copyright (c) 2004-2015, University of Oslo
@@ -28,20 +28,45 @@ package org.hisp.dhis.system.debug;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.Stack;
 
-public class DebuggerImpl
-    implements Debugger
+import org.nfunk.jep.ParseException;
+import org.nfunk.jep.function.PostfixMathCommand;
+
+/**
+ * Abstract JEP function for a single, numerical argument.
+ * 
+ * @author Lars Helge Overland
+ */
+public abstract class UnaryDoubleFunction
+    extends PostfixMathCommand
 {
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    public UnaryDoubleFunction()
+    {
+        super();
+
+        numberOfParameters = 1;
+    }
     
     @Override
-    @Transactional
-    public void markDbLog( String key )
+    @SuppressWarnings( { "rawtypes", "unchecked" } )
+    public void run( Stack inStack ) throws ParseException 
     {
-        jdbcTemplate.queryForObject( "select 1 as \"" + key + "\"", Integer.class );
+        checkStack( inStack );
+        
+        Object param = inStack.pop();
+        
+        if ( param == null || !( param instanceof Double ) )
+        {
+            throw new ParseException( "Invalid parameter type, must be double: " + param );
+        }
+        
+        double arg = ( (Double) param ).doubleValue();
+        
+        Double result = eval( arg );
+        
+        inStack.push( result );
     }
+    
+    public abstract Double eval( double arg );
 }

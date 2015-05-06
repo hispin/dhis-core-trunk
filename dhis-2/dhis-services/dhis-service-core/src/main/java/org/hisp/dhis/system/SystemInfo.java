@@ -32,6 +32,7 @@ import java.util.Date;
 
 import org.hisp.dhis.common.DxfNamespaces;
 import org.hisp.dhis.system.database.DatabaseInfo;
+import org.springframework.beans.BeanUtils;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
@@ -51,12 +52,20 @@ public class SystemInfo
 
     private String userAgent;
 
+    // -------------------------------------------------------------------------
+    // Volatile properties
+    // -------------------------------------------------------------------------
+
     private String calendar;
 
     private String dateFormat;
-        
+
+    private Date serverDate;
+    
     private Date lastAnalyticsTableSuccess;
     
+    private String intervalSinceLastAnalyticsTableSuccess;
+
     // -------------------------------------------------------------------------
     // Stable properties
     // -------------------------------------------------------------------------
@@ -66,8 +75,6 @@ public class SystemInfo
     private String revision;
 
     private Date buildTime;
-
-    private Date serverDate;
 
     private String environmentVariable;
 
@@ -97,13 +104,19 @@ public class SystemInfo
 
     private String systemId;
 
+    public SystemInfo instance()
+    {
+        SystemInfo info = new SystemInfo();
+        BeanUtils.copyProperties( this, info );        
+        return info;
+    }
+
     // -------------------------------------------------------------------------
     // Logic
     // -------------------------------------------------------------------------
 
     public void clearSensitiveInfo()
     {
-        this.revision = null;
         this.javaVersion = null;
         this.javaVendor = null;
         this.javaHome = null;
@@ -118,7 +131,7 @@ public class SystemInfo
         this.cpuCores = null;
         this.systemId = null;
     }
-
+    
     // -------------------------------------------------------------------------
     // Getters and setters
     // -------------------------------------------------------------------------
@@ -173,6 +186,18 @@ public class SystemInfo
 
     @JsonProperty
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public Date getServerDate()
+    {
+        return serverDate;
+    }
+
+    public void setServerDate( Date serverDate )
+    {
+        this.serverDate = serverDate;
+    }
+
+    @JsonProperty
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
     public Date getLastAnalyticsTableSuccess()
     {
         return lastAnalyticsTableSuccess;
@@ -181,6 +206,18 @@ public class SystemInfo
     public void setLastAnalyticsTableSuccess( Date lastAnalyticsTableSuccess )
     {
         this.lastAnalyticsTableSuccess = lastAnalyticsTableSuccess;
+    }
+
+    @JsonProperty
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public String getIntervalSinceLastAnalyticsTableSuccess()
+    {
+        return intervalSinceLastAnalyticsTableSuccess;
+    }
+
+    public void setIntervalSinceLastAnalyticsTableSuccess( String intervalSinceLastAnalyticsTableSuccess )
+    {
+        this.intervalSinceLastAnalyticsTableSuccess = intervalSinceLastAnalyticsTableSuccess;
     }
 
     @JsonProperty
@@ -217,18 +254,6 @@ public class SystemInfo
     public void setBuildTime( Date buildTime )
     {
         this.buildTime = buildTime;
-    }
-
-    @JsonProperty
-    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
-    public Date getServerDate()
-    {
-        return serverDate;
-    }
-
-    public void setServerDate( Date serverDate )
-    {
-        this.serverDate = serverDate;
     }
 
     @JsonProperty

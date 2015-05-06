@@ -223,13 +223,10 @@ public class DataApprovalController
         {
             for ( OrganisationUnit organisationUnit : organisationUnits )
             {
-                if ( organisationUnit.getDataSets().contains( dataSet ) )
+                for ( Period period : periods )
                 {
-                    for ( Period period : periods )
-                    {
-                        dataApprovalStateResponses.add(
-                            getDataApprovalStateResponse( dataSet, organisationUnit, period ) );
-                    }
+                    dataApprovalStateResponses.add(
+                        getDataApprovalStateResponse( dataSet, organisationUnit, period ) );
                 }
             }
         }
@@ -707,15 +704,15 @@ public class DataApprovalController
 
         for ( DataSet dataSet : dataSets )
         {
-            Set<DataElementCategoryOptionCombo> dataSetOptionCombos = dataSet.hasCategoryCombo() ? dataSet.getCategoryCombo().getOptionCombos() : null;
+            Set<DataElementCategoryOptionCombo> dataSetOptionCombos = dataSet.getCategoryCombo() != null ? dataSet.getCategoryCombo().getOptionCombos() : null;
 
-            for ( Period period : periods )
+            for ( Approval approval : approvals.getApprovals() )
             {
-                for ( Approval approval : approvals.getApprovals() )
+                OrganisationUnit unit = organisationUnitService.getOrganisationUnit( approval.getOu() );
+                DataElementCategoryOptionCombo optionCombo = categoryService.getDataElementCategoryOptionCombo( approval.getAoc() );
+                
+                for ( Period period : periods )
                 {
-                    OrganisationUnit unit = organisationUnitService.getOrganisationUnit( approval.getOu() );
-                    DataElementCategoryOptionCombo optionCombo = categoryService.getDataElementCategoryOptionCombo( approval.getAoc() );
-
                     if ( dataSetOptionCombos != null && dataSetOptionCombos.contains( optionCombo ) )
                     {
                         DataApproval dataApproval = new DataApproval( null, dataSet, period, unit, optionCombo, false, date, user );

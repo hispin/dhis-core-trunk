@@ -1,3 +1,15 @@
+html, body { 
+    height:100%;
+    margin: 0;
+    padding: 0;
+    background-color: white;
+    font-size: 10pt;
+}
+
+.not-for-screen {
+    display: none;
+}
+
 h1 {    
     font-size: 1.8em;
 }
@@ -894,7 +906,7 @@ input.typeahead::-ms-input-placeholder {
 }
 
 @media print {
-    #header, #leftBar, .not-printable {
+    #header, #leftBar, .hideInPrint {
         display: none;
     }
 }
@@ -1019,4 +1031,50 @@ ul.tree ul li:last-child:before {
  .form-horizontal .control-label {
     display: table-cell;
     vertical-align: middle;
+}
+
+div.event-paging 
+{ 
+    width:100%;
+    background-color: #ebf0f6;
+    float:left;
+    text-align: left;
+    height:16px; 
+    margin-top: 5px;
+    border-radius: 4px;
+}
+
+div.event-paging span, div.event-paging a 
+{
+    font-weight: bold;
+    padding: 0 5px;
+    font-size: 12px;
+}
+
+div.event-paging a
+{
+    text-decoration: none; 
+    color: #FF9900;
+}
+
+div.event-paging a.active
+{
+    text-decoration: none; 
+    color: #000;
+    cursor: default;
+}
+
+div.event-paging a:hover
+{
+    color: #000;
+}
+
+div.event-paging span.page 
+{
+    color:#000;
+}
+
+div.event-paging span.seperator 
+{
+    display:none;
 }

@@ -9,6 +9,7 @@ trackerCapture.controller('ProgramSummaryController',
                 TEIGridService,
                 AttributesFactory,
                 ProgramFactory,
+                ProgramStageFactory,
                 CurrentSelection,
                 OptionSetService,
                 DHIS2EventFactory) {    
@@ -33,6 +34,10 @@ trackerCapture.controller('ProgramSummaryController',
     //watch for selection of org unit from tree
     $scope.$watch('selectedOrgUnit', function() {      
         $scope.selectedProgram = null;
+        $scope.reportStarted = false;
+        $scope.dataReady = false;  
+        $scope.programStages = null;
+        $scope.stagesById = [];
         if( angular.isObject($scope.selectedOrgUnit)){            
             $scope.loadPrograms($scope.selectedOrgUnit);
         }
@@ -49,11 +54,19 @@ trackerCapture.controller('ProgramSummaryController',
         }        
     };
     
-    //watch for selection of program
-    $scope.$watch('selectedProgram', function() {   
+    $scope.$watch('selectedProgram', function() {        
+        $scope.programStages = null;
+        $scope.stagesById = [];
         if( angular.isObject($scope.selectedProgram)){            
             $scope.reportStarted = false;
-            $scope.dataReady = false;
+            $scope.dataReady = false;            
+            ProgramStageFactory.getByProgram($scope.selectedProgram).then(function(stages){
+                $scope.programStages = stages;
+                $scope.stagesById = [];
+                angular.forEach(stages, function(stage){
+                    $scope.stagesById[stage.id] = stage;
+                });
+            });
         }
     });
     
@@ -71,11 +84,6 @@ trackerCapture.controller('ProgramSummaryController',
         
         $scope.reportStarted = true;
         $scope.dataReady = false;
-        
-        $scope.programStages = [];
-        angular.forEach($scope.selectedProgram.programStages, function(stage){
-            $scope.programStages[stage.id] = stage;
-        });
             
         AttributesFactory.getByProgram($scope.selectedProgram).then(function(atts){            
             var grid = TEIGridService.generateGridColumns(atts, $scope.selectedOuMode.name);   
@@ -103,10 +111,14 @@ trackerCapture.controller('ProgramSummaryController',
                 $scope.dhis2Events = [];                
                 angular.forEach(eventList, function(ev){
                     if(ev.trackedEntityInstance){
-                        ev.name = $scope.programStages[ev.programStage].name;
+                        ev.name = $scope.stagesById[ev.programStage].name;
                         ev.programName = $scope.selectedProgram.name;
                         ev.statusColor = EventUtils.getEventStatusColor(ev); 
                         ev.eventDate = DateUtils.formatFromApiToUser(ev.eventDate);
+                        
+                        angular.forEach(ev.dataValues, function(dv){
+                            ev[dv.dataElement] = dv.value;
+                        });
                         
                         if($scope.dhis2Events[ev.trackedEntityInstance]){
                             if(teis.rows[ev.trackedEntityInstance]){
@@ -122,6 +134,9 @@ trackerCapture.controller('ProgramSummaryController',
                             }  
                             $scope.dhis2Events[ev.trackedEntityInstance] = [ev];
                         }
+                        
+                        $scope.stagesById[ev.programStage].hasData = true;
+                        
                     }
                 });
                 $scope.reportStarted = false;

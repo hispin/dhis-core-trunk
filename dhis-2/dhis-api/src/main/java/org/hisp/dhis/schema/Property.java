@@ -180,17 +180,17 @@ public class Property implements Ordered, Klass
     /**
      * Maximum length/size/value of this property.
      */
-    private int length = Integer.MAX_VALUE;
+    private Integer length;
 
     /**
-     * Minimum length/size/value of this property.
+     * Minimum size/length of this property.
      */
-    private int max = Integer.MAX_VALUE;
+    private Integer max;
 
     /**
-     * Minimum length/size/value of this property.
+     * Minimum size/length of this property.
      */
-    private int min = Integer.MIN_VALUE;
+    private Integer min;
 
     /**
      * Cascading used when doing CRUD operations.
@@ -226,6 +226,21 @@ public class Property implements Ordered, Klass
      * If property type is enum, this is the list of valid options.
      */
     private List<String> constants;
+
+    /**
+     * Used by LinkService to link to the Schema describing this type (if reference).
+     */
+    private String href;
+
+    /**
+     * Points to relative Web-API endpoint (if exposed).
+     */
+    private String relativeApiEndpoint;
+
+    /**
+     * Used by LinkService to link to the API endpoint containing this type.
+     */
+    private String apiEndpoint;
 
     public Property()
     {
@@ -520,36 +535,36 @@ public class Property implements Ordered, Klass
 
     @JsonProperty
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
-    public int getLength()
+    public Integer getLength()
     {
         return length;
     }
 
-    public void setLength( int length )
+    public void setLength( Integer length )
     {
         this.length = length;
     }
 
     @JsonProperty
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
-    public int getMax()
+    public Integer getMax()
     {
         return max;
     }
 
-    public void setMax( int max )
+    public void setMax( Integer max )
     {
         this.max = max;
     }
 
     @JsonProperty
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
-    public int getMin()
+    public Integer getMin()
     {
         return min;
     }
 
-    public void setMin( int min )
+    public void setMin( Integer min )
     {
         this.min = min;
     }
@@ -637,6 +652,42 @@ public class Property implements Ordered, Klass
     public void setConstants( List<String> constants )
     {
         this.constants = constants;
+    }
+
+    @JsonProperty
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public String getHref()
+    {
+        return href;
+    }
+
+    public void setHref( String href )
+    {
+        this.href = href;
+    }
+
+    @JsonProperty
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public String getRelativeApiEndpoint()
+    {
+        return relativeApiEndpoint;
+    }
+
+    public void setRelativeApiEndpoint( String relativeApiEndpoint )
+    {
+        this.relativeApiEndpoint = relativeApiEndpoint;
+    }
+
+    @JsonProperty
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public String getApiEndpoint()
+    {
+        return apiEndpoint;
+    }
+
+    public void setApiEndpoint( String apiEndpoint )
+    {
+        this.apiEndpoint = apiEndpoint;
     }
 
     public String key()

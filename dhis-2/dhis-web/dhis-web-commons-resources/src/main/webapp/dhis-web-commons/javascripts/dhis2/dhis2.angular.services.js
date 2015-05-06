@@ -2,7 +2,7 @@
 var d2Services = angular.module('d2Services', ['ngResource'])
 
 /* Factory for loading translation strings */
-.factory('i18nLoader', function ($q, $http, SessionStorageService, DialogService) {
+.factory('i18nLoader', function ($q, $http, SessionStorageService) {
  
     var getTranslationStrings = function(locale){
         var defaultUrl = 'i18n/i18n_app.properties';
@@ -20,12 +20,9 @@ var d2Services = angular.module('d2Services', ['ngResource'])
             tx= {locale: locale, keys: dhis2.util.parseJavaProperties(response.data)};
             return tx;
         }, function(){
-            var dialogOptions = {
-                headerText: 'missing_translation_file',
-                bodyText: 'missing_translation_using_default'
-            };
-
-            DialogService.showDialog({}, dialogOptions);
+        	
+        	setHeaderDelayMessage($translate('No translation file is found for the selected locale. Using default translation (English).'));
+        	            
             var p = $http.get(defaultUrl).then(function(response){
                 tx= {locale: locale, keys: dhis2.util.parseJavaProperties(response.data)};
                 return tx;
@@ -68,6 +65,35 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                 });
             });
             return deferred.promise;
+        }
+    };
+})
+
+.service('AuthorityService', function() {
+    var getAuthorities = function(roles){
+        var authority = {};
+        if( roles && roles.userCredentials && roles.userCredentials.userRoles ){
+            angular.forEach(roles.userCredentials.userRoles, function(role){
+                angular.forEach(role.authorities, function(auth){
+                    authority[auth] = true;
+                });
+            });
+        }
+        return authority;
+    };
+    
+    return {
+        getUserAuthorities: function(roles){
+            var auth = getAuthorities(roles);
+            var authority = {};
+            authority.canDeleteEvent = auth['F_TRACKED_ENTITY_DATAVALUE_DELETE'] || auth['ALL'] ? true:false;
+            authority.canAddOrUpdateEvent = auth['F_TRACKED_ENTITY_DATAVALUE_ADD'] || auth['ALL'] ? true:false;
+            authority.canSearchTei = auth['F_TRACKED_ENTITY_INSTANCE_SEARCH'] || auth['ALL'] ? true:false;
+            authority.canDeleteTei = auth['F_TRACKED_ENTITY_INSTANCE_DELETE'] || auth['ALL'] ? true:false;
+            authority.canRegisterTei = auth['F_TRACKED_ENTITY_INSTANCE_ADD'] || auth['ALL'] ? true:false;
+            authority.canEnrollTei = auth['F_PROGRAM_ENROLLMENT'] || auth['ALL'] ? true:false;
+            authority.canUnEnrollTei = auth['F_PROGRAM_UNENROLLMENT'] || auth['ALL'] ? true:false;
+            return authority;
         }
     };
 })
@@ -195,7 +221,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
             
             var htmlCode = programStage.dataEntryForm ? programStage.dataEntryForm.htmlCode : null;  
             
-            if(htmlCode){
+            if(htmlCode){                
 
                 var inputRegex = /<input.*?\/>/g,
                     match,
@@ -251,25 +277,10 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                             
                             var prStDe = programStageDataElements[fieldId];
                             
-                            if( prStDe && prStDe.dataElement && prStDe.dataElement.type ){                            
-
-	                            //check data element type and generate corresponding angular input field
-	                            if(prStDe.dataElement.type === "int"){
-	                                newInputField = '<input type="text" ' +
-	                                                this.getAttributesAsString(attributes) +
-	                                                ' d2-validation ' +
-	                                                ' d2-number-validation ' +
-	                                                ' number-type="' + prStDe.dataElement.numberType + '" ' +
-	                                                ' ng-model="currentEvent.' + fieldId + '"' +
-	                                                ' input-field-id="' + fieldId + '"' +
-	                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
-	                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
-	                                                ' ng-blur="saveDatavalue(prStDes.'+ fieldId + ')"' + 
-	                                                ' ng-required="{{prStDes.' + fieldId + '.compulsory}}">';
-	                            }
-	                            if(prStDe.dataElement.type === "string"){
-	                                if(prStDe.dataElement.optionSet){
-	                                    var optionSetId = prStDe.dataElement.optionSet.id;
+                            if( prStDe && prStDe.dataElement && prStDe.dataElement.type ){								
+								//check if dataelement has optionset								
+								if( prStDe.dataElement.optionSetValue){
+									var optionSetId = prStDe.dataElement.optionSet.id;
 	                                    newInputField = '<input type="text" ' +
 	                                                this.getAttributesAsString(attributes) +
 	                                                ' d2-validation ' +
@@ -285,60 +296,75 @@ var d2Services = angular.module('d2Services', ['ngResource'])
 	                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +                                            
 	                                                ' ng-blur="saveDatavalue(prStDes.'+ fieldId + ')"' +
 	                                                ' typeahead-open-on-focus ng-required="prStDes.'+fieldId+'.compulsory"> ';
-	                                }
-	                                else{
-	                                    newInputField = '<input type="text" ' +
+								}
+								else{
+		                            //check data element type and generate corresponding angular input field
+		                            if(prStDe.dataElement.type === "int"){
+		                                newInputField = '<input type="text" ' +
+		                                                this.getAttributesAsString(attributes) +
+		                                                ' d2-validation ' +
+		                                                ' d2-number-validation ' +
+		                                                ' number-type="' + prStDe.dataElement.numberType + '" ' +
+		                                                ' ng-model="currentEvent.' + fieldId + '"' +
+		                                                ' input-field-id="' + fieldId + '"' +
+		                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
+		                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed"' +
+		                                                ' ng-blur="saveDatavalue(prStDes.'+ fieldId + ')"' + 
+		                                                ' ng-required="{{prStDes.' + fieldId + '.compulsory}}">';
+		                            }		                            
+		                            else if(prStDe.dataElement.type === "bool"){
+		                                newInputField = '<select ' +
+		                                                this.getAttributesAsString(attributes) +
+		                                                ' d2-validation ' +
+		                                                ' ng-model="currentEvent.' + fieldId + '" ' +
+		                                                ' input-field-id="' + fieldId + '"' +
+		                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
+		                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed"' +
+		                                                ' ng-change="saveDatavalue(prStDes.'+ fieldId + ')"' + 
+		                                                ' ng-required="{{prStDes.' + fieldId + '.compulsory}}">' + 
+		                                                '<option value="">{{\'please_select\'| translate}}</option>' +
+		                                                '<option value="false">{{\'no\'| translate}}</option>' + 
+		                                                '<option value="true">{{\'yes\'| translate}}</option>' +
+		                                                '</select> ';                                     
+		                            }
+		                            else if(prStDe.dataElement.type === "date"){
+		                                var maxDate = prStDe.allowFutureDate ? '' : 0;
+		                                newInputField = '<input type="text" ' +
+		                                                this.getAttributesAsString(attributes) +
+		                                                ' d2-validation ' +
+		                                                ' ng-model="currentEvent.' + fieldId + '"' +
+		                                                ' input-field-id="' + fieldId + '"' +                                                
+		                                                ' placeholder="{{dhis2CalendarFormat.keyDateFormat}}" ' +
+		                                                ' d2-date ' +
+		                                                ' max-date="' + maxDate + '"' +
+		                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
+		                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed"' +
+		                                                ' blur-or-change="saveDatavalue(prStDes.'+ fieldId + ')"' + 
+		                                                ' ng-required="{{prStDes.' + fieldId + '.compulsory}}"> '; 
+		                            }
+		                            else if(prStDe.dataElement.type.type === "trueOnly"){
+		                                newInputField = '<input type="checkbox" ' +
+		                                                this.getAttributesAsString(attributes) +
+		                                                ' d2-validation ' +
+		                                                ' ng-model="currentEvent.' + fieldId + '"' +
+		                                                ' input-field-id="' + fieldId + '"' +
+		                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
+		                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed"' +
+		                                                ' ng-change="saveDatavalue(prStDes.'+ fieldId + ')"' +
+		                                                ' ng-required="{{prStDes.' + fieldId + '.compulsory}}"> ';
+		                            }
+		                            else{
+		                                newInputField = '<input type="text" ' +
 	                                                this.getAttributesAsString(attributes) +
 	                                                ' d2-validation ' +
 	                                                ' ng-model="currentEvent.' + fieldId + '" ' +
 	                                                ' input-field-id="' + fieldId + '"' +
-	                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent[uid]==\'uid\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
+	                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent[uid]==\'uid\' || currentEvent.editingNotAllowed"' +
 	                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
 	                                                ' ng-blur="saveDatavalue(prStDes.'+ fieldId + ')"' +
-	                                                ' ng-required="prStDes.' + fieldId + '.compulsory"> ';                                     
-	                                }
-	                            }
-	                            if(prStDe.dataElement.type === "bool"){
-	                                newInputField = '<select ' +
-	                                                this.getAttributesAsString(attributes) +
-	                                                ' d2-validation ' +
-	                                                ' ng-model="currentEvent.' + fieldId + '" ' +
-	                                                ' input-field-id="' + fieldId + '"' +
-	                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
-	                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
-	                                                ' ng-change="saveDatavalue(prStDes.'+ fieldId + ')"' + 
-	                                                ' ng-required="{{prStDes.' + fieldId + '.compulsory}}">' + 
-	                                                '<option value="">{{\'please_select\'| translate}}</option>' +
-	                                                '<option value="false">{{\'no\'| translate}}</option>' + 
-	                                                '<option value="true">{{\'yes\'| translate}}</option>' +
-	                                                '</select> ';                                     
-	                            }
-	                            if(prStDe.dataElement.type === "date"){
-	                                var maxDate = prStDe.allowFutureDate ? '' : 0;
-	                                newInputField = '<input type="text" ' +
-	                                                this.getAttributesAsString(attributes) +
-	                                                ' d2-validation ' +
-	                                                ' ng-model="currentEvent.' + fieldId + '"' +
-	                                                ' input-field-id="' + fieldId + '"' +                                                
-	                                                ' placeholder="{{dhis2CalendarFormat.keyDateFormat}}" ' +
-	                                                ' d2-date ' +
-	                                                ' max-date="' + maxDate + '"' +
-	                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
-	                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
-	                                                ' blur-or-change="saveDatavalue(prStDes.'+ fieldId + ')"' + 
-	                                                ' ng-required="{{prStDes.' + fieldId + '.compulsory}}"> '; 
-	                            }
-	                            if(prStDe.dataElement.type.type === "trueOnly"){
-	                                newInputField = '<input type="checkbox" ' +
-	                                                this.getAttributesAsString(attributes) +
-	                                                ' d2-validation ' +
-	                                                ' ng-model="currentEvent.' + fieldId + '"' +
-	                                                ' input-field-id="' + fieldId + '"' +
-	                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
-	                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
-	                                                ' ng-change="saveDatavalue(prStDes.'+ fieldId + ')"' +
-	                                                ' ng-required="{{prStDes.' + fieldId + '.compulsory}}"> ';
-	                            }
+	                                                ' ng-required="prStDes.' + fieldId + '.compulsory"> ';
+		                            }		                            
+	                           	}
                            	}                            
                         }
 						
@@ -389,23 +415,9 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                         
                         var att = trackedEntityFormAttributes[attId];
                         
-                        if( att ){                       
-
-	                        //check attribute type and generate corresponding angular input field
-	                        if(att.valueType === "number"){
-	                            newInputField = '<input type="text" ' +
-	                                            ' name="' + fieldName + '"' +                          
-	                                            ' element-id="' + i + '"' +
-	                                            this.getAttributesAsString(attributes) +
-	                                            ' d2-validation ' +
-	                                            ' d2-number-validation ' +
-	                                            ' d2-focus-next-on-enter' + 
-	                                            ' ng-model="selectedTei.' + attId + '" ' +
-	                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
-	                                            ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
-	                                            ' ng-required="' + (att.mandatory || att.unique) + '"> ';
-	                        }                                               
-	                        else if(att.valueType === "optionSet"){
+                        if( att ){                        	
+                        	//check if attribute has optionset
+                        	if(att.optionSetValue){                        		
 	                            var optionSetId = att.optionSet.id;                            
 	                            newInputField = '<input type="text" ' +
 	                                            ' name="' + fieldName + '"' +
@@ -423,73 +435,90 @@ var d2Services = angular.module('d2Services', ['ngResource'])
 	                                            ' typeahead-open-on-focus ' +
 	                                            ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
 	                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ';                            
-	                        }
-	                        else if(att.valueType === "bool"){
-	                            newInputField = '<select ' +
-	                                            ' name="' + fieldName + '"' +
-	                                            ' element-id="' + i + '"' +
-	                                            this.getAttributesAsString(attributes) +
-	                                            ' d2-focus-next-on-enter' + 
-	                                            ' ng-model="selectedTei.' + attId + '" ' +
-	                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
-	                                            ' ng-change="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
-	                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ' +
-	                                            ' <option value="">{{\'please_select\'| translate}}</option>' +
-	                                            ' <option value="false">{{\'no\'| translate}}</option>' + 
-	                                            ' <option value="true">{{\'yes\'| translate}}</option>' +
-	                                            '</select> ';
-	                        }
-	                        else if(att.valueType === "date"){
-	                            newInputField = '<input type="text" ' +
-	                                            ' name="' + fieldName + '"' +
-	                                            ' element-id="' + i + '"' +
-	                                            this.getAttributesAsString(attributes) +
-	                                            ' d2-focus-next-on-enter' + 
-	                                            ' placeholder="{{dhis2CalendarFormat.keyDateFormat}}" ' +
-	                                            ' ng-model="selectedTei.' + attId + '" ' +
-	                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
-	                                            ' max-date="' + attMaxDate + '"' + '\'' +
-	                                            ' d2-date' +
-	                                            ' d2-validation ' +
-	                                            ' blur-or-change="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
-	                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ';
-	                        }
-	                        else if(att.valueType === "trueOnly"){
-	                            newInputField = '<input type="checkbox" ' +  
-	                                            ' name="' + fieldName + '"' +
-	                                            ' element-id="' + i + '"' +
-	                                            this.getAttributesAsString(attributes) + 
-	                                            ' d2-validation ' +
-	                                            ' d2-focus-next-on-enter' + 
-	                                            ' ng-model="selectedTei.' + attId + '" ' +
-	                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
-	                                            ' ng-change="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
-	                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ';
-	                        }
-	                        else if(att.valueType === "email"){
-	                            newInputField = '<input type="email" ' +    
-	                                            ' name="' + fieldName + '"' +                                              
-	                                            ' element-id="' + i + '"' +
-	                                            this.getAttributesAsString(attributes) +
-	                                            ' d2-validation ' +
-	                                            ' d2-focus-next-on-enter' + 
-	                                            ' ng-model="selectedTei.' + attId + '" ' +
-	                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
-	                                            ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
-	                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ';
-	                        }
-	                        else {
-	                            newInputField = '<input type="text" ' +
-	                                            ' name="' + fieldName + '"' +
-	                                            ' element-id="' + i + '"' +                                             
-	                                            this.getAttributesAsString(attributes) +
-	                                            ' d2-validation ' +
-	                                            ' d2-focus-next-on-enter' + 
-	                                            ' ng-model="selectedTei.' + attId + '" ' +
-	                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
-	                                            ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
-	                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ';
-	                        }
+		                        
+                        	}
+                        	else{
+                        		//check attribute type and generate corresponding angular input field
+		                        if(att.valueType === "number"){
+		                            newInputField = '<input type="text" ' +
+		                                            ' name="' + fieldName + '"' +                          
+		                                            ' element-id="' + i + '"' +
+		                                            this.getAttributesAsString(attributes) +
+		                                            ' d2-validation ' +
+		                                            ' d2-number-validation ' +
+		                                            ' d2-focus-next-on-enter' + 
+		                                            ' ng-model="selectedTei.' + attId + '" ' +
+		                                            ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
+		                                            ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
+		                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ';
+		                        }		                        
+		                        else if(att.valueType === "bool"){
+		                            newInputField = '<select ' +
+		                                            ' name="' + fieldName + '"' +
+		                                            ' element-id="' + i + '"' +
+		                                            this.getAttributesAsString(attributes) +
+		                                            ' d2-focus-next-on-enter' + 
+		                                            ' ng-model="selectedTei.' + attId + '" ' +
+		                                             ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
+		                                            ' ng-change="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
+		                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ' +
+		                                            ' <option value="">{{\'please_select\'| translate}}</option>' +
+		                                            ' <option value="false">{{\'no\'| translate}}</option>' + 
+		                                            ' <option value="true">{{\'yes\'| translate}}</option>' +
+		                                            '</select> ';
+		                        }
+		                        else if(att.valueType === "date"){
+		                            newInputField = '<input type="text" ' +
+		                                            ' name="' + fieldName + '"' +
+		                                            ' element-id="' + i + '"' +
+		                                            this.getAttributesAsString(attributes) +
+		                                            ' d2-focus-next-on-enter' + 
+		                                            ' placeholder="{{dhis2CalendarFormat.keyDateFormat}}" ' +
+		                                            ' ng-model="selectedTei.' + attId + '" ' +
+		                                             ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
+		                                            ' max-date="' + attMaxDate + '"' + '\'' +
+		                                            ' d2-date' +
+		                                            ' d2-validation ' +
+		                                            ' blur-or-change="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
+		                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ';
+		                        }
+		                        else if(att.valueType === "trueOnly"){
+		                            newInputField = '<input type="checkbox" ' +  
+		                                            ' name="' + fieldName + '"' +
+		                                            ' element-id="' + i + '"' +
+		                                            this.getAttributesAsString(attributes) + 
+		                                            ' d2-validation ' +
+		                                            ' d2-focus-next-on-enter' + 
+		                                            ' ng-model="selectedTei.' + attId + '" ' +
+		                                             ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
+		                                            ' ng-change="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
+		                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ';
+		                        }
+		                        else if(att.valueType === "email"){
+		                            newInputField = '<input type="email" ' +    
+		                                            ' name="' + fieldName + '"' +                                              
+		                                            ' element-id="' + i + '"' +
+		                                            this.getAttributesAsString(attributes) +
+		                                            ' d2-validation ' +
+		                                            ' d2-focus-next-on-enter' + 
+		                                            ' ng-model="selectedTei.' + attId + '" ' +
+		                                             ' ng-disabled="editingDisabled || !attributesById.' +attId+ '.allowDataEntry"' +
+		                                            ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
+		                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ';
+		                        }
+		                        else {
+		                            newInputField = '<input type="text" ' +
+		                                            ' name="' + fieldName + '"' +
+		                                            ' element-id="' + i + '"' +                                             
+		                                            this.getAttributesAsString(attributes) +
+		                                            ' d2-validation ' +
+		                                            ' d2-focus-next-on-enter' + 
+		                                            ' ng-model="selectedTei.' + attId + '" ' +
+		                                            ' ng-disabled="editingDisabled"' +
+		                                            ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
+		                                            ' ng-required=" ' + (att.mandatory || att.unique) + '"> ';
+		                        }
+	                       	}
                        }
                          
                     }                        
@@ -728,9 +757,17 @@ var d2Services = angular.module('d2Services', ['ngResource'])
     this.getPageCount = function () {
         return this.pageCount;
     };
+    
+    this.setToolBarDisplay = function(toolBarDisplay){
+        this.toolBarDisplay = toolBarDisplay;
+    };
 
+    this.getToolBarDisplay = function(){
+        return this.toolBarDisplay;
+    };
+    
     this.lowerLimit = function() { 
-        var pageCountLimitPerPageDiff = this.getPageCount() - this.toolBarDisplay;
+        var pageCountLimitPerPageDiff = this.getPageCount() - this.getToolBarDisplay();
 
         if (pageCountLimitPerPageDiff < 0) { 
             return 0; 
@@ -740,7 +777,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
             return pageCountLimitPerPageDiff; 
         } 
 
-        var low = this.getPage() - (Math.ceil(this.toolBarDisplay/2) - 1); 
+        var low = this.getPage() - (Math.ceil(this.getToolBarDisplay()/2) - 1); 
 
         return Math.max(low, 0);
     };

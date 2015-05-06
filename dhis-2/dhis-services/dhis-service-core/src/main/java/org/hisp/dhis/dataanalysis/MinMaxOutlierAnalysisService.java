@@ -29,6 +29,7 @@ package org.hisp.dhis.dataanalysis;
  */
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -50,6 +51,7 @@ import org.hisp.dhis.system.util.ConversionUtils;
 import org.hisp.dhis.system.util.Filter;
 import org.hisp.dhis.system.util.FilterUtils;
 import org.hisp.dhis.system.util.MathUtils;
+import org.joda.time.DateTime;
 
 import static org.hisp.dhis.dataelement.DataElement.*;
 
@@ -94,7 +96,7 @@ public class MinMaxOutlierAnalysisService
 
     @Override
     public Collection<DeflatedDataValue> analyse( Collection<OrganisationUnit> organisationUnits,
-        Collection<DataElement> dataElements, Collection<Period> periods, Double stdDevFactor )
+        Collection<DataElement> dataElements, Collection<Period> periods, Double stdDevFactor, Date from )
     {
         Set<DataElement> elements = new HashSet<>( dataElements );
         
@@ -107,7 +109,7 @@ public class MinMaxOutlierAnalysisService
             categoryOptionCombos.addAll( dataElement.getCategoryCombo().getOptionCombos() );
         }
 
-        log.info( "Starting min-max analysis, no of data elements: " + elements.size() + ", no of org units: " + organisationUnits.size() );
+        log.debug( "Starting min-max analysis, no of data elements: " + elements.size() + ", no of org units: " + organisationUnits.size() );
         
         return dataAnalysisStore.getMinMaxViolations( elements, categoryOptionCombos, periods, organisationUnits, MAX_OUTLIERS );
     }
@@ -120,6 +122,8 @@ public class MinMaxOutlierAnalysisService
 
         Set<Integer> orgUnitIds = new HashSet<>( ConversionUtils.getIdentifiers( OrganisationUnit.class, organisationUnits ) );
 
+        Date from = new DateTime( 1, 1, 1, 1, 1 ).toDate();
+        
         minMaxDataElementService.removeMinMaxDataElements( dataElements, organisationUnits );
 
         log.debug( "Deleted existing min-max values" );
@@ -134,9 +138,9 @@ public class MinMaxOutlierAnalysisService
 
                 for ( DataElementCategoryOptionCombo categoryOptionCombo : categoryOptionCombos )
                 {
-                    Map<Integer, Double> standardDeviations = dataAnalysisStore.getStandardDeviation( dataElement, categoryOptionCombo, orgUnitIds );
+                    Map<Integer, Double> standardDeviations = dataAnalysisStore.getStandardDeviation( dataElement, categoryOptionCombo, orgUnitIds, from );
                     
-                    Map<Integer, Double> averages = dataAnalysisStore.getAverage( dataElement, categoryOptionCombo, standardDeviations.keySet() );
+                    Map<Integer, Double> averages = dataAnalysisStore.getAverage( dataElement, categoryOptionCombo, standardDeviations.keySet(), from );
                     
                     for ( Integer unit : averages.keySet() )
                     {

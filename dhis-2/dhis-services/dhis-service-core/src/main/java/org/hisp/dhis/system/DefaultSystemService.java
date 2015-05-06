@@ -47,6 +47,7 @@ import org.hisp.dhis.external.location.LocationManager;
 import org.hisp.dhis.external.location.LocationManagerException;
 import org.hisp.dhis.setting.SystemSettingManager;
 import org.hisp.dhis.system.database.DatabaseInfoProvider;
+import org.hisp.dhis.system.util.DateUtils;
 import org.hisp.dhis.system.util.SystemUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -72,6 +73,9 @@ public class DefaultSystemService
     @Autowired
     private SystemSettingManager systemSettingManager;
     
+    /**
+     * Variable holding fixed system info state.
+     */
     private SystemInfo systemInfo = null;
 
     // -------------------------------------------------------------------------
@@ -81,18 +85,32 @@ public class DefaultSystemService
     @Override
     public SystemInfo getSystemInfo()
     {
-        if ( systemInfo != null )
+        if ( systemInfo == null )
         {
-            systemInfo.setServerDate( new Date() );
-            
-            return systemInfo;
+            systemInfo = getFixedSystemInfo();
         }
 
-        systemInfo = new SystemInfo();
+        // ---------------------------------------------------------------------
+        // Set volatile properties
+        // ---------------------------------------------------------------------
 
-        systemInfo.setCalendar( calendarService.getSystemCalendar().name() );
-        systemInfo.setDateFormat( calendarService.getSystemDateFormat().getJs() );
-        systemInfo.setLastAnalyticsTableSuccess( (Date) systemSettingManager.getSystemSetting( KEY_LAST_SUCCESSFUL_ANALYTICS_TABLES_UPDATE ) );
+        Date lastAnalyticsTableSuccess = (Date) systemSettingManager.getSystemSetting( KEY_LAST_SUCCESSFUL_ANALYTICS_TABLES_UPDATE );
+        Date now = new Date();
+        
+        SystemInfo info = systemInfo.instance();
+        
+        info.setCalendar( calendarService.getSystemCalendar().name() );
+        info.setDateFormat( calendarService.getSystemDateFormat().getJs() );
+        info.setServerDate( new Date() );
+        info.setLastAnalyticsTableSuccess( lastAnalyticsTableSuccess );
+        info.setIntervalSinceLastAnalyticsTableSuccess( DateUtils.getPrettyInterval( lastAnalyticsTableSuccess, now ) );
+        
+        return info;
+    }
+    
+    private SystemInfo getFixedSystemInfo()
+    {
+        SystemInfo info = new SystemInfo();
 
         // ---------------------------------------------------------------------
         // Version
@@ -112,14 +130,14 @@ public class DefaultSystemService
 
                 properties.load( in );
 
-                systemInfo.setVersion( properties.getProperty( "build.version" ) );
-                systemInfo.setRevision( properties.getProperty( "build.revision" ) );
+                info.setVersion( properties.getProperty( "build.version" ) );
+                info.setRevision( properties.getProperty( "build.revision" ) );
 
                 String buildTime = properties.getProperty( "build.time" );
 
                 DateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 
-                systemInfo.setBuildTime( dateFormat.parse( buildTime ) );
+                info.setBuildTime( dateFormat.parse( buildTime ) );
             }
             catch ( IOException ex )
             {
@@ -139,24 +157,24 @@ public class DefaultSystemService
         // External directory
         // ---------------------------------------------------------------------
 
-        systemInfo.setEnvironmentVariable( locationManager.getEnvironmentVariable() );
+        info.setEnvironmentVariable( locationManager.getEnvironmentVariable() );
 
         try
         {
             File directory = locationManager.getExternalDirectory();
 
-            systemInfo.setExternalDirectory( directory.getAbsolutePath() );
+            info.setExternalDirectory( directory.getAbsolutePath() );
         }
         catch ( LocationManagerException ex )
         {
-            systemInfo.setExternalDirectory( "Not set" );
+            info.setExternalDirectory( "Not set" );
         }
 
         // ---------------------------------------------------------------------
         // Database
         // ---------------------------------------------------------------------
 
-        systemInfo.setDatabaseInfo( databaseInfoProvider.getDatabaseInfo() );
+        info.setDatabaseInfo( databaseInfoProvider.getDatabaseInfo() );
 
         // ---------------------------------------------------------------------
         // System env variables and properties
@@ -164,31 +182,30 @@ public class DefaultSystemService
 
         try
         {
-            systemInfo.setJavaOpts( System.getenv( "JAVA_OPTS" ) );
+            info.setJavaOpts( System.getenv( "JAVA_OPTS" ) );
         }
         catch ( SecurityException ex )
         {
-            systemInfo.setJavaOpts( "Unknown" );
+            info.setJavaOpts( "Unknown" );
         }
 
         Properties props = System.getProperties();
 
-        systemInfo.setJavaHome( props.getProperty( "java.home" ) );
-        systemInfo.setJavaIoTmpDir( props.getProperty( "java.io.tmpdir" ) );
-        systemInfo.setJavaVersion( props.getProperty( "java.version" ) );
-        systemInfo.setJavaVendor( props.getProperty( "java.vendor" ) );
-        systemInfo.setOsName( props.getProperty( "os.name" ) );
-        systemInfo.setOsArchitecture( props.getProperty( "os.arch" ) );
-        systemInfo.setOsVersion( props.getProperty( "os.version" ) );
+        info.setJavaHome( props.getProperty( "java.home" ) );
+        info.setJavaIoTmpDir( props.getProperty( "java.io.tmpdir" ) );
+        info.setJavaVersion( props.getProperty( "java.version" ) );
+        info.setJavaVendor( props.getProperty( "java.vendor" ) );
+        info.setOsName( props.getProperty( "os.name" ) );
+        info.setOsArchitecture( props.getProperty( "os.arch" ) );
+        info.setOsVersion( props.getProperty( "os.version" ) );
 
-        systemInfo.setMemoryInfo( SystemUtils.getMemoryString() );
-        systemInfo.setCpuCores( SystemUtils.getCpuCores() );
-        systemInfo.setServerDate( new Date() );
+        info.setMemoryInfo( SystemUtils.getMemoryString() );
+        info.setCpuCores( SystemUtils.getCpuCores() );
 
         Configuration config = configurationService.getConfiguration();
 
-        systemInfo.setSystemId( config.getSystemId() );
+        info.setSystemId( config.getSystemId() );
 
-        return systemInfo;
+        return info;
     }
 }

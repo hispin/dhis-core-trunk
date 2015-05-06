@@ -40,6 +40,8 @@ import org.apache.commons.validator.routines.DoubleValidator;
 import org.apache.commons.validator.routines.IntegerValidator;
 import org.hisp.dhis.datavalue.DataValue;
 import org.hisp.dhis.expression.Operator;
+import org.hisp.dhis.system.math.OneIfZeroOrPositiveFunction;
+import org.hisp.dhis.system.math.ZeroIfNegativeFunction;
 import org.nfunk.jep.JEP;
 
 /**
@@ -66,17 +68,28 @@ public class MathUtils
     private static final Pattern ZERO_PATTERN = Pattern.compile( "^0(\\.0*)?$" );
 
     /**
-     * Validates whether an expression is true or false.
+     * Evaluates whether an expression is true or false.
      * 
      * @param leftSide The left side of the expression.
      * @param operator The expression operator.
      * @param rightSide The right side of the expression.
-     * @return True if the expressio is true, fals otherwise.
+     * @return True if the expression is true, false otherwise.
      */
     public static boolean expressionIsTrue( double leftSide, Operator operator, double rightSide )
     {
         final String expression = leftSide + operator.getMathematicalOperator() + rightSide;
         
+        return expressionIsTrue( expression );
+    }
+
+    /**
+     * Evaluates whether an expression is true or false.
+     * 
+     * @param expression the expression to evaluate.
+     * @return True if the expression is true, false otherwise.
+     */
+    public static boolean expressionIsTrue( String expression )
+    {
         final JEP parser = getJep();
         parser.parseExpression( expression );
         
@@ -146,6 +159,8 @@ public class MathUtils
         final JEP parser = new JEP();
         parser.addStandardFunctions();
         parser.addStandardConstants();
+        parser.addFunction( OneIfZeroOrPositiveFunction.NAME, new OneIfZeroOrPositiveFunction() );
+        parser.addFunction( ZeroIfNegativeFunction.NAME, new ZeroIfNegativeFunction() );
         return parser;
     }
     

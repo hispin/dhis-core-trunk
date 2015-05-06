@@ -32,18 +32,21 @@ import java.util.Date;
 
 import org.hisp.dhis.common.OrganisationUnitSelectionMode;
 import org.hisp.dhis.dxf2.common.IdSchemes;
-import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.event.EventStatus;
 import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.program.Program;
 import org.hisp.dhis.program.ProgramStage;
 import org.hisp.dhis.program.ProgramStatus;
+import org.hisp.dhis.trackedentity.TrackedEntityInstance;
 
 /**
  * @author Lars Helge Overland
  */
 public class EventSearchParams
 {
+    public static final int DEFAULT_PAGE = 1;
+    public static final int DEFAULT_PAGE_SIZE = 50;
+    
     private Program program;
     
     private ProgramStage programStage;
@@ -76,6 +79,10 @@ public class EventSearchParams
     
     private Integer pageSize;
 
+    private boolean totalPages;
+    
+    private boolean skipPaging;
+    
     // -------------------------------------------------------------------------
     // Constructors
     // -------------------------------------------------------------------------
@@ -95,19 +102,29 @@ public class EventSearchParams
 
     public int getPageWithDefault()
     {
-        return page != null && page > 0 ? page : 1;
+        return page != null && page > 0 ? page : DEFAULT_PAGE;
     }
     
     public int getPageSizeWithDefault()
     {
-        return pageSize != null && pageSize >= 0 ? pageSize : 100;
+        return pageSize != null && pageSize >= 0 ? pageSize : DEFAULT_PAGE_SIZE;
     }
 
     public int getOffset()
     {
         return ( getPageWithDefault() - 1 ) * getPageSizeWithDefault();
     }
-    
+
+    /**
+     * Sets paging properties to default values.
+     */
+    public void setDefaultPaging()
+    {
+        this.page = DEFAULT_PAGE;
+        this.pageSize = DEFAULT_PAGE_SIZE;
+        this.skipPaging = false;
+    }
+
     // -------------------------------------------------------------------------
     // Getters and setters
     // -------------------------------------------------------------------------
@@ -270,5 +287,25 @@ public class EventSearchParams
     public void setPageSize( Integer pageSize )
     {
         this.pageSize = pageSize;
+    }
+
+    public boolean isTotalPages()
+    {
+        return totalPages;
+    }
+
+    public void setTotalPages( boolean totalPages )
+    {
+        this.totalPages = totalPages;
+    }
+
+    public boolean isSkipPaging()
+    {
+        return skipPaging;
+    }
+
+    public void setSkipPaging( boolean skipPaging )
+    {
+        this.skipPaging = skipPaging;
     }
 }

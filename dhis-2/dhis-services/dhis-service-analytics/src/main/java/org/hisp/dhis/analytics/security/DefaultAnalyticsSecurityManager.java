@@ -116,7 +116,7 @@ public class DefaultAnalyticsSecurityManager
 
         boolean hideUnapprovedData = (Boolean) systemSettingManager.getSystemSetting( SystemSettingManager.KEY_HIDE_UNAPPROVED_DATA_IN_ANALYTICS, false );
         
-        boolean canViewUnapproveData = user != null ? user.getUserCredentials().isAuthorized( DataApproval.AUTH_VIEW_UNAPPROVED_DATA ) : true;
+        boolean canViewUnapprovedData = user != null ? user.getUserCredentials().isAuthorized( DataApproval.AUTH_VIEW_UNAPPROVED_DATA ) : true;
         
         if ( hideUnapprovedData && user != null )
         {
@@ -135,7 +135,7 @@ public class DefaultAnalyticsSecurityManager
                 
                 approvalLevels = approvalLevelService.getUserReadApprovalLevels( approvalLevel );
             }
-            else if ( !canViewUnapproveData )
+            else if ( !canViewUnapprovedData )
             {
                 // Set approval level from user level
                 
@@ -151,7 +151,7 @@ public class DefaultAnalyticsSecurityManager
                 
                 params.setDataApprovalLevels( approvalLevels );
                 
-                log.info( "User: " + user.getUsername() + " constrained by data approval levels: " + approvalLevels.values() );
+                log.debug( "User: " + user.getUsername() + " constrained by data approval levels: " + approvalLevels.values() );
             }
         }
     }
@@ -197,7 +197,7 @@ public class DefaultAnalyticsSecurityManager
         
         params.getFilters().add( constraint );
 
-        log.info( "User: " + user.getUsername() + " constrained by data view organisation units" );        
+        log.debug( "User: " + user.getUsername() + " constrained by data view organisation units" );        
     }
     
     private void applyUserConstraints( DataQueryParams params )

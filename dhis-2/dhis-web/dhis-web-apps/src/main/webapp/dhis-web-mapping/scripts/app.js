@@ -424,7 +424,8 @@ Ext.onReady( function() {
 			};
 
 			util.gui.window.addHideOnBlurHandler = function(w) {
-				var el = Ext.get(Ext.query('.x-mask')[0]);
+				var maskElements = Ext.query('.x-mask'),
+                    el = Ext.get(maskElements[maskElements.length - 1]);
 
 				el.on('click', function() {
 					if (w.hideOnBlur) {
@@ -436,7 +437,8 @@ Ext.onReady( function() {
 			};
 
 			util.gui.window.addDestroyOnBlurHandler = function(w) {
-				var el = Ext.get(Ext.query('.x-mask')[0]);
+				var maskElements = Ext.query('.x-mask'),
+                    el = Ext.get(maskElements[maskElements.length - 1]);
 
 				el.on('click', function() {
 					if (w.destroyOnBlur) {
@@ -1949,7 +1951,7 @@ Ext.onReady( function() {
 				}
 			],
 			listeners: {
-				show: function() {
+				show: function(w) {
 					if (!this.isRendered) {
 						this.isRendered = true;
 
@@ -2576,7 +2578,16 @@ Ext.onReady( function() {
 				show: function(w) {
 					var pos = gis.viewport.favoriteWindow.getPosition();
 					w.setPosition(pos[0] + 5, pos[1] + 5);
-				}
+
+					if (!w.hasDestroyOnBlurHandler) {
+						gis.util.gui.window.addDestroyOnBlurHandler(w);
+					}
+
+                    gis.viewport.favoriteWindow.destroyOnBlur = false;
+				},
+                destroy: function() {
+                    gis.viewport.favoriteWindow.destroyOnBlur = true;
+                }
 			}
 		});
 
@@ -2796,6 +2807,7 @@ Ext.onReady( function() {
 				resizable: false,
 				modal: true,
 				items: nameTextfield,
+				destroyOnBlur: true,
 				bbar: [
 					cancelButton,
 					'->',
@@ -2804,6 +2816,12 @@ Ext.onReady( function() {
 				listeners: {
 					show: function() {
 						this.setPosition(favoriteWindow.x + 14, favoriteWindow.y + 67);
+
+                        if (!w.hasDestroyOnBlurHandler) {
+                            gis.util.gui.window.addDestroyOnBlurHandler(w);
+                        }
+
+                        gis.viewport.favoriteWindow.destroyOnBlur = true;
 
 						nameTextfield.focus(false, 500);
 					}
@@ -3160,6 +3178,7 @@ Ext.onReady( function() {
 			resizable: false,
 			modal: true,
 			width: windowWidth,
+			destroyOnBlur: true,
 			items: [
 				{
 					xtype: 'panel',
@@ -3180,8 +3199,12 @@ Ext.onReady( function() {
 				grid
 			],
 			listeners: {
-				show: function() {
+				show: function(w) {
 					this.setPosition(199, 33);
+
+					if (!w.hasDestroyOnBlurHandler) {
+						gis.util.gui.window.addDestroyOnBlurHandler(w);
+					}
 
 					searchTextfield.focus(false, 500);
 				}
@@ -4012,6 +4035,7 @@ Ext.onReady( function() {
 			width: windowWidth,
 			modal: true,
 			items: new LegendSetPanel(),
+            destroyOnBlur: true,
 			bbar: {
 				height: 27,
 				items: [
@@ -4023,8 +4047,12 @@ Ext.onReady( function() {
 				]
 			},
 			listeners: {
-				show: function() {
+				show: function(w) {
 					this.setPosition(269, 33);
+
+					if (!w.hasDestroyOnBlurHandler) {
+						gis.util.gui.window.addDestroyOnBlurHandler(w);
+					}
 				},
                 beforeclose: function() {
                     if (window.isDirty) {
@@ -4101,6 +4129,7 @@ Ext.onReady( function() {
             bodyStyle: 'padding:1px',
 			resizable: true,
 			modal: true,
+            destroyOnBlur: true,
 			items: [
 				name,
 				format
@@ -4110,8 +4139,12 @@ Ext.onReady( function() {
 				button
 			],
 			listeners: {
-				show: function() {
+				show: function(w) {
 					this.setPosition(253, 33);
+
+					if (!w.hasDestroyOnBlurHandler) {
+						gis.util.gui.window.addDestroyOnBlurHandler(w);
+					}
 				}
 			}
 		});
@@ -4169,6 +4202,7 @@ Ext.onReady( function() {
                 width: 500,
                 resizable: true,
                 modal: true,
+                destroyOnBlur: true,
                 items: [
                     textArea
                 ],
@@ -4183,8 +4217,12 @@ Ext.onReady( function() {
 					]
 				},
                 listeners: {
-                    show: function() {
+                    show: function(w) {
                         this.setPosition(325, 33);
+
+                        if (!w.hasDestroyOnBlurHandler) {
+                            gis.util.gui.window.addDestroyOnBlurHandler(w);
+                        }
 
 						document.body.oncontextmenu = true;
                     },
@@ -4202,6 +4240,69 @@ Ext.onReady( function() {
 
 		return;
     };
+
+	GIS.app.AboutWindow = function() {
+		return Ext.create('Ext.window.Window', {
+			title: GIS.i18n.about,
+			bodyStyle: 'background:#fff; padding:6px',
+			modal: true,
+            resizable: false,
+			destroyOnBlur: true,
+			listeners: {
+				show: function(w) {
+					Ext.Ajax.request({
+						url: gis.init.contextPath + '/api/system/info.json',
+						success: function(r) {
+							var info = Ext.decode(r.responseText),
+								divStyle = 'padding:3px',
+								html = '<div class="user-select">';
+
+							if (Ext.isObject(info)) {
+								html += '<div style="' + divStyle + '"><b>' + GIS.i18n.time_since_last_data_update + ': </b>' + info.intervalSinceLastAnalyticsTableSuccess + '</div>';
+								html += '<div style="' + divStyle + '"><b>' + GIS.i18n.version + ': </b>' + info.version + '</div>';
+								html += '<div style="' + divStyle + '"><b>' + GIS.i18n.revision + ': </b>' + info.revision + '</div>';
+                                html += '<div style="' + divStyle + '"><b>' + GIS.i18n.username + ': </b>' + gis.init.userAccount.username + '</div>';
+                                html += '</div>';
+							}
+							else {
+								html += 'No system info found';
+							}
+
+							w.update(html);
+						},
+						failure: function(r) {
+							html += r.status + '\n' + r.statusText + '\n' + r.responseText;
+
+							w.update(html);
+						},
+                        callback: function() {
+                            document.body.oncontextmenu = true;
+
+                            gis.util.gui.window.setAnchorPosition(w, gis.viewport.aboutButton);
+
+                            //if (!w.hasHideOnBlurHandler) {
+                                //ns.core.web.window.addHideOnBlurHandler(w);
+                            //}
+                        }
+					});
+
+					if (!w.hasDestroyOnBlurHandler) {
+						gis.util.gui.window.addDestroyOnBlurHandler(w);
+					}
+				},
+                hide: function() {
+                    document.body.oncontextmenu = function() {
+                        return false;
+                    };
+                },
+                destroy: function() {
+                    document.body.oncontextmenu = function() {
+                        return false;
+                    };
+                }
+			}
+		});
+	};
 
 	GIS.app.LayerWidgetEvent = function(layer) {
 
@@ -8636,6 +8737,7 @@ Ext.onReady( function() {
 			eastRegion,
 			downloadButton,
 			shareButton,
+            aboutButton,
 			defaultButton,
 			layersPanel,
 			resizeButton,
@@ -8793,6 +8895,10 @@ Ext.onReady( function() {
 					listeners: {
 						show: function(w) {
 							this.setPosition(215, 33);
+
+                            if (!w.hasDestroyOnBlurHandler) {
+                                gis.util.gui.window.addDestroyOnBlurHandler(w);
+                            }
 						}
 					}
 				});
@@ -8833,6 +8939,10 @@ Ext.onReady( function() {
 					listeners: {
 						show: function(w) {
                             this.setPosition(325, 33);
+
+                            if (!w.hasDestroyOnBlurHandler) {
+                                gis.util.gui.window.addDestroyOnBlurHandler(w);
+                            }
 
 							document.body.oncontextmenu = true;
 						},
@@ -8879,6 +8989,10 @@ Ext.onReady( function() {
 						show: function(w) {
                             this.setPosition(325, 33);
 
+                            if (!w.hasDestroyOnBlurHandler) {
+                                gis.util.gui.window.addDestroyOnBlurHandler(w);
+                            }
+
 							document.body.oncontextmenu = true;
 						},
 						hide: function() {
@@ -8918,6 +9032,20 @@ Ext.onReady( function() {
 						shareButton.xableItems();
 					}
 				}
+			}
+		});
+
+		aboutButton = Ext.create('Ext.button.Button', {
+			text: GIS.i18n.about,
+            menu: {},
+			handler: function() {
+                if (viewport.aboutWindow && viewport.aboutWindow.destroy) {
+					viewport.aboutWindow.destroy();
+					viewport.aboutWindow = null;
+				}
+
+				viewport.aboutWindow = GIS.app.AboutWindow();
+				viewport.aboutWindow.show();
 			}
 		});
 
@@ -9247,6 +9375,8 @@ Ext.onReady( function() {
 						}
 					});
 
+                    a.push(aboutButton);
+
 					a.push({
 						xtype: 'button',
 						text: GIS.i18n.home,
@@ -9510,6 +9640,7 @@ Ext.onReady( function() {
 			centerRegion: centerRegion,
 			downloadButton: downloadButton,
 			shareButton: shareButton,
+            aboutButton: aboutButton,
 			layersPanel: layersPanel,
 			items: [
 				centerRegion,
@@ -9618,8 +9749,6 @@ Ext.onReady( function() {
             adapters: [dhis2.storage.IndexedDBAdapter, dhis2.storage.DomSessionStorageAdapter, dhis2.storage.InMemoryAdapter],
             objectStores: ['optionSets']
         });
-
-        dhis2.gis.store.open();
 
         // inject google maps
         GIS_GM = {
@@ -9913,80 +10042,80 @@ Ext.onReady( function() {
                                             success: function() {
                                                 var store = dhis2.gis.store;
 
-                                                // check if idb has any option sets
-                                                store.count('optionSets').done( function(count) {
+                                                store.open().done( function() {
 
-                                                    if (count === 0) {
-                                                        Ext.Ajax.request({
-                                                            url: contextPath + '/api/optionSets.json?fields=id,name,version,options[code,name]&paging=false',
-                                                            success: function(r) {
-                                                                var sets = Ext.decode(r.responseText).optionSets;
+                                                    // check if idb has any option sets
+                                                    store.getKeys('optionSets').done( function(keys) {
+                                                        if (keys.length === 0) {
+                                                            Ext.Ajax.request({
+                                                                url: contextPath + '/api/optionSets.json?fields=id,name,version,options[code,name]&paging=false',
+                                                                success: function(r) {
+                                                                    var sets = Ext.decode(r.responseText).optionSets;
 
-                                                                if (sets.length) {
-                                                                    store.setAll('optionSets', sets).done(fn);
-                                                                }
-                                                                else {
-                                                                    fn();
-                                                                }
-                                                            }
-                                                        });
-                                                    }
-                                                    else {
-                                                        Ext.Ajax.request({
-                                                            url: contextPath + '/api/optionSets.json?fields=id,version&paging=false',
-                                                            success: function(r) {
-                                                                var optionSets = Ext.decode(r.responseText).optionSets || [],
-                                                                    ids = [],
-                                                                    url = '',
-                                                                    callbacks = 0,
-                                                                    checkOptionSet,
-                                                                    updateStore;
-
-                                                                updateStore = function() {
-                                                                    if (++callbacks === optionSets.length) {
-                                                                        if (!ids.length) {
-                                                                            fn();
-                                                                            return;
-                                                                        }
-
-                                                                        for (var i = 0; i < ids.length; i++) {
-                                                                            url += '&filter=id:eq:' + ids[i];
-                                                                        }
-
-                                                                        Ext.Ajax.request({
-                                                                            url: contextPath + '/api/optionSets.json?fields=id,name,version,options[code,name]&paging=false' + url,
-                                                                            success: function(r) {
-                                                                                var sets = Ext.decode(r.responseText).optionSets;
-
-                                                                                store.setAll('optionSets', sets).done(fn);
-                                                                            }
-                                                                        });
+                                                                    if (sets.length) {
+                                                                        store.setAll('optionSets', sets).done(fn);
                                                                     }
-                                                                };
+                                                                    else {
+                                                                        fn();
+                                                                    }
+                                                                }
+                                                            });
+                                                        }
+                                                        else {
+                                                            Ext.Ajax.request({
+                                                                url: contextPath + '/api/optionSets.json?fields=id,version&paging=false',
+                                                                success: function(r) {
+                                                                    var optionSets = Ext.decode(r.responseText).optionSets || [],
+                                                                        ids = [],
+                                                                        url = '',
+                                                                        callbacks = 0,
+                                                                        checkOptionSet,
+                                                                        updateStore;
 
-                                                                registerOptionSet = function(optionSet) {
-                                                                    store.get('optionSets', optionSet.id).done( function(obj) {
-                                                                        if (!Ext.isObject(obj) || obj.version !== optionSet.version) {
-                                                                            ids.push(optionSet.id);
+                                                                    updateStore = function() {
+                                                                        if (++callbacks === optionSets.length) {
+                                                                            if (!ids.length) {
+                                                                                fn();
+                                                                                return;
+                                                                            }
+
+                                                                            for (var i = 0; i < ids.length; i++) {
+                                                                                url += '&filter=id:eq:' + ids[i];
+                                                                            }
+
+                                                                            Ext.Ajax.request({
+                                                                                url: contextPath + '/api/optionSets.json?fields=id,name,version,options[code,name]&paging=false' + url,
+                                                                                success: function(r) {
+                                                                                    var sets = Ext.decode(r.responseText).optionSets;
+
+                                                                                    store.setAll('optionSets', sets).done(fn);
+                                                                                }
+                                                                            });
                                                                         }
+                                                                    };
 
-                                                                        updateStore();
-                                                                    });
-                                                                };
+                                                                    registerOptionSet = function(optionSet) {
+                                                                        store.get('optionSets', optionSet.id).done( function(obj) {
+                                                                            if (!Ext.isObject(obj) || obj.version !== optionSet.version) {
+                                                                                ids.push(optionSet.id);
+                                                                            }
 
-                                                                if (optionSets.length) {
-                                                                    store.open().done( function() {
+                                                                            updateStore();
+                                                                        });
+                                                                    };
+
+                                                                    if (optionSets.length) {
                                                                         for (var i = 0; i < optionSets.length; i++) {
                                                                             registerOptionSet(optionSets[i]);
                                                                         }
-                                                                    });
+                                                                    }
+                                                                    else {
+                                                                        fn();
+                                                                    }
                                                                 }
-                                                                else {
-                                                                    fn();
-                                                                }
-                                                            }
-                                                        });
-                                                    }
+                                                            });
+                                                        }
+                                                    });
                                                 });
                                             }
                                         });

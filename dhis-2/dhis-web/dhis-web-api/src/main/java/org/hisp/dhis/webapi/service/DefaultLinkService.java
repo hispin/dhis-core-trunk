@@ -34,6 +34,7 @@ import org.apache.commons.logging.LogFactory;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hisp.dhis.common.Pager;
 import org.hisp.dhis.schema.Property;
+import org.hisp.dhis.schema.PropertyType;
 import org.hisp.dhis.schema.Schema;
 import org.hisp.dhis.schema.SchemaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,7 @@ import org.springframework.stereotype.Service;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
@@ -72,7 +74,7 @@ public class DefaultLinkService implements LinkService
             return;
         }
 
-        String endpoint = contextService.getServletPath() + schema.getApiEndpoint();
+        String endpoint = contextService.getServletPath() + schema.getRelativeApiEndpoint();
 
         if ( pager.getPage() < pager.getPageCount() )
         {
@@ -120,6 +122,59 @@ public class DefaultLinkService implements LinkService
         else
         {
             generateLink( object, hrefBase, deepScan );
+        }
+    }
+
+    @Override
+    public void generateSchemaLinks( List<Schema> schemas )
+    {
+        for ( Schema schema : schemas )
+        {
+            generateSchemaLinks( schema );
+        }
+    }
+
+    @Override
+    public void generateSchemaLinks( Schema schema )
+    {
+        generateSchemaLinks( schema, contextService.getServletPath() );
+    }
+
+    @Override
+    public void generateSchemaLinks( Schema schema, String hrefBase )
+    {
+        schema.setHref( hrefBase + "/schemas/" + schema.getSingular() );
+
+        if ( schema.haveApiEndpoint() )
+        {
+            schema.setApiEndpoint( hrefBase + schema.getRelativeApiEndpoint() );
+        }
+
+        for ( Property property : schema.getProperties() )
+        {
+            if ( PropertyType.REFERENCE == property.getPropertyType() )
+            {
+                Schema klassSchema = schemaService.getDynamicSchema( property.getKlass() );
+                property.setHref( hrefBase + "/schemas/" + klassSchema.getSingular() );
+
+                if ( klassSchema.haveApiEndpoint() )
+                {
+                    property.setRelativeApiEndpoint( klassSchema.getRelativeApiEndpoint() );
+                    property.setApiEndpoint( hrefBase + klassSchema.getRelativeApiEndpoint() );
+                }
+            }
+            else if ( PropertyType.REFERENCE == property.getItemPropertyType() )
+            {
+                Schema klassSchema = schemaService.getDynamicSchema( property.getItemKlass() );
+                property.setHref( hrefBase + "/schemas/" + klassSchema.getSingular() );
+
+                if ( klassSchema.haveApiEndpoint() )
+                {
+                    property.setRelativeApiEndpoint( klassSchema.getRelativeApiEndpoint() );
+                    property.setApiEndpoint( hrefBase + klassSchema.getRelativeApiEndpoint() );
+                }
+            }
+
         }
     }
 
@@ -217,7 +272,7 @@ public class DefaultLinkService implements LinkService
             }
 
             Method setHref = object.getClass().getMethod( "setHref", String.class );
-            setHref.invoke( object, hrefBase + schema.getApiEndpoint() + "/" + value );
+            setHref.invoke( object, hrefBase + schema.getRelativeApiEndpoint() + "/" + value );
         }
         catch ( NoSuchMethodException | InvocationTargetException | IllegalAccessException ignored )
         {

@@ -45,6 +45,7 @@ import org.hisp.dhis.dataelement.DataElementService;
 import org.hisp.dhis.i18n.I18nService;
 import org.hisp.dhis.system.util.DateUtils;
 import org.hisp.dhis.system.util.MathUtils;
+import org.hisp.dhis.system.util.TextUtils;
 import org.hisp.dhis.trackedentity.TrackedEntityAttribute;
 import org.hisp.dhis.trackedentity.TrackedEntityAttributeService;
 import org.hisp.dhis.trackedentityattributevalue.TrackedEntityAttributeValue;
@@ -180,9 +181,17 @@ public class DefaultProgramIndicatorService
     }
 
     @Override
+    public String getProgramIndicatorValue( ProgramStageInstance programStageInstance, ProgramIndicator programIndicator )
+    {
+        Double value = getValue( null, programStageInstance, programIndicator );
+
+        return value != null ? String.valueOf( value ) : null;
+    }
+    
+    @Override
     public String getProgramIndicatorValue( ProgramInstance programInstance, ProgramIndicator programIndicator )
     {
-        Double value = getValue( programInstance, programIndicator );
+        Double value = getValue( programInstance, null, programIndicator );
 
         if ( value != null )
         {
@@ -259,7 +268,6 @@ public class DefaultProgramIndicatorService
                     matcher.appendReplacement( description, programStageName + ProgramIndicator.SEPARATOR_ID + dataelementName );
                 }
             }
-
             else if ( ProgramIndicator.KEY_ATTRIBUTE.equals( key ) )
             {
                 TrackedEntityAttribute attribute = attributeService.getTrackedEntityAttribute( uid );
@@ -280,17 +288,25 @@ public class DefaultProgramIndicatorService
             }
             else if ( ProgramIndicator.KEY_PROGRAM_VARIABLE.equals( key ) )
             {
-                if ( uid.equals( ProgramIndicator.CURRENT_DATE ) )
+                if ( ProgramIndicator.CURRENT_DATE.equals( uid ) )
                 {
                     matcher.appendReplacement( description, "Current date" );
                 }
-                else if ( uid.equals( ProgramIndicator.ENROLLMENT_DATE ) )
+                else if ( ProgramIndicator.ENROLLMENT_DATE.equals( uid ) )
                 {
                     matcher.appendReplacement( description, "Enrollment date" );
                 }
-                else if ( uid.equals( ProgramIndicator.INCIDENT_DATE ) )
+                else if ( ProgramIndicator.INCIDENT_DATE.equals( uid ) )
                 {
                     matcher.appendReplacement( description, "Incident date" );
+                }
+                else if ( ProgramIndicator.VAR_VALUE_COUNT.equals( uid ) )
+                {
+                    matcher.appendReplacement( description, "Value count" );
+                }
+                else if ( ProgramIndicator.VAR_ZERO_POS_VALUE_COUNT.equals( uid ) )
+                {
+                    matcher.appendReplacement( description, "Zero or positive value count" );
                 }
             }
         }
@@ -298,7 +314,6 @@ public class DefaultProgramIndicatorService
         matcher.appendTail( description );
 
         return description.toString();
-
     }
 
     @Override
@@ -329,7 +344,6 @@ public class DefaultProgramIndicatorService
                     return ProgramIndicator.EXPRESSION_NOT_WELL_FORMED;
                 }
             }
-
             else if ( ProgramIndicator.KEY_ATTRIBUTE.equals( key ) )
             {
                 TrackedEntityAttribute attribute = attributeService.getTrackedEntityAttribute( uid );
@@ -426,12 +440,26 @@ public class DefaultProgramIndicatorService
     // Supportive methods
     // -------------------------------------------------------------------------
 
-    private Double getValue( ProgramInstance programInstance, ProgramIndicator indicator )
+    /**
+     * Get value for the given arguments. If programStageInstance argument is null, 
+     * the program stage instance will be retrieved based on the given program
+     * instance in combination with the program stage from the indicator expression.
+     * 
+     * @param programInstance the program instance, can be null.
+     * @param programStageInstance the program stage instance, can be null.
+     * @param indicator the indicator, must be not null.
+     */
+    private Double getValue( ProgramInstance programInstance, ProgramStageInstance programStageInstance, ProgramIndicator indicator )
     {
-        StringBuffer description = new StringBuffer();
+        StringBuffer buffer = new StringBuffer();
 
-        Matcher matcher = ProgramIndicator.EXPRESSION_PATTERN.matcher( indicator.getExpression() );
+        String expression = indicator.getExpression();
+        
+        Matcher matcher = ProgramIndicator.EXPRESSION_PATTERN.matcher( expression );
 
+        int valueCount = 0;
+        int zeroPosValueCount = 0;
+        
         while ( matcher.find() )
         {
             String key = matcher.group( 1 );
@@ -445,11 +473,11 @@ public class DefaultProgramIndicatorService
 
                 if ( programStage != null && dataElement != null )
                 {
-                    ProgramStageInstance programStageInstance = programStageInstanceService.getProgramStageInstance(
-                        programInstance, programStage );
+                    ProgramStageInstance psi = programStageInstance != null ?
+                        programStageInstance :
+                        programStageInstanceService.getProgramStageInstance( programInstance, programStage );
 
-                    TrackedEntityDataValue dataValue = dataValueService.getTrackedEntityDataValue(
-                        programStageInstance, dataElement );
+                    TrackedEntityDataValue dataValue = dataValueService.getTrackedEntityDataValue( psi, dataElement );
 
                     if ( dataValue == null )
                     {
@@ -463,8 +491,10 @@ public class DefaultProgramIndicatorService
                         value = DateUtils.daysBetween( new Date(), DateUtils.getDefaultDate( value ) ) + " ";
                     }
 
-                    matcher.appendReplacement( description, value );
+                    matcher.appendReplacement( buffer, value );
                     
+                    valueCount++;
+                    zeroPosValueCount = isZeroOrPositive( value ) ? ( zeroPosValueCount + 1 ) : zeroPosValueCount;
                 }
                 else
                 {
@@ -483,11 +513,16 @@ public class DefaultProgramIndicatorService
                     if ( attributeValue != null )
                     {
                         String value = attributeValue.getValue();
-                        if( attribute.getValueType().equals( TrackedEntityAttribute.TYPE_DATE ))
+                        
+                        if ( attribute.getValueType().equals( TrackedEntityAttribute.TYPE_DATE ) )
                         {
                             value = DateUtils.daysBetween( new Date(), DateUtils.getDefaultDate( value ) ) + " ";
                         }
-                        matcher.appendReplacement( description, value );
+                        
+                        matcher.appendReplacement( buffer, value );
+                        
+                        valueCount++;
+                        zeroPosValueCount = isZeroOrPositive( value ) ? ( zeroPosValueCount + 1 ) : zeroPosValueCount;
                     }
                     else
                     {
@@ -505,7 +540,7 @@ public class DefaultProgramIndicatorService
                 
                 if ( constant != null )
                 {
-                    matcher.appendReplacement( description, String.valueOf( constant.getValue() ) );
+                    matcher.appendReplacement( buffer, String.valueOf( constant.getValue() ) );
                 }
                 else
                 {
@@ -517,29 +552,56 @@ public class DefaultProgramIndicatorService
                 Date currentDate = new Date();
                 Date date = null;
                 
-                if ( uid.equals( ProgramIndicator.ENROLLMENT_DATE ) )
+                if ( ProgramIndicator.ENROLLMENT_DATE.equals( uid ) )
                 {
                     date = programInstance.getEnrollmentDate();
                 }
-                else if ( uid.equals( ProgramIndicator.INCIDENT_DATE ) )
+                else if ( ProgramIndicator.INCIDENT_DATE.equals( uid ) )
                 {
                     date = programInstance.getDateOfIncident();
                 }
-                else if ( uid.equals( ProgramIndicator.CURRENT_DATE ) )
+                else if ( ProgramIndicator.CURRENT_DATE.equals( uid ) )
                 {
                     date = currentDate;
                 }
-
+                
                 if ( date != null )
                 {
-                    matcher.appendReplacement( description, DateUtils.daysBetween( currentDate, date ) + "" );
+                    matcher.appendReplacement( buffer, DateUtils.daysBetween( currentDate, date ) + "" );
                 }
             }
-
         }
 
-        matcher.appendTail( description );
+        expression = TextUtils.appendTail( matcher, buffer );
 
-        return MathUtils.calculateExpression( description.toString() );
+        // ---------------------------------------------------------------------
+        // Value count variable
+        // ---------------------------------------------------------------------
+
+        buffer = new StringBuffer();
+        matcher = ProgramIndicator.VALUECOUNT_PATTERN.matcher( expression );
+        
+        while ( matcher.find() )
+        {
+            String var = matcher.group( 1 );
+            
+            if ( ProgramIndicator.VAR_VALUE_COUNT.equals( var ) )
+            {
+                matcher.appendReplacement( buffer, String.valueOf( valueCount ) );
+            }
+            else if ( ProgramIndicator.VAR_ZERO_POS_VALUE_COUNT.equals( var ) )
+            {
+                matcher.appendReplacement( buffer, String.valueOf( zeroPosValueCount ) );
+            }            
+        }
+        
+        expression = TextUtils.appendTail( matcher, buffer );
+        
+        return MathUtils.calculateExpression( expression );
+    }
+
+    private boolean isZeroOrPositive( String value )
+    {
+        return MathUtils.isNumeric( value ) && Double.valueOf( value ) >= 0d;
     }
 }

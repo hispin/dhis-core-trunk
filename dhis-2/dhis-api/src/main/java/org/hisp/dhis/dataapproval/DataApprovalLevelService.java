@@ -110,7 +110,8 @@ public interface DataApprovalLevelService
     DataApprovalLevel getLowestDataApprovalLevel( OrganisationUnit orgUnit, DataElementCategoryOptionCombo attributeOptionCombo );
 
     /**
-     * Gets a list of all data approval levels.
+     * Gets a list of all data approval levels, ordered by level in ascending order,
+     * i.e. from 1 to n.
      *
      * @return list of all data approval levels, ordered from 1 to n.
      */
@@ -247,5 +248,13 @@ public interface DataApprovalLevelService
      */
     Map<OrganisationUnit, Integer> getUserReadApprovalLevels();
     
+    /**
+     * Gets a map of organisation units by the given approval level. The organisation
+     * units are the data view organisation units of the current user, or if user
+     * has no data view organisation units then the hierarchy root organisation units.
+     * 
+     * @param approvalLevel the approval level.
+     * @return a mapping of organisation units and approval levels.
+     */
     Map<OrganisationUnit, Integer> getUserReadApprovalLevels( DataApprovalLevel approvalLevel );
 }

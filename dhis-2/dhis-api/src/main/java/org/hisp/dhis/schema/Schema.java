@@ -43,6 +43,7 @@ import org.hisp.dhis.common.NameableObject;
 import org.springframework.core.Ordered;
 import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -109,14 +110,24 @@ public class Schema implements Ordered, Klass
     private boolean shareable;
 
     /**
-     * Points to Web-API endpoint (if exposed).
+     * Points to relative Web-API endpoint (if exposed).
+     */
+    private String relativeApiEndpoint;
+
+    /**
+     * Used by LinkService to link to the API endpoint containing this type.
      */
     private String apiEndpoint;
 
     /**
+     * Used by LinkService to link to the Schema describing this type (if reference).
+     */
+    private String href;
+
+    /**
      * Is this class considered metadata, this is mainly used for our metadata importer/exporter.
      */
-    private boolean metadata;
+    private boolean metadata = true;
 
     /**
      * Are any properties on this class being persisted, if false, this file does not have any hbm file attached to it.
@@ -137,6 +148,16 @@ public class Schema implements Ordered, Klass
     private Map<String, Property> propertyMap = Maps.newHashMap();
 
     /**
+     * Map of all persisted properties, cached on first request.
+     */
+    private Map<String, Property> persistedProperties;
+
+    /**
+     * Map of all persisted properties, cached on first request.
+     */
+    private Map<String, Property> nonPersistedProperties;
+
+    /**
      * Used for sorting of schema list when doing metadata import/export.
      */
     private int order = Ordered.LOWEST_PRECEDENCE;
@@ -148,9 +169,9 @@ public class Schema implements Ordered, Klass
         this.nameableObject = NameableObject.class.isAssignableFrom( klass );
         this.singular = singular;
         this.plural = plural;
-        this.metadata = true;
     }
 
+    @Override
     @JsonProperty
     @JacksonXmlProperty( isAttribute = true )
     public Class<?> getKlass()
@@ -263,6 +284,18 @@ public class Schema implements Ordered, Klass
 
     @JsonProperty
     @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public String getRelativeApiEndpoint()
+    {
+        return relativeApiEndpoint;
+    }
+
+    public void setRelativeApiEndpoint( String relativeApiEndpoint )
+    {
+        this.relativeApiEndpoint = relativeApiEndpoint;
+    }
+
+    @JsonProperty
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
     public String getApiEndpoint()
     {
         return apiEndpoint;
@@ -275,7 +308,19 @@ public class Schema implements Ordered, Klass
 
     public boolean haveApiEndpoint()
     {
-        return getApiEndpoint() != null;
+        return getRelativeApiEndpoint() != null || getApiEndpoint() != null;
+    }
+
+    @JsonProperty
+    @JacksonXmlProperty( namespace = DxfNamespaces.DXF_2_0 )
+    public String getHref()
+    {
+        return href;
+    }
+
+    public void setHref( String href )
+    {
+        this.href = href;
     }
 
     @JsonProperty
@@ -360,6 +405,42 @@ public class Schema implements Ordered, Klass
         this.propertyMap = propertyMap;
     }
 
+    public Map<String, Property> getPersistedProperties()
+    {
+        if ( persistedProperties == null )
+        {
+            persistedProperties = new HashMap<>();
+
+            for ( Map.Entry<String, Property> entry : getPropertyMap().entrySet() )
+            {
+                if ( entry.getValue().isPersisted() )
+                {
+                    persistedProperties.put( entry.getKey(), entry.getValue() );
+                }
+            }
+        }
+
+        return persistedProperties;
+    }
+
+    public Map<String, Property> getNonPersistedProperties()
+    {
+        if ( nonPersistedProperties == null )
+        {
+            nonPersistedProperties = new HashMap<>();
+
+            for ( Map.Entry<String, Property> entry : getPropertyMap().entrySet() )
+            {
+                if ( !entry.getValue().isPersisted() )
+                {
+                    nonPersistedProperties.put( entry.getKey(), entry.getValue() );
+                }
+            }
+        }
+
+        return nonPersistedProperties;
+    }
+
     public void addProperty( Property property )
     {
         if ( property == null || property.getName() == null || propertyMap.containsKey( property.getName() ) )
@@ -433,7 +514,7 @@ public class Schema implements Ordered, Klass
     public int hashCode()
     {
         return Objects.hashCode( klass, identifiableObject, nameableObject, singular, plural, namespace, name,
-            collectionName, shareable, apiEndpoint, metadata, authorities, propertyMap, order, authorityMap );
+            collectionName, shareable, relativeApiEndpoint, metadata, authorities, propertyMap, order, authorityMap );
     }
 
     @Override
@@ -454,7 +535,7 @@ public class Schema implements Ordered, Klass
             && Objects.equal( this.nameableObject, other.nameableObject ) && Objects.equal( this.singular, other.singular )
             && Objects.equal( this.plural, other.plural ) && Objects.equal( this.namespace, other.namespace )
             && Objects.equal( this.name, other.name ) && Objects.equal( this.collectionName, other.collectionName )
-            && Objects.equal( this.shareable, other.shareable ) && Objects.equal( this.apiEndpoint, other.apiEndpoint )
+            && Objects.equal( this.shareable, other.shareable ) && Objects.equal( this.relativeApiEndpoint, other.relativeApiEndpoint )
             && Objects.equal( this.metadata, other.metadata ) && Objects.equal( this.authorities, other.authorities )
             && Objects.equal( this.propertyMap, other.propertyMap ) && Objects.equal( this.order, other.order )
             && Objects.equal( this.authorityMap, other.authorityMap );
@@ -473,7 +554,7 @@ public class Schema implements Ordered, Klass
             .add( "name", name )
             .add( "collectionName", collectionName )
             .add( "shareable", shareable )
-            .add( "apiEndpoint", apiEndpoint )
+            .add( "relativeApiEndpoint", relativeApiEndpoint )
             .add( "metadata", metadata )
             .add( "authorities", authorities )
             .add( "propertyMap", propertyMap )

@@ -7,6 +7,7 @@ Ext.onReady( function() {
 		FavoriteWindow,
 		SharingWindow,
 		InterpretationWindow,
+        AboutWindow,
 
 		extendCore,
 		createViewport,
@@ -1664,6 +1665,8 @@ Ext.onReady( function() {
                     store.add(record);
                 }
             }
+
+            onCollapseDataDimensionsChange(collapseDataDimensions.getValue());
         };
 
         removeDimension = function(id, excludedStores) {
@@ -1750,8 +1753,9 @@ Ext.onReady( function() {
 
         toggleDataItems = function(param) {
             var stores = [colStore, rowStore, filterStore, fixedFilterStore],
-                collapse = Ext.isObject(param) && param.collapseDataItems ? param.collapseDataItems : param,
+                collapse = Ext.isObject(param) && Ext.isDefined(param.collapseDataItems) ? param.collapseDataItems : param,
                 keys = ['ou', 'pe', 'dates'],
+                dimensionKeys = Ext.Array.pluck(ns.core.init.dimensions || [], 'id'),
                 dy = ['dy'],
                 keys;
 
@@ -1770,7 +1774,7 @@ Ext.onReady( function() {
 
             // keys
             if (collapse) { // included keys
-                keys = ['ou', 'pe', 'dates', 'dy'];
+                keys = ['ou', 'pe', 'dates', 'dy'].concat(dimensionKeys);
             }
             else { // excluded keys
                 keys = ['dy'];
@@ -3745,6 +3749,67 @@ Ext.onReady( function() {
 		return;
 	};
 
+	AboutWindow = function() {
+		return Ext.create('Ext.window.Window', {
+			title: NS.i18n.about,
+			bodyStyle: 'background:#fff; padding:6px',
+			modal: true,
+            resizable: false,
+			hideOnBlur: true,
+			listeners: {
+				show: function(w) {
+					Ext.Ajax.request({
+						url: ns.core.init.contextPath + '/api/system/info.json',
+						success: function(r) {
+							var info = Ext.decode(r.responseText),
+								divStyle = 'padding:3px',
+								html = '<div class="user-select">';
+
+							if (Ext.isObject(info)) {
+								html += '<div style="' + divStyle + '"><b>' + NS.i18n.time_since_last_data_update + ': </b>' + info.intervalSinceLastAnalyticsTableSuccess + '</div>';
+								html += '<div style="' + divStyle + '"><b>' + NS.i18n.version + ': </b>' + info.version + '</div>';
+								html += '<div style="' + divStyle + '"><b>' + NS.i18n.revision + ': </b>' + info.revision + '</div>';
+                                html += '<div style="' + divStyle + '"><b>' + NS.i18n.username + ': </b>' + ns.core.init.userAccount.username + '</div>';
+                                html += '</div>';
+							}
+							else {
+								html += 'No system info found';
+							}
+
+							w.update(html);
+						},
+						failure: function(r) {
+							html += r.status + '\n' + r.statusText + '\n' + r.responseText;
+
+							w.update(html);
+						},
+                        callback: function() {
+                            document.body.oncontextmenu = true;
+
+                            if (ns.app.aboutButton.rendered) {
+                                ns.core.web.window.setAnchorPosition(w, ns.app.aboutButton);
+
+                                if (!w.hasHideOnBlurHandler) {
+                                    ns.core.web.window.addHideOnBlurHandler(w);
+                                }
+                            }
+                        }
+					});
+				},
+                hide: function() {
+                    document.body.oncontextmenu = function() {
+                        return false;
+                    };
+                },
+                destroy: function() {
+                    document.body.oncontextmenu = function() {
+                        return false;
+                    };
+                }
+			}
+		});
+	};
+
 	LayerWidgetEvent = function(layer) {
 
 		// stores
@@ -4508,7 +4573,7 @@ Ext.onReady( function() {
                 element.name = element.name || element.displayName;
                 recordMap[element.id] = element;
 
-                // dont add ux if dim is selected as value
+                // dont create ux if dim is selected as value
                 if (element.id !== aggWindow.value.getValue()) {
                     ux = addUxFromDataElement(element);
 
@@ -7217,6 +7282,7 @@ Ext.onReady( function() {
             interpretationItem,
             pluginItem,
             shareButton,
+            aboutButton,
             statusBar,
             defaultButton,
             centerRegion,
@@ -7647,6 +7713,24 @@ Ext.onReady( function() {
 			}
 		});
 
+		aboutButton = Ext.create('Ext.button.Button', {
+			text: NS.i18n.about,
+            menu: {},
+			handler: function() {
+				if (ns.app.aboutWindow && ns.app.aboutWindow.destroy) {
+					ns.app.aboutWindow.destroy();
+				}
+
+				ns.app.aboutWindow = AboutWindow();
+				ns.app.aboutWindow.show();
+			},
+			listeners: {
+				added: function() {
+					ns.app.aboutButton = this;
+				}
+			}
+		});
+
         statusBar = Ext.create('Ext.ux.toolbar.StatusBar', {
             height: 27,
             listeners: {
@@ -7849,6 +7933,7 @@ Ext.onReady( function() {
 							}
 						}
 					},
+                    aboutButton,
 					{
 						xtype: 'button',
 						text: NS.i18n.home,
@@ -8039,8 +8124,6 @@ Ext.onReady( function() {
             adapters: [dhis2.storage.IndexedDBAdapter, dhis2.storage.DomSessionStorageAdapter, dhis2.storage.InMemoryAdapter],
             objectStores: ['optionSets']
         });
-
-        dhis2.er.store.open();
 
 		// requests
 		Ext.Ajax.request({
@@ -8237,80 +8320,80 @@ Ext.onReady( function() {
                                             success: function() {
                                                 var store = dhis2.er.store;
 
-                                                // check if idb has any option sets
-                                                store.count('optionSets').done( function(count) {
+                                                store.open().done( function() {
 
-                                                    if (count === 0) {
-                                                        Ext.Ajax.request({
-                                                            url: contextPath + '/api/optionSets.json?fields=id,name,version,options[code,name]&paging=false',
-                                                            success: function(r) {
-                                                                var sets = Ext.decode(r.responseText).optionSets;
+                                                    // check if idb has any option sets
+                                                    store.getKeys('optionSets').done( function(keys) {
+                                                        if (keys.length === 0) {
+                                                            Ext.Ajax.request({
+                                                                url: contextPath + '/api/optionSets.json?fields=id,name,version,options[code,name]&paging=false',
+                                                                success: function(r) {
+                                                                    var sets = Ext.decode(r.responseText).optionSets;
 
-                                                                if (sets.length) {
-                                                                    store.setAll('optionSets', sets).done(fn);
-                                                                }
-                                                                else {
-                                                                    fn();
-                                                                }
-                                                            }
-                                                        });
-                                                    }
-                                                    else {
-                                                        Ext.Ajax.request({
-                                                            url: contextPath + '/api/optionSets.json?fields=id,version&paging=false',
-                                                            success: function(r) {
-                                                                var optionSets = Ext.decode(r.responseText).optionSets || [],
-                                                                    ids = [],
-                                                                    url = '',
-                                                                    callbacks = 0,
-                                                                    checkOptionSet,
-                                                                    updateStore;
-
-                                                                updateStore = function() {
-                                                                    if (++callbacks === optionSets.length) {
-                                                                        if (!ids.length) {
-                                                                            fn();
-                                                                            return;
-                                                                        }
-
-                                                                        for (var i = 0; i < ids.length; i++) {
-                                                                            url += '&filter=id:eq:' + ids[i];
-                                                                        }
-
-                                                                        Ext.Ajax.request({
-                                                                            url: contextPath + '/api/optionSets.json?fields=id,name,version,options[code,name]&paging=false' + url,
-                                                                            success: function(r) {
-                                                                                var sets = Ext.decode(r.responseText).optionSets;
-
-                                                                                store.setAll('optionSets', sets).done(fn);
-                                                                            }
-                                                                        });
+                                                                    if (sets.length) {
+                                                                        store.setAll('optionSets', sets).done(fn);
                                                                     }
-                                                                };
+                                                                    else {
+                                                                        fn();
+                                                                    }
+                                                                }
+                                                            });
+                                                        }
+                                                        else {
+                                                            Ext.Ajax.request({
+                                                                url: contextPath + '/api/optionSets.json?fields=id,version&paging=false',
+                                                                success: function(r) {
+                                                                    var optionSets = Ext.decode(r.responseText).optionSets || [],
+                                                                        ids = [],
+                                                                        url = '',
+                                                                        callbacks = 0,
+                                                                        checkOptionSet,
+                                                                        updateStore;
 
-                                                                registerOptionSet = function(optionSet) {
-                                                                    store.get('optionSets', optionSet.id).done( function(obj) {
-                                                                        if (!Ext.isObject(obj) || obj.version !== optionSet.version) {
-                                                                            ids.push(optionSet.id);
+                                                                    updateStore = function() {
+                                                                        if (++callbacks === optionSets.length) {
+                                                                            if (!ids.length) {
+                                                                                fn();
+                                                                                return;
+                                                                            }
+
+                                                                            for (var i = 0; i < ids.length; i++) {
+                                                                                url += '&filter=id:eq:' + ids[i];
+                                                                            }
+
+                                                                            Ext.Ajax.request({
+                                                                                url: contextPath + '/api/optionSets.json?fields=id,name,version,options[code,name]&paging=false' + url,
+                                                                                success: function(r) {
+                                                                                    var sets = Ext.decode(r.responseText).optionSets;
+
+                                                                                    store.setAll('optionSets', sets).done(fn);
+                                                                                }
+                                                                            });
                                                                         }
+                                                                    };
 
-                                                                        updateStore();
-                                                                    });
-                                                                };
+                                                                    registerOptionSet = function(optionSet) {
+                                                                        store.get('optionSets', optionSet.id).done( function(obj) {
+                                                                            if (!Ext.isObject(obj) || obj.version !== optionSet.version) {
+                                                                                ids.push(optionSet.id);
+                                                                            }
 
-                                                                if (optionSets.length) {
-                                                                    store.open().done( function() {
+                                                                            updateStore();
+                                                                        });
+                                                                    };
+
+                                                                    if (optionSets.length) {
                                                                         for (var i = 0; i < optionSets.length; i++) {
                                                                             registerOptionSet(optionSets[i]);
                                                                         }
-                                                                    });
+                                                                    }
+                                                                    else {
+                                                                        fn();
+                                                                    }
                                                                 }
-                                                                else {
-                                                                    fn();
-                                                                }
-                                                            }
-                                                        });
-                                                    }
+                                                            });
+                                                        }
+                                                    });
                                                 });
                                             }
                                         });

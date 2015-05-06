@@ -59,7 +59,7 @@ public interface EventService
 
     EventSearchParams getFromUrl( String program, String programStage, ProgramStatus programStatus, Boolean followUp, String orgUnit,
         OrganisationUnitSelectionMode orgUnitSelectionMode, String trackedEntityInstance, Date startDate, Date endDate, 
-        EventStatus status, String queryDataElement, String queryDataValue, Date lastUpdated, IdSchemes idSchemes, Integer page, Integer pageSize );
+        EventStatus status, String queryDataElement, String queryDataValue, Date lastUpdated, IdSchemes idSchemes, Integer page, Integer pageSize, boolean totalPages, boolean skipPaging );
     
     Event getEvent( String uid );
 

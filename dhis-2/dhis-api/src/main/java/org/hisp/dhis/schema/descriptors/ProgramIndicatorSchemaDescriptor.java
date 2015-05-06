@@ -53,8 +53,7 @@ public class ProgramIndicatorSchemaDescriptor implements SchemaDescriptor
     public Schema getSchema()
     {
         Schema schema = new Schema( ProgramIndicator.class, SINGULAR, PLURAL );
-        schema.setApiEndpoint( API_ENDPOINT );
-        schema.setShareable( true );
+        schema.setRelativeApiEndpoint( API_ENDPOINT );
         schema.setOrder( 1560 );
 
         schema.getAuthorities().add( new Authority( AuthorityType.CREATE_PUBLIC, Lists.newArrayList( "F_PROGRAM_INDICATOR_PUBLIC_ADD" ) ) );
