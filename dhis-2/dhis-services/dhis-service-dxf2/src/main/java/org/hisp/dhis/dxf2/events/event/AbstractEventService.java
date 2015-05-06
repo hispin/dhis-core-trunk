@@ -56,7 +56,6 @@ import org.hisp.dhis.dxf2.common.IdSchemes;
 import org.hisp.dhis.dxf2.common.ImportOptions;
 import org.hisp.dhis.dxf2.events.report.EventRow;
 import org.hisp.dhis.dxf2.events.report.EventRows;
-import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.dxf2.importsummary.ImportConflict;
 import org.hisp.dhis.dxf2.importsummary.ImportStatus;
 import org.hisp.dhis.dxf2.importsummary.ImportSummaries;
@@ -82,6 +81,7 @@ import org.hisp.dhis.system.util.CachingMap;
 import org.hisp.dhis.system.util.DateUtils;
 import org.hisp.dhis.system.util.DebugUtils;
 import org.hisp.dhis.system.util.ValidationUtils;
+import org.hisp.dhis.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.trackedentity.TrackedEntityInstanceService;
 import org.hisp.dhis.trackedentitycomment.TrackedEntityComment;
 import org.hisp.dhis.trackedentitycomment.TrackedEntityCommentService;
@@ -491,7 +491,7 @@ public abstract class AbstractEventService
     @Override
     public EventSearchParams getFromUrl( String program, String programStage, ProgramStatus programStatus, Boolean followUp, String orgUnit,
         OrganisationUnitSelectionMode orgUnitSelectionMode, String trackedEntityInstance, Date startDate, Date endDate, 
-        EventStatus status, String queryDataElement, String queryDataValueDate lastUpdated, IdSchemes idSchemes, Integer page, Integer pageSize, boolean totalPages, boolean skipPaging )
+        EventStatus status, String queryDataElement, String queryDataValue, Date lastUpdated, IdSchemes idSchemes, Integer page, Integer pageSize, boolean totalPages, boolean skipPaging )
 
     {
         EventSearchParams params = new EventSearchParams();

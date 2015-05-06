@@ -28,14 +28,8 @@ package org.hisp.dhis.dxf2.events.report;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.hisp.dhis.dxf2.events.event.EventSearchParams;
 import org.hisp.dhis.dxf2.events.event.EventService;
-import org.hisp.dhis.dxf2.events.event.Events;
-import org.hisp.dhis.dxf2.events.event.Event;
-import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -59,36 +53,9 @@ public class AbstractEventRowService
     public EventRows getEventRows( EventSearchParams params )
     {
 
-        /*EventRows eventRows = eventService.getEventRows( params );
+        EventRows eventRows = eventService.getEventRows( params );
 
-        return eventRows;*/
-        
-        List<EventRow> eventRowList = new ArrayList<EventRow>();
-        EventRows eventRows = new EventRows();
-        
-        Events events = eventService.getEvents( params );
-
-        for ( Event event : events.getEvents() )
-        {
-            if ( event.getTrackedEntityInstance() != null )
-            {
-                TrackedEntityInstance tei = trackedEntityInstanceService.getTrackedEntityInstance( event.getTrackedEntityInstance() );
-                
-                EventRow eventRow = new EventRow();
-                eventRow.setTrackedEntityInstance( event.getTrackedEntityInstance() );
-                eventRow.setAttributes( tei.getAttributes() );
-                eventRow.setEvent( event.getEvent() );
-                eventRow.setProgram( event.getProgram() );
-                eventRow.setProgramStage( event.getProgramStage() );  
-                eventRow.setOrgUnitName( event.getOrgUnitName() );
-                eventRow.setDueDate( event.getDueDate() );
-                eventRow.setFollowup( event.getFollowup() );
-                eventRowList.add( eventRow );
-            }
-        }
-
-        eventRows.setEventRows( eventRowList );
-        
         return eventRows;
+
     }
 }

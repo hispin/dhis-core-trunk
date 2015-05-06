@@ -152,7 +152,7 @@ public class EventController
         WebOptions options = new WebOptions( parameters );
 
         EventSearchParams params = eventService.getFromUrl( program, programStage, programStatus, followUp, orgUnit, ouMode,
-            trackedEntityInstance, startDate, endDate, status, lastUpdated, idSchemes, page, pageSize, totalPages, skipPaging );
+            trackedEntityInstance, startDate, endDate, status, null, null, lastUpdated, idSchemes, page, pageSize, totalPages, skipPaging );
 
         Events events = eventService.getEvents( params );
 
@@ -204,7 +204,7 @@ public class EventController
         IdSchemes idSchemes, Model model, HttpServletResponse response, HttpServletRequest request ) throws IOException
     {
         EventSearchParams params = eventService.getFromUrl( program, programStage, programStatus, followUp, orgUnit, ouMode,
-            trackedEntityInstance, startDate, endDate, status, lastUpdated, idSchemes, page, pageSize, totalPages, skipPaging );
+            trackedEntityInstance, startDate, endDate, status, null, null, lastUpdated, idSchemes, page, pageSize, totalPages, skipPaging );
 
         Events events = eventService.getEvents( params );
 
@@ -238,6 +238,10 @@ public class EventController
         @RequestParam( required = false ) EventStatus eventStatus,
         @RequestParam( required = false ) Date startDate,
         @RequestParam( required = false ) Date endDate,
+        @RequestParam( required = false ) String queryDataElement,
+        @RequestParam( required = false ) String queryDataValue,
+        @RequestParam( required = false ) Integer page,
+        @RequestParam( required = false ) Integer pageSize,
         @RequestParam( required = false ) boolean totalPages,
         @RequestParam( required = false ) boolean skipPaging,
         @RequestParam Map<String, String> parameters, Model model, HttpServletRequest request )
@@ -245,7 +249,7 @@ public class EventController
         WebOptions options = new WebOptions( parameters );
 
         EventSearchParams params = eventService.getFromUrl( program, null, programStatus, null,
-            orgUnit, ouMode, null, startDate, endDate, eventStatus, null, null, null, null, totalPages, skipPaging );
+            orgUnit, ouMode, null, startDate, endDate, eventStatus, queryDataElement, queryDataValue, null, null, page, pageSize, totalPages, skipPaging );
 
         EventRows eventRows = eventRowService.getEventRows( params );
 
