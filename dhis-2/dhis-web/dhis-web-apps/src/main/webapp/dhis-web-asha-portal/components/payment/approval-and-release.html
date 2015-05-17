@@ -1,0 +1,139 @@
+<div id="leftBar">   
+    <div ng-include="'views/left-menu.html'"></div>
+    <div id="orgUnitTree" style="margin-top:20px">
+        <ul>
+        </ul>
+    </div>
+    <img id="ouwt_loader" src="../images/ajax-loader-bar.gif" alt="{{'loading_tree'| translate}}"/>
+    <!--- selected org unit begins -->
+    <input type="text" selected-org-unit ng-model="selectedOrgUnit.name" ng-hide=true>
+    <!--- selected org unit ends  -->
+</div>
+
+<div id="mainPage" class="bordered-div">
+    <h2>{{'payment_approval_and_release'| translate}}</h2>
+    <form name="outerForm" novalidate>               
+        <div ng-include="'components/report/periodicReportForm.html'"></div>
+    </form>    
+    <img src="../images/ajax-loader-bar.gif" ng-if="!dataReady && reportStarted"/>
+    <div ng-if="reportFinished">
+        <div class="alert alert-warning vertical-spacing" ng-if="teiList.length === 0">
+            {{'no_data_found'| translate}}
+        </div>
+        <div ng-if="teiList.length > 0">
+            <!-- report begins -->
+            <div class="vertical-spacing">
+                <table class="table table-bordered tavertical-spacing">
+                    <thead>                        
+                        <tr>
+                            <th class="active" ng-repeat="gridColumn in gridColumns" ng-if="gridColumn.displayInListNoProgram">
+                                {{gridColumn.name}}
+                            </th>
+                            <th class="active">
+                                {{'program_stage'| translate}}
+                            </th>
+                            <th class="active">
+                                {{'program'| translate}}
+                            </th>
+                            <th class="active">
+                                {{'service'| translate}}
+                            </th>
+                            <th class="active" ng-repeat="col in serviceGridColumns| filter: {statusCol: true}">
+                                {{col.name| translate}}
+                            </th>
+                            <th class="active">
+                                {{'latest_approval_status'| translate}}
+                            </th>
+                            
+                        </tr>                        
+                    </thead>                    
+                    <tbody ng-repeat="tei in teiList" ng-init="teiIndex = $index">
+                        <tr ng-repeat="payment in teisById[tei].paymentRows | orderBy: ['ownerProgramStageName', 'programName', 'serviceName', 'event']" 
+                            ng-init="paymentRowIndex = $index">
+                            <td style="vertical-align:middle"
+                                ng-repeat="gridColumn in gridColumns" 
+                                rowspan="{{teisById[tei].paymentRowCount}}" 
+                                ng-if="gridColumn.displayInListNoProgram && paymentRowIndex === 0">
+                                {{teisById[tei][gridColumn.id]}}
+                            </td>
+                            <td style="vertical-align:middle"
+                                ng-repeat="service in teisById[tei].paymentRows| filter: {ownerProgramStage: payment.ownerProgramStage} | orderBy: ['ownerProgramStageName', 'programName', 'serviceName', 'event']" 
+                                rowspan="{{(teisById[tei].paymentRows| filter: {ownerProgramStage: payment.ownerProgramStage}).length}}"
+                                ng-if="$index === 0 && service === payment">
+                                {{service.ownerProgramStageName}}
+                            </td>
+                            <td style="vertical-align:middle"
+                                ng-repeat="service in teisById[tei].paymentRows| filter: {program: payment.program} | orderBy: ['ownerProgramStageName', 'programName', 'serviceName', 'event']"  
+                                rowspan="{{(teisById[tei].paymentRows| filter: {program: payment.program}).length}}"
+                                ng-if="$index === 0 && service === payment">
+                                {{service.programName}}
+                            </td>
+                            <td style="vertical-align:middle"
+                                ng-repeat="service in teisById[tei].paymentRows| filter: {programStage: payment.programStage} | orderBy: ['ownerProgramStageName', 'programName', 'serviceName', 'event']"  
+                                rowspan="{{(teisById[tei].paymentRows| filter: {programStage: payment.programStage}).length}}"
+                                ng-if="$index === 0 && service === payment">
+                                {{payment.serviceName}}
+                            </td>
+                            <td style="vertical-align:middle"
+                                class="align-center" 
+                                ng-repeat="col in serviceGridColumns| filter: {statusCol: true}">
+                                {{payment[col.id]}} 
+                            </td>
+                            <td>
+                                <select ng-model="payment.latestApprovalStatus"
+                                        class="form-control-trimmed"
+                                        ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
+                                        ng-change="saveServiceApproval(payment)"
+                                        ng-disabled="approvalAuthorityLevel <= 0 || approvalAuthorityLevel < payment[dataElementForCurrentApprovalLevel.id]">
+                                    <option value="">{{'[select]'| translate}}</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <!--<tbody ng-repeat="tei in teiList" ng-init="teiIndex = $index">
+                        <tr ng-repeat="payment in teisById[tei].paymentRows | orderBy: ['ownerProgramStageName', 'programName', 'serviceName']" 
+                            ng-init="paymentRowIndex = $index">
+                            <td style="vertical-align:middle"
+                                ng-repeat="gridColumn in gridColumns" 
+                                rowspan="{{teisById[tei].paymentRowCount}}" 
+                                ng-if="gridColumn.displayInListNoProgram && paymentRowIndex === 0">
+                                {{teisById[tei][gridColumn.id]}}
+                            </td>
+                            <td style="vertical-align:middle"
+                                ng-repeat="service in teisById[tei].paymentRows| filter: {ownerProgramStage: payment.ownerProgramStage} | orderBy: ['ownerProgramStageName', 'programName', 'serviceName']" 
+                                rowspan="{{(teisById[tei].paymentRows| filter: {ownerProgramStage: payment.ownerProgramStage}).length}}"
+                                ng-if="$index === 0 && service === payment">
+                                {{service.ownerProgramStageName}}
+                            </td>
+                            <td style="vertical-align:middle"
+                                ng-repeat="service in teisById[tei].paymentRows| filter: {program: payment.program} | orderBy: ['ownerProgramStageName', 'programName', 'serviceName']"  
+                                rowspan="{{(teisById[tei].paymentRows| filter: {program: payment.program}).length}}"
+                                ng-if="$index === 0 && service === payment">
+                                {{service.programName}}
+                            </td>
+                            <td style="vertical-align:middle"
+                                ng-repeat="service in teisById[tei].paymentRows| filter: {programStage: payment.programStage} | orderBy: ['ownerProgramStageName', 'programName', 'serviceName']"  
+                                rowspan="{{(teisById[tei].paymentRows| filter: {programStage: payment.programStage}).length}}"
+                                ng-if="$index === 0 && service === payment">
+                                {{payment.serviceName}}
+                            </td>
+                            <td class="align-center" ng-repeat="col in serviceGridColumns| filter: {statusCol: true}">
+                                {{payment[col.id]}} 
+                            </td>
+                            <td>
+                                <select ng-model="payment.latestApprovalStatus"
+                                        class="form-control-trimmed"
+                                        ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
+                                        ng-change="saveServiceApproval(payment)"
+                                        ng-disabled="approvalAuthorityLevel <= 0 || approvalAuthorityLevel < payment[dataElementForCurrentApprovalLevel.id]">
+                                    <option value="">{{'[select]'| translate}}</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>-->
+                </table>
+            </div>
+            <!-- report ends -->
+        </div>        
+    </div>
+</div>

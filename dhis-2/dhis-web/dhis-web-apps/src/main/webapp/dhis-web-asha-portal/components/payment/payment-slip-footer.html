@@ -1,0 +1,56 @@
+<div class="col-sm-12 remove-default-padding">
+    <!--<div class="col-sm-4 bordered-div">
+        <form class="form-horizontal" role="form">
+            <div class="form-group">
+                <span class="control-label col-sm-6 bold">{{'total_amount_pay' | translate}}</span>
+                <div class="col-sm-6">
+                    <input type="text" class="form-control-trimmed" ng-disabled="true" value="{{'currency' | translate}} {{totalPaymentAmount}}">
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="col-sm-4 bordered-div">
+        <form class="form-horizontal" role="form">
+            <div class="form-group">
+                <span class="control-label col-sm-6 bold">{{'authorized_by' | translate}}</span>
+                <div class="col-sm-6">
+                    <input type="text" class="form-control-trimmed" ng-disabled="true" value="">
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="col-sm-4 bordered-div">
+        <form class="form-horizontal" role="form">
+            <div class="form-group">
+                <span class="control-label col-sm-6 bold">{{'signature' | translate}}</span>
+                <div class="col-sm-6">
+                    <input type="text" class="form-control-trimmed" ng-disabled="true" value="">
+                </div>
+            </div>
+        </form>
+    </div>-->
+    <hr>
+    <table class="table table-bordered vertical-spacing">
+        <tr>
+            <td>
+                <span class="bold">
+                    {{'total_amount' | translate}}:
+                </span>
+                <span>
+                    {{'currency' | translate}} {{totalPaymentAmount}}
+                </span>
+            </td>
+            <td>
+                <span class="bold">
+                    {{'authorized_by' | translate}}:
+                </span>
+            </td>
+            <td>
+                <span class="bold">
+                    {{'signature' | translate}}:
+                </span>
+            </td>
+            
+        </tr>
+    </table>
+</div>

@@ -1,0 +1,22 @@
+<div class="row col-sm-12">
+    <div class="col-sm-6 bordered-div">
+        <form class="form-horizontal" role="form">
+            <div class="form-group" ng-repeat="att in ashaDetails.attributes">
+                <span class="control-label col-sm-3 bold">{{att.displayName}}</span>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control-trimmed" ng-disabled="true" value="{{att.value}}">
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="col-sm-6 bordered-div">
+        <form class="form-horizontal" role="form">
+            <div class="form-group" ng-repeat="header in paymentHeaders">
+                <span class="control-label col-sm-3 bold">{{header.name}}</span>
+                <div class="col-sm-9">
+                    <input type="text" class="form-control-trimmed" ng-disabled="true" value="{{header.value}}">
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

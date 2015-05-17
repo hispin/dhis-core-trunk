@@ -1,0 +1,60 @@
+<table class="table table-borderless table-striped">
+    <tr>
+        <td>{{'org_unit'| translate}}</td>
+        <td>
+            <input type="text" class="form-control" value="{{selectedOrgUnit.name || 'please_select'| translate}}" ng-disabled="true">                                                                                        
+        </td>
+    </tr>            
+    <tr>
+        <td>{{'org_unit_scope'| translate}}</td>
+        <td>                 
+            <label><input type="radio" ng-model="selectedOuMode.name" name="selected" value="SELECTED"> {{'SELECTED'| translate}}</label><br/>
+            <label><input type="radio" ng-model="selectedOuMode.name" name="children" value="CHILDREN"> {{'CHILDREN'| translate}}</label><br/>
+            <label><input type="radio" ng-model="selectedOuMode.name" name="descendants" value="DESCENDANTS"> {{'DESCENDANTS'| translate}}</label><br/>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            {{'program'| translate}}
+        </td>
+        <td>
+            <select ng-model="selectedProgram"
+                    class="form-control"
+                    ng-options="program as program.name for program in programs | orderBy: 'name'" 
+                    ng-change="getSelectedProgram(selectedProgram)"
+                    ng-disabled="programs.length < 1">
+                <option value="">{{programs.length > 0 ? 'please_select' : 'no_program_exists'| translate}}</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            {{'period'| translate}}
+        </td>
+        <td>
+            <select ng-model="selectedPeriod"
+                    class="form-control"
+                    ng-options="period.name for period in periods" 
+                    ng-change="getSelectedProgram(selectedProgram)"
+                    ng-required="true" 
+                    ng-disabled="periods.length < 1">
+                <option value="">{{periods.length > 0 ? 'please_select' : 'no_period_exists'| translate}}</option>
+            </select>
+        </td>
+        <td class="hideInPrint">
+            <button type="button" class="btn btn-primary trim" ng-click="generateReport(selectedProgram, selectedPeriod, selectedOuMode)" ng-disabled="!selectedProgram || !selectedPeriod">{{'go'| translate}}</button>
+            <button type="button" class="btn btn-success trim small-horizonal-spacing" onclick="javascript:window.print()" ng-if="printableExists">{{'print'| translate}}</button>
+        </td>
+    </tr>
+</table>
+
+<div class="row" ng-if="programs.length < 1">        
+    <div class="col-sm-8 col-md-6 vertical-spacing">
+        <div class="alert alert-warning">{{'no_program_exists_report'| translate}}</div> 
+    </div>
+</div>
+<div class="row" ng-if="programs.length > 0 && !selectedProgram">        
+    <div class="col-sm-8 col-md-6 vertical-spacing">
+        <div class="alert alert-warning">{{'please_select_program_report'| translate}}</div> 
+    </div>
+</div>
