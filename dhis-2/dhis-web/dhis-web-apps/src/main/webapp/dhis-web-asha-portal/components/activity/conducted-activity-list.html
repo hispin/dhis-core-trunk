@@ -1,14 +1,65 @@
 <div class="alert alert-warning align-center" ng-if="approvalAuthorityLevel <= 0">{{'lacking_approval_authority'| translate}}</div>
 <span class="vertical-spacing">
     <span>
-        <button type="button" class="btn btn-success" ng-click="generatePaymentSlip()" ng-if="(activitiesConducted | filter: {currentApprovalStatus: 'Approved'}).length > 0">{{'payment_slip'| translate}}</button>
+        <button type="button" class="btn btn-success" ng-click="generatePaymentSlip()" ng-if="(activitiesConducted | filter: {currentApprovalStatus: 'Approved'}).length > 0">{{'get_payment_slip'| translate}}</button>
     </span>
-    <span class="pull-right">
+    <!--<span class="pull-right">
         <button type="button" class="btn btn-warning" ng-click="approveAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'approve_all'| translate}}</button>
         <button type="button" class="btn btn-danger" ng-click="rejectAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'reject_all'| translate}}</button>
-    </span>
+    </span>-->
 </span>
-<div ng-repeat="program in activityPrograms | orderBy: 'name'" ng-if="(activitiesConducted | filter: {program: program.id}).length > 0">
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th class="active">
+                {{'program' | translate}}
+            </th>
+            <th class="active">
+                {{'activity_date'| translate}}
+            </th>
+            <th class="active" ng-repeat="header in headers">
+                {{header.name}}
+            </th>
+            <th class="active">
+                {{dataElementForCurrentApprovalStatus.name}}
+            </th>
+            <th class="active">
+                {{'latest_approval_status'| translate}}
+            </th>
+        </tr>
+    </thead>
+    <tbody ng-repeat="program in activityPrograms | orderBy: 'name'"ng-if="(activitiesConducted | filter: {program: program.id}).length > 0">
+        <tr ng-repeat="activity in activitiesConducted| filter: {program: program.id}">
+            <td rowspan="{{(activitiesConducted | filter: {program: program.id}).length}}" ng-if="$index === 0">
+                {{program.name}}
+            </td>
+            <td>
+                {{activity.eventDate}}
+            </td>
+            <td ng-class="{'not-applicable': !activity[header.id]}"
+                ng-repeat="header in headers">                
+                {{activity[header.id]}}
+            </td>
+            <td>
+                {{activity[dataElementForCurrentApprovalStatus.id]}}
+            </td>
+            <td>
+                <select ng-model="activity.latestApprovalStatus"
+                        class="form-control-trimmed"
+                        ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
+                        ng-change="saveActivityApproval(activity)"
+                        ng-disabled="approvalAuthorityLevel <= 0 || approvalAuthorityLevel < activity[dataElementForCurrentApprovalLevel.id]">
+                    <option value="">{{'please_select'| translate}}</option>
+                </select>
+            </td>
+            <td class="mouse-pointer" ng-click="deleteActivity(activity)" title="{{'delete_row'| translate}}">
+                <i class="fa fa-trash-o alert-danger bold"></i>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<!--<div ng-repeat="program in activityPrograms | orderBy: 'name'" ng-if="(activitiesConducted | filter: {program: program.id}).length > 0">
     <table class="listTable dhis2-table-striped-border vertical-spacing">
         <thead>
             <tr>
@@ -50,4 +101,4 @@
             </tr>
         </tbody>
     </table>
-</div>
+</div>-->

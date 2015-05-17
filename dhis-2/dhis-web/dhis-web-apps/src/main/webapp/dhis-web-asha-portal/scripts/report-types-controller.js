@@ -18,7 +18,7 @@ trackerCapture.controller('ReportTypesController',
         $location.path('/upcoming-events').search();
     };
     
-    $scope.paymentAdvise = function(){
-        $location.path('/payment-advise').search();
+    $scope.bankAdvise = function(){
+        $location.path('/bank-advise').search();
     };
 });

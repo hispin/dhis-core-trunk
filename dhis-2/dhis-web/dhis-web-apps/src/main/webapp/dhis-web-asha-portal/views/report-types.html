@@ -1,33 +1,28 @@
 <div id="leftBar">   
-    <div class="left-bar-menu" ng-controller="LeftBarMenuController">
-        <ul class="nav nav-pills nav-stacked">
-            <li><a href ng-click="showHome()">{{'registration_and_data_entry'| translate}}</a></li>
-            <li><a href ng-click="showReportTypes()">{{'reports'| translate}}</a></li>
-        </ul>
-    </div>    
+    <div ng-include="'views/left-menu.html'"></div>    
 </div>
 <div id="mainPage">
-    <h1>{{'tracker_reports'| translate}}</h1>
-    <div style="width: 90%;" class="row col-sm-12">        
-        <div class="col-sm-6 report-type-container" ng-click="programSummary()">
-            <h2><small><i class="fa fa-list-alt fa-2x black"></i></small><span class="horizonal-spacing">{{'program_summary'| translate}}</span></h2>
-            {{'program_summary_description'| translate}}
+    <h1>{{'reports'| translate}}</h1>
+    <div class="row col-sm-12">                              
+        <div class="col-sm-6 report-type-container" ng-click="trainingStatus()">
+            <h2><small><i class="fa fa-graduation-cap fa-2x black"></i></small><span class="horizonal-spacing">{{'training_status'| translate}}</span></h2>
+            {{'training_status_description'| translate}}
         </div>
-        <div class="col-sm-6 report-type-container" ng-click="programStatistics()">
-            <h2><small><i class="fa fa-bar-chart fa-2x black"></i></small><span class="horizonal-spacing">{{'program_statistics'| translate}}</span></h2>
-            {{'program_statistics_description'| translate}}
+        <div class="col-sm-6 report-type-container" ng-click="healthFactilityStatus()">
+            <h2><small><i class="fa fa-hospital-o fa-2x black"></i></small><span class="horizonal-spacing">{{'health_facility_status'| translate}}</span></h2>
+            {{'health_facility_status_description'| translate}}
         </div>
-        <div class="col-sm-6 report-type-container" ng-click="upcomingEvents()">
-            <h2><small><i class="fa fa-clock-o fa-2x black"></i></small><span class="horizonal-spacing">{{'upcoming_events'| translate}}</span></h2>
-            {{'upcoming_events_description'| translate}}
+        <div class="col-sm-6 report-type-container" ng-click="performanceReport()">
+            <h2><small><i class="fa fa-list-alt fa-2x black"></i></small><span class="horizonal-spacing">{{'performance_report'| translate}}</span></h2>
+            {{'performance_report_description'| translate}}
+        </div>         
+        <div class="col-sm-6 report-type-container" ng-click="bankAdvise()">
+            <h2><small><i class="fa fa-money fa-2x black"></i></small><span class="horizonal-spacing">{{'bank_adivse'| translate}}</span></h2>
+            {{'bank_advise_description'| translate}}
         </div>
-        <div class="col-sm-6 report-type-container" ng-click="overdueEvents()">
-            <h2><small><i class="fa fa-bell-o fa-2x black"></i></small><span class="horizonal-spacing">{{'overdue_events'| translate}}</span></h2>
-            {{'overdue_events_description'| translate}}
-        </div>
-        <div class="col-sm-6 report-type-container" ng-click="paymentAdvise()">
-            <h2><small><i class="fa fa-money fa-2x black"></i></small><span class="horizonal-spacing">{{'payment_adivse'| translate}}</span></h2>
-            {{'payment_advise_description'| translate}}
+        <div class="col-sm-6 report-type-container" ng-click="paymentStatus()">
+            <h2><small><i class="fa fa-bar-chart fa-2x black"></i></small><span class="horizonal-spacing">{{'payment_status'| translate}}</span></h2>
+            {{'payment_status_description'| translate}}
         </div>
     </div>
 </div>

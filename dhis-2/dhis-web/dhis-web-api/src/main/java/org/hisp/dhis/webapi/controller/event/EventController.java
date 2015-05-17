@@ -42,6 +42,7 @@ import org.hisp.dhis.dxf2.events.event.Events;
 import org.hisp.dhis.dxf2.events.event.ImportEventTask;
 import org.hisp.dhis.dxf2.events.event.ImportEventsTask;
 import org.hisp.dhis.dxf2.events.event.csv.CsvEventService;
+import org.hisp.dhis.dxf2.events.report.EventEventRows;
 import org.hisp.dhis.dxf2.events.report.EventRowService;
 import org.hisp.dhis.dxf2.events.report.EventRows;
 import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstanceService;
@@ -72,6 +73,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -257,6 +259,37 @@ public class EventController
         model.addAttribute( "viewClass", options.getViewClass( "detailed" ) );
 
         return "eventRows";
+    }
+    
+    @RequestMapping( value = "/bankAdvise", method = RequestMethod.GET )
+    @PreAuthorize( "hasRole('ALL') or hasRole('F_TRACKED_ENTITY_DATAVALUE_ADD')" )
+    public String getPaymentAdvise(
+        @RequestParam( required = false ) String program,
+        @RequestParam( required = false ) String orgUnit,
+        @RequestParam( required = false ) OrganisationUnitSelectionMode ouMode,
+        @RequestParam( required = false ) ProgramStatus programStatus,
+        @RequestParam( required = false ) EventStatus eventStatus,
+        @RequestParam( required = false ) Date startDate,
+        @RequestParam( required = false ) Date endDate,
+        @RequestParam( required = false ) String queryDataElement,
+        @RequestParam( required = false ) String queryDataValue,
+        @RequestParam( required = false ) Integer page,
+        @RequestParam( required = false ) Integer pageSize,
+        @RequestParam( required = false ) boolean totalPages,
+        @RequestParam( required = false ) boolean skipPaging,
+        @RequestParam Map<String, String> parameters, Model model, HttpServletRequest request )
+    {
+        WebOptions options = new WebOptions( parameters );
+
+        EventSearchParams params = eventService.getFromUrl( program, null, programStatus, null,
+            orgUnit, ouMode, null, startDate, endDate, eventStatus, queryDataElement, queryDataValue, null, null, page, pageSize, totalPages, skipPaging );
+
+        EventEventRows eventEventRows = eventRowService.getEventEventRows( params );
+
+        model.addAttribute( "model", eventEventRows );
+        model.addAttribute( "viewClass", options.getViewClass( "detailed" ) );
+
+        return "eventEventRows";
     }
 
     @RequestMapping( value = "/{uid}", method = RequestMethod.GET )

@@ -1,14 +1,14 @@
 <div class="alert alert-warning align-center" ng-if="!showAddNewServiceDiv && approvalAuthorityLevel <= 0">{{'lacking_approval_authority'| translate}}</div>
 <span class="vertical-spacing">
     <span>        
-        <button type="button" class="btn btn-success" ng-click="generatePaymentSlip()" ng-if="!showAddNewServiceDiv && (servicesProvided | filter: {currentApprovalStatus: 'Approved'}).length > 0">{{'payment_slip'| translate}}</button>
+        <button type="button" class="btn btn-success" ng-click="generatePaymentSlip()" ng-if="!showAddNewServiceDiv && (servicesProvided | filter: {currentApprovalStatus: 'Approved'}).length > 0">{{'get_payment_slip'| translate}}</button>
     </span>
-    <span class="pull-right">
+    <!--<span class="pull-right">
         <button type="button" class="btn btn-warning" ng-click="approveAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="!showAddNewServiceDiv && approvalAuthorityLevel > 0">{{'approve_all'| translate}}</button>
         <button type="button" class="btn btn-danger" ng-click="rejectAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="!showAddNewServiceDiv && approvalAuthorityLevel > 0">{{'reject_all'| translate}}</button>
-    </span>
+    </span>-->
 </span>
-<table class="table table-bordered vertical-spacing">
+<table class="table table-bordered table-compact">
     <thead>                        
         <tr>
             <th class="active">
@@ -23,24 +23,27 @@
         </tr>                        
     </thead>
     <tbody ng-repeat="program in beneficiaryPrograms | orderBy: 'name'" ng-if="(servicesProvided | filter: {program: program.id}).length > 0">
-        <tr ng-repeat="serviceProvided in servicesProvided | filter: {program: program.id} | orderBy: ['trackedEntityInstance', 'serviceName']">
+        <tr ng-repeat="service in servicesProvided | filter: {program: program.id} | orderBy: ['trackedEntityInstance', 'serviceName']">
             <td class="bold" rowspan="{{(servicesProvided | filter: {program: program.id}).length}}" ng-if="$index === 0">
                 {{program.name}}
             </td>
             <td ng-if="gridColumn.show" ng-repeat="gridColumn in serviceGridColumns">                                                
                 <span ng-if="gridColumn.id !== dataElementForServiceOwner.id && gridColumn.id !== dataElementForPaymentSanctioned.id && gridColumn.id !== dataElementForCurrentApprovalLevel.id">
-                    {{serviceProvided[gridColumn.id]}}
+                    {{service[gridColumn.id]}}
                 </span>
             </td>
             <td>
-                <select ng-model="serviceProvided.latestApprovalStatus"
+                <select ng-model="service.latestApprovalStatus"
                         class="form-control-trimmed"
                         ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
-                        ng-change="saveServiceApproval(serviceProvided)"
-                        ng-disabled="showAddNewServiceDiv || (approvalAuthorityLevel <= 0 || approvalAuthorityLevel < serviceProvided[dataElementForCurrentApprovalLevel.id])">
+                        ng-change="saveServiceApproval(service)"
+                        ng-disabled="showAddNewServiceDiv || (approvalAuthorityLevel <= 0 || approvalAuthorityLevel < service[dataElementForCurrentApprovalLevel.id])">
                     <option value="">{{'[select]'| translate}}</option>
                 </select>
-            </td>                                
+            </td>
+            <td class="mouse-pointer" ng-click="deleteService(service)" title="{{'delete_row'| translate}}">
+                <i class="fa fa-trash-o alert-danger bold"></i>
+            </td>
         </tr>
     </tbody>
 </table>

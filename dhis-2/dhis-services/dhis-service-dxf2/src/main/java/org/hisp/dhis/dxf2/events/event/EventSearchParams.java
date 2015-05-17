@@ -28,7 +28,9 @@ package org.hisp.dhis.dxf2.events.event;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.hisp.dhis.common.OrganisationUnitSelectionMode;
 import org.hisp.dhis.dxf2.common.IdSchemes;
@@ -69,7 +71,9 @@ public class EventSearchParams
     
     private String queryDataElement;
     
-    private String queryDataValue;
+    private String queryDataValue;    
+    
+    private List<String> queryDataValues = new ArrayList<>();
     
     private Date lastUpdated;
     
@@ -307,5 +311,15 @@ public class EventSearchParams
     public void setSkipPaging( boolean skipPaging )
     {
         this.skipPaging = skipPaging;
+    }
+
+    public List<String> getQueryDataValues()
+    {
+        return queryDataValues;
+    }
+
+    public void setQueryDataValues( List<String> queryDataValues )
+    {
+        this.queryDataValues = queryDataValues;
     }
 }

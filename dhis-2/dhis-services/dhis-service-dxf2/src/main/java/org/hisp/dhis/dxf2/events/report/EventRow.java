@@ -38,6 +38,7 @@ import org.hisp.dhis.common.DxfNamespaces;
 import org.hisp.dhis.dxf2.events.event.DataValue;
 import org.hisp.dhis.dxf2.events.event.Note;
 import org.hisp.dhis.dxf2.events.trackedentity.Attribute;
+import org.hisp.dhis.event.EventStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,8 @@ public class EventRow
     private String programStage;
 
     private String enrollment;
+    
+    private EventStatus status;
     
     private String orgUnit;
     
@@ -163,6 +166,18 @@ public class EventRow
     public void setEnrollment( String enrollment )
     {
         this.enrollment = enrollment;
+    }
+    
+    @JsonProperty( required = true )
+    @JacksonXmlProperty( isAttribute = true )
+    public EventStatus getStatus()
+    {
+        return status;
+    }
+
+    public void setStatus( EventStatus status )
+    {
+        this.status = status;
     }
 
     @JsonProperty

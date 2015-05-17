@@ -718,5 +718,32 @@ trackerCapture.controller('BeneficiaryController',
     $scope.hideAddNewService = function(){
         $scope.showAddNewServiceDiv = false;
         $scope.selectedBeneficiary = null;
-    };    
+    };
+    
+    $scope.deleteService = function(service){
+        
+        var modalOptions = {
+            closeButtonText: 'cancel',
+            actionButtonText: 'delete',
+            headerText: 'delete',
+            bodyText: 'are_you_sure_to_delete'
+        };
+
+        ModalService.showModal({}, modalOptions).then(function(result){
+            
+            DHIS2EventFactory.delete(service).then(function(data){
+                
+                var continueLoop = true, index = -1;
+                for(var i=0; i< $scope.servicesProvided.length && continueLoop; i++){
+                    if($scope.servicesProvided[i].event === service.event ){
+                        continueLoop = false;
+                        index = i;
+                    }
+                }
+                if(index !== -1){
+                    $scope.servicesProvided.splice(index,1);
+                }                
+            });
+        });        
+    };
 });

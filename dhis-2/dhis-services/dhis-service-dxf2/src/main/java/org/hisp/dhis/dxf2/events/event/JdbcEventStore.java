@@ -48,6 +48,7 @@ import org.hisp.dhis.organisationunit.OrganisationUnit;
 import org.hisp.dhis.program.Program;
 import org.hisp.dhis.system.util.DateUtils;
 import org.hisp.dhis.system.util.SqlHelper;
+import org.hisp.dhis.system.util.TextUtils;
 import org.hisp.dhis.trackedentity.TrackedEntityInstanceService;
 import org.hisp.dhis.util.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -173,7 +174,11 @@ public class JdbcEventStore
 
                 dataValue.setStoredBy( rowSet.getString( "pdv_storedby" ) );
 
-                event.getDataValues().add( dataValue );
+                if ( !event.getDataValues().contains( dataValue ) )
+                {
+                    event.getDataValues().add( dataValue );
+                }
+
             }
 
             if ( rowSet.getString( "psinote_value" ) != null && !notes.contains( rowSet.getString( "psinote_id" ) ) )
@@ -202,9 +207,8 @@ public class JdbcEventStore
 
         log.debug( "Event query SQL: " + sql );
 
-        System.out.println( "The sql is:  " + sql );
-
         EventRow eventRow = new EventRow();
+        
         eventRow.setEvent( "not_valid" );
 
         Set<String> notes = new HashSet<>();
@@ -224,6 +228,7 @@ public class JdbcEventStore
 
                 eventRow.setEvent( rowSet.getString( "psi_uid" ) );
                 eventRow.setTrackedEntityInstance( rowSet.getString( "tei_uid" ) );
+                eventRow.setStatus( EventStatus.valueOf( rowSet.getString( "psi_status" ) ) );
 
                 eventRow.setProgram( IdSchemes.getValue( rowSet.getString( "p_uid" ), rowSet.getString( "p_code" ),
                     idSchemes.getProgramIdScheme() ) );
@@ -254,7 +259,10 @@ public class JdbcEventStore
                 attribute.setType( rowSet.getString( "ta_valuetype" ) );
                 attribute.setAttribute( rowSet.getString( "ta_uid" ) );
 
-                eventRow.getAttributes().add( attribute );
+                if ( !eventRow.getAttributes().contains( attribute ) )
+                {
+                    eventRow.getAttributes().add( attribute );
+                }
             }
 
             if ( rowSet.getString( "pdv_value" ) != null && rowSet.getString( "de_uid" ) != null )
@@ -267,7 +275,10 @@ public class JdbcEventStore
 
                 dataValue.setStoredBy( rowSet.getString( "pdv_storedby" ) );
 
-                eventRow.getDataValues().add( dataValue );
+                if ( !eventRow.getDataValues().contains( dataValue ) )
+                {
+                    eventRow.getDataValues().add( dataValue );
+                }
             }
 
             if ( rowSet.getString( "psinote_value" ) != null && !notes.contains( rowSet.getString( "psinote_id" ) ) )
@@ -310,7 +321,7 @@ public class JdbcEventStore
         sql += getEventPagingQuery( params );
 
         sql += ") as event left join (";
-        
+
         sql += getAttributeValueQuery();
 
         sql += ") as att on event.tei_id=att.pav_id left join(";
@@ -453,13 +464,16 @@ public class JdbcEventStore
             }
             else
             {
-                generalFilterSql += "and psi.status = '" + params.getEventStatus().name() + "' ";
+                if ( params.getEventStatus() != null )
+                {
+                    generalFilterSql += "and psi.status = '" + params.getEventStatus().name() + "' ";
+                }
             }
         }
 
         sql += generalFilterSql;
 
-        if ( params.getQueryDataElement() != null && params.getQueryDataValue() != null )
+        if ( params.getQueryDataElement() != null )
         {
             dataElementFilterSql += "select psi.programstageinstanceid as psi_id " + "from programstageinstance psi "
                 + "inner join programinstance pi on pi.programinstanceid=psi.programinstanceid "
@@ -479,6 +493,12 @@ public class JdbcEventStore
             if ( params.getQueryDataValue() != null )
             {
                 dataElementFilterSql += hlp.whereAnd() + " pdv.value = '" + params.getQueryDataValue() + "' ";
+            }
+
+            if ( params.getQueryDataValues().size() > 0 )
+            {
+                dataElementFilterSql += hlp.whereAnd() + " pdv.value in ("
+                    + TextUtils.getQuotedCommaDelimitedString( params.getQueryDataValues() ) + ") ";
             }
 
             sql += hlp.whereAnd() + " psi.programstageinstanceid in (" + dataElementFilterSql + ") ";

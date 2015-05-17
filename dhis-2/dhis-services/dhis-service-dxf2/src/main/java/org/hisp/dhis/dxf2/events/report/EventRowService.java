@@ -36,4 +36,6 @@ import org.hisp.dhis.dxf2.events.event.EventSearchParams;
 public interface EventRowService
 {
     EventRows getEventRows( EventSearchParams params );
+    
+    EventEventRows getEventEventRows( EventSearchParams params );
 }

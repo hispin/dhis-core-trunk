@@ -439,6 +439,25 @@ function getPrograms( programs )
     return mainPromise;
 }
 
+function processProgram( program )
+{
+    if(!program){
+        return;
+    }
+    
+    if(program.attributeValues){
+        for(var i=0; i<program.attributeValues.length; i++){
+            if(program.attributeValues[i].value && program.attributeValues[i].attribute && program.attributeValues[i].attribute.code){
+                program[program.attributeValues[i].attribute.code] = program.attributeValues[i].value;
+            }
+        }
+    }
+    
+    delete program.attributeValues;
+   
+    return program;    
+}
+
 function getProgram( id )
 {
     return function() {
@@ -468,7 +487,9 @@ function getProgram( id )
                 }                
 
                 program.userRoles = ur;
-                dhis2.tc.store.set( 'programs', program );
+                
+                
+                dhis2.tc.store.set( 'programs', processProgram( program ) );
             });         
         });
     };
@@ -563,7 +584,7 @@ function getProgramStage( id )
         return $.ajax( {
             url: '../api/programStages.json',
             type: 'GET',
-            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,sortOrder,version,dataEntryForm,captureCoordinates,blockEntryForm,autoGenerateEvent,allowGenerateNextVisit,generatedByEnrollmentDate,reportDateDescription,minDaysFromStart,repeatable,openAfterEnrollment,standardInterval,periodType,reportDateToUse,attributeValues[value,attribute[id,code]],programStageSections[id,name,programStageDataElements[dataElement[id]]],programStageDataElements[displayInReports,allowProvidedElsewhere,allowFutureDate,compulsory,dataElement[id,code,name,formName,type,attributeValues[value,attribute[id,code]],optionSet[id]]]'
+            data: 'paging=false&filter=id:eq:' + id +'&fields=id,name,sortOrder,version,dataEntryForm,captureCoordinates,blockEntryForm,autoGenerateEvent,allowGenerateNextVisit,generatedByEnrollmentDate,reportDateDescription,minDaysFromStart,repeatable,openAfterEnrollment,standardInterval,periodType,reportDateToUse,attributeValues[value,attribute[id,code]],programStageSections[id,name,programStageDataElements[dataElement[id]]],programStageDataElements[displayInReports,sortOrder,allowProvidedElsewhere,allowFutureDate,compulsory,dataElement[id,code,name,formName,type,attributeValues[value,attribute[id,code]],optionSet[id]]]'
         }).done( function( response ){            
             _.each( _.values( response.programStages ), function( programStage ) {
                 programStage = processProgramStage( programStage );

@@ -50,9 +50,12 @@ var trackerCapture = angular.module('trackerCapture',
     }).when('/upcoming-events',{
         templateUrl:'components/report/upcoming-events.html',
         controller: 'UpcomingEventsController'
-    }).when('/payment-advise',{
-        templateUrl:'components/payment/payment-advise.html',
-        controller: 'PaymentAdviseController'
+    }).when('/approval-and-release',{
+        templateUrl:'components/payment/approval-and-release.html',
+        controller: 'PaymentApprovalController'
+    }).when('/bank-advise',{
+        templateUrl:'components/payment/bank-advise.html',
+        controller: 'BankAdviseController'
     }).otherwise({
         redirectTo : '/'
     });  

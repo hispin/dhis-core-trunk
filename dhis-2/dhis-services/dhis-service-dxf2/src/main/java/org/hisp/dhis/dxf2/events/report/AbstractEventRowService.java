@@ -28,6 +28,10 @@ package org.hisp.dhis.dxf2.events.report;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.hisp.dhis.dxf2.events.event.DataValue;
 import org.hisp.dhis.dxf2.events.event.EventSearchParams;
 import org.hisp.dhis.dxf2.events.event.EventService;
 import org.hisp.dhis.dxf2.events.trackedentity.TrackedEntityInstanceService;
@@ -57,5 +61,52 @@ public class AbstractEventRowService
 
         return eventRows;
 
+    }
+
+    @Override
+    public EventEventRows getEventEventRows( EventSearchParams params )
+    {
+        EventEventRows ers = new EventEventRows();
+
+        EventSearchParams parameters = new EventSearchParams();
+        parameters.setQueryDataElement( params.getQueryDataElement() );
+        params.setQueryDataElement( null );
+
+        Map<String, EventEventRow> mappedEventEventRow = new HashMap<String, EventEventRow>();
+
+        EventRows eventProviders = eventService.getEventRows( params );
+
+        for ( EventRow eventRow : eventProviders.getEventRows() )
+        {
+            if ( eventRow.getEvent() != null )
+            {
+                parameters.getQueryDataValues().add( eventRow.getEvent() );
+            }
+
+            EventEventRow eer = new EventEventRow();
+            eer.setEventProvider( eventRow );
+            mappedEventEventRow.put( eventRow.getEvent(), eer );
+        }
+
+        EventRows providedEvents = eventService.getEventRows( parameters );
+
+        for ( EventRow eventRow : providedEvents.getEventRows() )
+        {
+            for ( DataValue dataValue : eventRow.getDataValues() )
+            {
+                if ( dataValue.getDataElement().equalsIgnoreCase( parameters.getQueryDataElement() ) )
+                {
+                    if ( mappedEventEventRow.get( dataValue.getValue() ) != null )
+                    {
+                        mappedEventEventRow.get( dataValue.getValue() ).getProvidedEvents().add( eventRow );
+                    }
+                }
+
+            }
+        }
+
+        ers.getEventEventRows().addAll( mappedEventEventRow.values() );
+
+        return ers;
     }
 }

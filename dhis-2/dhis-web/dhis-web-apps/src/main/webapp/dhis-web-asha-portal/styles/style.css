@@ -197,6 +197,10 @@ div.paging a.active
     color: black;
 }
 
+.not-applicable{
+    background-color: #eee;
+}
+
 .bold {
     font-weight: bold;
 }
@@ -702,6 +706,11 @@ input[type=number], input[type=text], input[type=email], input[type=password], t
     transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
 }
 
+.form-control-trimmed[disabled], .form-control-trimmed[readonly], fieldset[disabled] .form-control-trimmed {
+    cursor: not-allowed;
+    background-color: #eee
+}
+
 .form-control-program {    
     width: 40%;
     height: 34px;
@@ -911,7 +920,7 @@ input.typeahead::-ms-input-placeholder {
 }
 
 @media print {
-    #header, #leftBar, .not-printable {
+    #header, #leftBar, .hideInPrint {
         display: none;
     }
 }

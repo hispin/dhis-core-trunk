@@ -2,30 +2,11 @@
     <h2 class="align-center bold">{{'payment_slip'| translate}}</h2>
 </div>
 <div class="modal-body">
+    
+    <div ng-include="'components/payment/payment-slip-header.html'"></div>
+    
     <div class="row col-sm-12">
-        <div class="col-sm-6 bordered-div">
-            <form class="form-horizontal" role="form">
-                <div class="form-group" ng-repeat="att in ashaDetails.attributes">
-                    <span class="control-label col-sm-3 bold">{{att.displayName}}</span>
-                    <div class="col-sm-9">
-                        <input type="text" class="form-control-trimmed" ng-disabled="true" value="{{att.value}}">
-                    </div>
-                </div>
-            </form>
-        </div>
-        <div class="col-sm-6 bordered-div">
-            <form class="form-horizontal" role="form">
-                <div class="form-group" ng-repeat="header in paymentHeaders">
-                    <span class="control-label col-sm-3 bold">{{header.name}}</span>
-                    <div class="col-sm-9">
-                        <input type="text" class="form-control-trimmed" ng-disabled="true" value="{{header.value}}">
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div> 
-    <div class="row col-sm-12 table-responsive">
-        <table class="table table-striped table-bordered">
+        <table class="table table-bordered table-compact">
             <thead>
                 <tr>
                     <th class="active" ng-repeat="header in paymentTableHeaders"  ng-class="{true: 'align - center'} [header.id !== 'activity']">
@@ -36,7 +17,7 @@
             <tbody ng-repeat="program in programs| orderBy: 'name'" ng-if="(paymentReport | filter: {programId: program.id}).length > 0">
                 <tr ng-repeat="payment in paymentReport| filter: {programId: program.id} | orderBy: 'service'">
                     <td class="col-sm-1 bold" rowspan="{{(paymentReport| filter: {programId: program.id}).length}}" ng-if="$index === 0">
-                        {{payment.program}}
+                        {{payment.programName}}
                     </td>
                     <td ng-class="{true: 'col - sm - 2', false: 'col - sm - 1'} [header.id === 'service']" ng-repeat="header in paymentTableHeaders" ng-if="header.id !== 'program'">
                         {{payment[header.id]}}
@@ -46,11 +27,11 @@
         </table>
     </div>
     
-    <div ng-include="'components/payment/payment-footer.html'"></div>
+    <div ng-include="'components/payment/payment-slip-footer.html'"></div>
     
 </div>
 
-<div class="modal-footer not-printable">        
+<div class="modal-footer hideInPrint">        
     <button class="btn btn-primary" onclick="javascript:window.print()">{{'print'| translate}}</button>
     <button class="btn btn-default" data-ng-click="close()">{{'close'| translate}}</button>
 </div>

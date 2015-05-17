@@ -15,7 +15,6 @@ trackerCapture.controller('ActivityController',
                 DateUtils,
                 DialogService,
                 ModalService,
-                Paginator,
                 AshaPortalUtils,
                 CurrentSelection) {
                     
@@ -78,6 +77,8 @@ trackerCapture.controller('ActivityController',
             
             ProgramStageFactory.getAll().then(function(stages){
                 $scope.stages = [];
+                $scope.headers = [];
+                var headerIds = [];
                 $scope.dataElementForServiceOwner = null;
                 $scope.dataElementForPaymentSanctioned = null;
                 $scope.dataElementForCurrentApprovalLevel = null;
@@ -93,29 +94,26 @@ trackerCapture.controller('ActivityController',
                                 stage.programStageDataElements[i].displayForDataEntry = false;
                                 if( stage.programStageDataElements[i].dataElement.PaymentSanctioned ){
                                     $scope.dataElementForPaymentSanctioned = stage.programStageDataElements[i].dataElement;
+                                    stage.programStageDataElements[i].displayForDataEntry = false;
                                 }                                    
                                 else if( stage.programStageDataElements[i].dataElement.ServiceOwner ){
                                     $scope.dataElementForServiceOwner = stage.programStageDataElements[i].dataElement;
+                                    stage.programStageDataElements[i].displayForDataEntry = false;
                                 }                                    
                                 else if( stage.programStageDataElements[i].dataElement.ApprovalLevel ){
                                     $scope.dataElementForCurrentApprovalLevel = stage.programStageDataElements[i].dataElement;
+                                    stage.programStageDataElements[i].displayForDataEntry = false;
                                 }                                    
                                 else if( stage.programStageDataElements[i].dataElement.ApprovalStatus ){
                                     $scope.dataElementForCurrentApprovalStatus = stage.programStageDataElements[i].dataElement;
-                                }
-                                else{
-                                    stage.programStageDataElements[i].displayForDataEntry = true;
-                                }
-                                
-                                if( stage.programStageDataElements[i].dataElement.PaymentSanctioned ||
-                                    stage.programStageDataElements[i].dataElement.ServiceOwner ||
-                                    stage.programStageDataElements[i].dataElement.ApprovalLevel ||
-                                    stage.programStageDataElements[i].dataElement.ApprovalStatus){
-                                    
                                     stage.programStageDataElements[i].displayForDataEntry = false;
                                 }
                                 else{
                                     stage.programStageDataElements[i].displayForDataEntry = true;
+                                    if(headerIds.indexOf(stage.programStageDataElements[i].dataElement.id) === -1){
+                                        $scope.headers.push(stage.programStageDataElements[i].dataElement);
+                                        headerIds.push(stage.programStageDataElements[i].dataElement.id);
+                                    }
                                 }
                             }
                         } 
@@ -124,7 +122,6 @@ trackerCapture.controller('ActivityController',
                         $scope.stagesById[stage.id] = stage;
                     }
                 });
-                
                 $scope.getActivitiesConducted();
             });            
         });
@@ -171,10 +168,10 @@ trackerCapture.controller('ActivityController',
 
                 angular.forEach(data.eventRows, function(row){
                     var activityConducted = {};
-                    activityConducted.eventDate = DateUtils.formatFromApiToUser(row.dueDate);
+                    activityConducted.eventDate = DateUtils.formatFromApiToUser(row.eventDate);
                     activityConducted.event = row.event;
                     activityConducted.status = 'VISITED';
-                    activityConducted.orgUnit = row.eventOrgUnit;
+                    activityConducted.orgUnit = row.orgUnit;
                     activityConducted.program = row.program;
                     activityConducted.programStage = row.programStage;
                     angular.forEach(row.dataValues, function(dv){
@@ -197,7 +194,6 @@ trackerCapture.controller('ActivityController',
 
                 //sort activities by their activity date
                 $scope.activitiesConducted = orderByFilter($scope.activitiesConducted, '-activityDate');
-
             });
         }
         else{
@@ -371,5 +367,34 @@ trackerCapture.controller('ActivityController',
         
         modalInstance.result.then(function () {                 
         });
-    };       
+    };
+    
+    $scope.deleteActivity = function(activity){
+        
+        var modalOptions = {
+            closeButtonText: 'cancel',
+            actionButtonText: 'delete',
+            headerText: 'delete',
+            bodyText: 'are_you_sure_to_delete'
+        };
+
+        ModalService.showModal({}, modalOptions).then(function(result){
+            
+            console.log('the activity is:  ', activity);
+            
+            DHIS2EventFactory.delete(activity).then(function(data){
+                
+                var continueLoop = true, index = -1;
+                for(var i=0; i< $scope.activitiesConducted.length && continueLoop; i++){
+                    if($scope.activitiesConducted[i].event === activity.event ){
+                        continueLoop = false;
+                        index = i;
+                    }
+                }
+                if(index !== -1){
+                    $scope.activitiesConducted.splice(index,1);
+                }                
+            });
+        });        
+    };
 });

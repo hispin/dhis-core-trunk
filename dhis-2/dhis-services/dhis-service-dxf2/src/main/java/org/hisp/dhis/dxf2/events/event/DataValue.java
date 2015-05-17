@@ -31,6 +31,7 @@ package org.hisp.dhis.dxf2.events.event;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+
 import org.hisp.dhis.common.DxfNamespaces;
 
 /**
@@ -103,6 +104,38 @@ public class DataValue
     public void setStoredBy( String storedBy )
     {
         this.storedBy = storedBy;
+    }
+    
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+            return true;
+        if ( o == null || getClass() != o.getClass() )
+            return false;
+
+        DataValue dataValue1 = (DataValue) o;
+
+        if ( value != null ? !value.equals( dataValue1.value ) : dataValue1.value != null )
+            return false;
+        if ( dataElement != null ? !dataElement.equals( dataValue1.dataElement ) : dataValue1.dataElement != null ) 
+            return false;
+        if ( providedElsewhere != null ? !providedElsewhere.equals( dataValue1.providedElsewhere ) : dataValue1.providedElsewhere != null ) 
+            return false;
+        if ( storedBy != null ? !storedBy.equals( dataValue1.storedBy ) : dataValue1.storedBy != null ) 
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = value != null ? value.hashCode() : 0;
+        result = 31 * result + (dataElement != null ? dataElement.hashCode() : 0);
+        result = 31 * result + (providedElsewhere != null ? providedElsewhere.hashCode() : 0);
+        result = 31 * result + (storedBy != null ? storedBy.hashCode() : 0);
+        return result;
     }
 
     @Override

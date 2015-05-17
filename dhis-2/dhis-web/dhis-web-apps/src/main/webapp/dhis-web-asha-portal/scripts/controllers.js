@@ -109,9 +109,16 @@ var trackerCaptureControllers = angular.module('trackerCaptureControllers', [])
         
         if (angular.isObject($scope.selectedOrgUnit)) {   
             
-            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram, 'ASHA').then(function(response){
-                $scope.programs = response.programs;
-                $scope.selectedProgram = response.selectedProgram;
+            ProgramFactory.getProgramsByOu($scope.selectedOrgUnit, $scope.selectedProgram, null).then(function(response){
+                
+                $scope.programs = $filter('filter')(response.programs, {ProgramOwner: 'ASHA', type: 1});
+                
+                if($scope.programs.length === 1){
+                    $scope.selectedProgram = $scope.programs[0];
+                }
+                else{
+                    $scope.selectedProgram = null;
+                }
                 
                 $scope.processAttributes();                
                 $scope.search($scope.searchMode.listAll);

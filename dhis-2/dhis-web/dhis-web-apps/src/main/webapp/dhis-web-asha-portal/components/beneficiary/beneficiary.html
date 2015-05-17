@@ -9,7 +9,7 @@
             <div class="row">
                 
                 <!-- search and registration buttons begin -->
-                <div id="searchDropDownParent" class="col-sm-12 not-printable">
+                <div id="searchDropDownParent" class="col-sm-12 hideInPrint">
                     <div class='input-group'>
                         <input type="text" placeholder="{{'search_for_beneficiary'| translate}}" ng-model="searchText.value" class="form-control" d2-enter="search(searchMode.freeText)" ng-class="{true: 'invalid - input'} [!searchText && emptySearchText]" ng-disabled="showRegistrationDiv">
                         <div class="input-group-btn">

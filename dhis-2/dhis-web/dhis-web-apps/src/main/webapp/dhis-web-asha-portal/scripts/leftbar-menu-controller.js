@@ -6,6 +6,10 @@ trackerCapture.controller('LeftBarMenuController',
         $location.path('/').search();
     }; 
     
+    $scope.showApprovals = function(){
+        $location.path('/approval-and-release').search();
+    };
+    
     $scope.showReportTypes = function(){
         $location.path('/report-types').search();
     };
