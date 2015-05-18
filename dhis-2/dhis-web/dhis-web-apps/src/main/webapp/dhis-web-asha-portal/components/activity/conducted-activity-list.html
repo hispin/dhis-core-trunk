@@ -15,7 +15,7 @@
                 {{'program' | translate}}
             </th>
             <th class="active">
-                {{'activity_date'| translate}}
+                {{'date'| translate}}
             </th>
             <th class="active" ng-repeat="header in headers">
                 {{header.name}}
@@ -33,7 +33,7 @@
             <td rowspan="{{(activitiesConducted | filter: {program: program.id}).length}}" ng-if="$index === 0">
                 {{program.name}}
             </td>
-            <td>
+            <td nowrap>
                 {{activity.eventDate}}
             </td>
             <td ng-class="{'not-applicable': !activity[header.id]}"

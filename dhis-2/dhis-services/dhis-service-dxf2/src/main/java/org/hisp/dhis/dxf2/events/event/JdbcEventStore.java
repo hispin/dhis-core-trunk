@@ -268,11 +268,11 @@ public class JdbcEventStore
             if ( rowSet.getString( "pdv_value" ) != null && rowSet.getString( "de_uid" ) != null )
             {
                 DataValue dataValue = new DataValue();
-                dataValue.setValue( rowSet.getString( "pdv_value" ) );
+                dataValue.setValue( rowSet.getString( "pdv_value" ) );                
                 dataValue.setProvidedElsewhere( rowSet.getBoolean( "pdv_providedelsewhere" ) );
                 dataValue.setDataElement( IdSchemes.getValue( rowSet.getString( "de_uid" ),
                     rowSet.getString( "de_code" ), idSchemes.getDataElementIdScheme() ) );
-
+                dataValue.setType( rowSet.getString( "de_type" ) );
                 dataValue.setStoredBy( rowSet.getString( "pdv_storedby" ) );
 
                 if ( !eventRow.getDataValues().contains( dataValue ) )
@@ -522,7 +522,7 @@ public class JdbcEventStore
     private String getDataValueQuery()
     {
         String sql = "select pdv.programstageinstanceid as pdv_id, pdv.value as pdv_value, pdv.storedby as pdv_storedby, pdv.providedelsewhere as pdv_providedelsewhere, "
-            + "de.uid as de_uid, de.code as de_code "
+            + "de.uid as de_uid, de.code as de_code, de.valueType as de_type "
             + "from trackedentitydatavalue pdv "
             + "inner join dataelement de on pdv.dataelementid=de.dataelementid ";
 

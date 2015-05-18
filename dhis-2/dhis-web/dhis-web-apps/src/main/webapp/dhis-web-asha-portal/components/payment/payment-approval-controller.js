@@ -5,6 +5,7 @@ trackerCapture.controller('PaymentApprovalController',
                 $filter,
                 $translate,
                 ModalService,
+                EventUtils,
                 DateUtils,
                 AshaPortalUtils,
                 PeriodService,
@@ -180,8 +181,6 @@ trackerCapture.controller('PaymentApprovalController',
                 $scope.teiList = [];
                 $scope.teisById = [];
                 $scope.paymentsByOwner = [];
-                var ownerProgramStages = [];
-                var ownerTypesById = [];
                 $scope.serviceGridColumns = [{id: 'ownerProgramStage', name: 'ownerProgramStage', statusCol: false},
                                             {id: 'programId', name: 'programId', statusCol: false},
                                             {id: 'programStageId', name: 'programStageId', statusCol: false}];
@@ -194,7 +193,6 @@ trackerCapture.controller('PaymentApprovalController',
                     if(row.eventProvider && row.eventProvider.trackedEntityInstance && row.eventProvider.programStage && $scope.paymentStagesById[row.eventProvider.programStage] && 
                                 ($scope.paymentStagesById[row.eventProvider.programStage].ActivityRegistration || $scope.paymentStagesById[row.eventProvider.programStage].BeneficiaryRegistration)){                        
 
-                        var paymentRow = {};
                         if(!$scope.teisById[row.eventProvider.trackedEntityInstance]){
                             var tei = {};
                             tei.trackedEntityInstance = row.eventProvider.trackedEntityInstance;
@@ -249,62 +247,81 @@ trackerCapture.controller('PaymentApprovalController',
 
                                 if(ev.dataValues){
                                     angular.forEach(ev.dataValues, function(dv){
-                                        if(dv.dataElement && dv.value){                            
+                                        var val = dv.value;
+                                        if(dv.dataElement && val && dv.type){
+                                            if(dv.type === 'date'){
+                                                val = DateUtils.formatFromApiToUser(val);
+                                            }
+                                            if(dv.type === 'trueOnly'){
+                                                if(val === 'true'){
+                                                    val = true;
+                                                }
+                                                else{
+                                                    val = '';
+                                                }
+                                            }
+                                            
                                             if(dv.dataElement === $scope.dataElementForCurrentApprovalLevel.id){
-                                                service[dv.dataElement] = new Number(dv.value);
+                                                service[dv.dataElement] = new Number(val);
                                             }
                                             else{
                                                 if(dv.dataElement === $scope.dataElementForCurrentApprovalStatus.id){
-                                                    service.currentApprovalStatus = dv.value;
+                                                    service.currentApprovalStatus = val;
                                                 }
-                                                service[dv.dataElement] = dv.value;
+                                                service[dv.dataElement] = val;
                                             }
                                         }
                                     });                                
-                                }
-                                
-                                $scope.teisById[row.eventProvider.trackedEntityInstance].paymentRows.push(service);
-                                                            
+                                }                                
+                                $scope.teisById[row.eventProvider.trackedEntityInstance].paymentRows.push(service);                                                            
                             });
-                        }          
-                        $scope.paymentList.push(paymentRow);
+                        }
                     }
                 });
-                
                 $scope.reportFinished = true;
                 $scope.reportStarted = false;
             });
         });
     };
     
-    $scope.saveServiceApproval = function(service){
+    $scope.savePayment = function(payment, mode){
         
-        var stage = $scope.programStagesById[service.programStage];
-        
-        if( stage && stage.id ){
+        if( $scope.programStagesById[payment.programStage] && $scope.programStagesById[payment.programStage].id ){
+            
+            var headerText = payment.latestApprovalStatus;
+            if(mode === 'RELEASE'){
+                headerText = payment[$scope.dataElementForPaymentSanctioned.id] ? $translate('release_payment') : $translate('hold_payment');
+            }
             
             var modalOptions = {
                 closeButtonText: 'cancel',
                 actionButtonText: 'yes',
-                headerText: service.latestApprovalStatus,
+                headerText: headerText,
                 bodyText: $translate('proceed_?')
             };
 
+            //(event, programStage, optionSets)
             ModalService.showModal({}, modalOptions).then(function(result){                
-                var obj = AshaPortalUtils.saveApproval( service, 
-                                          stage, 
+                var obj = mode === 'APPROVAL' ? AshaPortalUtils.saveApproval( payment, 
+                                          $scope.programStagesById[payment.programStage], 
                                           $scope.optionSets, 
                                           $scope.dataElementForCurrentApprovalLevel.id, 
-                                          $scope.dataElementForCurrentApprovalStatus.id);
-                                          
-                console.log('the obj is:  ', obj);
-                DHIS2EventFactory.update( obj.model ).then(function(){
-                    service.currentApprovalLevel =  service[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
-                    service[$scope.dataElementForCurrentApprovalStatus.id] = service.latestApprovalStatus;
-                    service.currentApprovalStatus = service.latestApprovalStatus;
+                                          $scope.dataElementForCurrentApprovalStatus.id) : EventUtils.reconstruct(payment, $scope.programStagesById[payment.programStage], $scope.optionSets);
+
+                DHIS2EventFactory.update( mode === 'APPROVAL' ? obj.model : obj ).then(function(){                    
+                    if(mode === 'APPROVAL'){
+                        payment.currentApprovalLevel =  payment[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
+                        payment[$scope.dataElementForCurrentApprovalStatus.id] = payment.latestApprovalStatus;
+                        payment.currentApprovalStatus = payment.latestApprovalStatus;
+                    }                    
                 });                           
             }, function(){
-                service.latestApprovalStatus = null;
+                if(mode === 'APPROVAL'){
+                    payment.latestApprovalStatus = null;
+                }
+                if(mode === 'RELEASE'){
+                    payment[$scope.dataElementForPaymentSanctioned.id] = !payment[$scope.dataElementForPaymentSanctioned.id];
+                }
             });
         }        
     };

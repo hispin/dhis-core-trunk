@@ -380,8 +380,6 @@ trackerCapture.controller('ActivityController',
 
         ModalService.showModal({}, modalOptions).then(function(result){
             
-            console.log('the activity is:  ', activity);
-            
             DHIS2EventFactory.delete(activity).then(function(data){
                 
                 var continueLoop = true, index = -1;

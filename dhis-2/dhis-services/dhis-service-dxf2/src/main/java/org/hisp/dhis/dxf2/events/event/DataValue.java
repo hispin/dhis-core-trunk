@@ -43,6 +43,8 @@ public class DataValue
     private String value;
 
     private String dataElement;
+    
+    private String type;
 
     private Boolean providedElsewhere = false;
 
@@ -80,6 +82,18 @@ public class DataValue
     public void setDataElement( String dataElement )
     {
         this.dataElement = dataElement;
+    }
+    
+    @JsonProperty
+    @JacksonXmlProperty( isAttribute = true )
+    public String getType()
+    {
+        return type;
+    }
+
+    public void setType( String type )
+    {
+        this.type = type;
     }
 
     @JsonProperty
@@ -120,6 +134,8 @@ public class DataValue
             return false;
         if ( dataElement != null ? !dataElement.equals( dataValue1.dataElement ) : dataValue1.dataElement != null ) 
             return false;
+        if ( type != null ? !type.equals( dataValue1.type ) : dataValue1.type != null ) 
+            return false;
         if ( providedElsewhere != null ? !providedElsewhere.equals( dataValue1.providedElsewhere ) : dataValue1.providedElsewhere != null ) 
             return false;
         if ( storedBy != null ? !storedBy.equals( dataValue1.storedBy ) : dataValue1.storedBy != null ) 
@@ -133,6 +149,7 @@ public class DataValue
     {
         int result = value != null ? value.hashCode() : 0;
         result = 31 * result + (dataElement != null ? dataElement.hashCode() : 0);
+        result = 31 * result + (type != null ? type.hashCode() : 0);
         result = 31 * result + (providedElsewhere != null ? providedElsewhere.hashCode() : 0);
         result = 31 * result + (storedBy != null ? storedBy.hashCode() : 0);
         return result;
@@ -144,6 +161,7 @@ public class DataValue
         return "DataValue{" +
             "value='" + value + '\'' +
             ", dataElement='" + dataElement + '\'' +
+            ", type='" + type + '\'' +
             ", providedElsewhere=" + providedElsewhere +
             ", storedBy='" + storedBy + '\'' +
             '}';

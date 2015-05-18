@@ -186,7 +186,8 @@ trackerCapture.controller('BankAdviseController',
                                             {id: 'pending', name: 'pending', statusCol: true},
                                             {id: 'rejected', name: 'rejected', statusCol: true},
                                             {id: 'approved', name: 'approved', statusCol: true},
-                                            {id: 'sanctioned', name: 'sanctioned', statusCol: true},
+                                            {id: 'released', name: 'released', statusCol: true},
+                                            {id: 'subtotal', name: 'subtotal', statusCol: true},
                                             {id: 'total', name: 'total', totalCol: true}];
 
                 angular.forEach(data.eventEventRows, function(row){
@@ -253,8 +254,8 @@ trackerCapture.controller('BankAdviseController',
                                                 service[dv.dataElement] = new Number(dv.value);
                                             }
                                             else{
-                                                if(dv.dataElement === $scope.dataElementForCurrentApprovalStatus.id){
-                                                    service.currentApprovalStatus = dv.value;
+                                                if(dv.dataElement === $scope.dataElementForPaymentSanctioned.id){
+                                                    service.paymentReleased = dv.value;
                                                 }
                                                 service[dv.dataElement] = dv.value;
                                             }

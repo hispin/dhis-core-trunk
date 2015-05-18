@@ -1741,10 +1741,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                     event: dhis2Event.event, 
                     program: dhis2Event.program, 
                     programStage: dhis2Event.programStage, 
-                    orgUnit: dhis2Event.orgUnit, 
-                    trackedEntityInstance: dhis2Event.trackedEntityInstance,
-                    status: dhis2Event.status,
-                    dueDate: DateUtils.formatFromUserToApi(dhis2Event.dueDate)
+                    orgUnit: dhis2Event.orgUnit,                     
+                    status: dhis2Event.status
                 };
                 
             angular.forEach(programStage.programStageDataElements, function(prStDe){
@@ -1767,7 +1765,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                     }
                     
                     var val = {value: value, dataElement: prStDe.dataElement.id};
-                    if(dhis2Event.providedElsewhere[prStDe.dataElement.id]){
+                    if(dhis2Event.providedElsewhere && dhis2Event.providedElsewhere[prStDe.dataElement.id]){
                         val.providedElsewhere = dhis2Event.providedElsewhere[prStDe.dataElement.id];
                     }
                     e.dataValues.push(val);
@@ -1783,12 +1781,24 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 e.eventDate = DateUtils.formatFromUserToApi(dhis2Event.eventDate);
             }
             
+            if(dhis2Event.dueDate){
+                e.dueDate = DateUtils.formatFromUserToApi(dhis2Event.dueDate);
+            }
+            
+            if(dhis2Event.trackedEntityInstance){
+                e.trackedEntityInstance = dhis2Event.trackedEntityInstance;
+            }
+            
+            if(dhis2Event.enrollment){
+                e.enrollment = dhis2Event.enrollment;
+            }
+            
             return e;
         }
     };
 })
 
-.service('AshaPortalUtils', function(SessionStorageService, OptionSetService, DateUtils, TCStorageService, $q, RemoteDataService, $filter, $translate){   
+.service('AshaPortalUtils', function(SessionStorageService, OptionSetService, DateUtils, EventUtils, TCStorageService, $q, RemoteDataService, $filter, $translate){   
     
     function getStageRate( stageId, stagesById, paymentRate ){        
         
@@ -1809,15 +1819,15 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
     
     function calculatePayment( obj ){
         
-        var amount = new Number(obj.approved);
+        var amount = new Number(obj.released);
         var rate = obj.rate;
                  
         if( dhis2.validation.isNumber( rate ) ){
             rate = new Number(rate);
-            obj.sanctioned = rate*amount;
+            obj.subtotal = rate*amount;
         }
         else{
-            obj.sanctioned = 0;
+            obj.subtotal = 0;
         }
         
         return obj;
@@ -1876,57 +1886,10 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             else{
                 event[approvalLevelDe] = approvalLevel();
                 event[approvalStatusDe] = event.latestApprovalStatus;
-            }
+            }            
             
-            var e = {dataValues: [], 
-                event: event.event, 
-                program: event.program, 
-                programStage: event.programStage,
-                orgUnit: event.orgUnit, 
-                status: event.status,
-                eventDate: DateUtils.formatFromUserToApi(event.eventDate)
-            };
-
-            angular.forEach(programStage.programStageDataElements, function(prStDe){
-                if(event[prStDe.dataElement.id]){
-
-                    var value = event[prStDe.dataElement.id];
-
-                    if( value && prStDe.dataElement.type === 'string' && prStDe.dataElement.optionSet && optionSets[prStDe.dataElement.optionSet.id]){
-                        value = OptionSetService.getCode(optionSets[prStDe.dataElement.optionSet.id].options, value);
-                    }                    
-
-                    if( value && prStDe.dataElement.type === 'date'){
-                        value = DateUtils.formatFromUserToApi(value);
-                    }
-
-                    if( prStDe.dataElement.type === 'trueOnly' ){
-                        if(value){
-                            value = 'true';
-                        }
-                        else{
-                            value = '';
-                        }
-                    }
-
-                    var val = {value: value, dataElement: prStDe.dataElement.id};
-
-                    e.dataValues.push(val);
-                }                                
-            });
-
-            if(event.enrollment){
-                e.enrollment = event.enrollment;
-            }
-
-            if(event.dueDate){
-                e.dueDate = event.dueDate;
-            }
-
-            if(event.trackedEntityInstance){
-                e.trackedEntityInstance = event.trackedEntityInstance;
-            }
-            
+            var e = EventUtils.reconstruct(event, programStage, optionSets);
+                        
             return {model: e, display: event};
         },
         getPaymentSlip: function(slipType, payments, paymentRate, programs, programsById, stages, stagesById, orgUnitName, periodName){
@@ -1942,7 +1905,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             var totalPaymentAmount = new Number(0);
             if(slipType === 'ACTIVITY'){
                 angular.forEach(programs, function(program){
-                    paymentReport[program.id] = {hasData: false, rate: 'rate', claimed: 0, pending: 0, rejected: 0, approved: 0, sanctioned: 0};
+                    paymentReport[program.id] = {hasData: false, rate: 'rate', claimed: 0, pending: 0, rejected: 0, approved: 0, released: 0, subtotal: 0};
                     angular.forEach($filter('filter')(payments, {program: program.id}), function(payment){
                         var obj = paymentReport[payment.program];
                         paymentReport[program.id] = {hasData: true, 
@@ -1955,7 +1918,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                                                                 pending: !payment.currentApprovalStatus ? obj.pending + 1: obj.pending,
                                                                 rejected: payment.currentApprovalStatus === 'Rejected' ? obj.rejected + 1 : obj.rejected,
                                                                 approved: payment.currentApprovalStatus === 'Approved' ? obj.approved + 1 : obj.approved,
-                                                                sanctioned: ''
+                                                                released: payment.paymentReleased === 'true' ? obj.released + 1 : obj.released,
+                                                                subtotal: ''
                                                             };
                     });
                 });
@@ -1964,8 +1928,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                     if(paymentReport[key] && paymentReport[key].hasData){                
                         paymentReport[key] = calculatePayment( paymentReport[key] );
 
-                        if( dhis2.validation.isNumber( paymentReport[key].sanctioned ) ){
-                            totalPaymentAmount = totalPaymentAmount + new Number( paymentReport[key].sanctioned );
+                        if( dhis2.validation.isNumber( paymentReport[key].subtotal ) ){
+                            totalPaymentAmount = totalPaymentAmount + new Number( paymentReport[key].subtotal );
                         }
 
                     }
@@ -1974,7 +1938,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             else if (slipType === 'SERVICE'){
                 var report = [];
                 angular.forEach(stages, function(st){
-                    report[st.id] = {hasData: false, rate: 'rate', claimed: 0, pending: 0, rejected: 0, approved: 0, sanctioned: 0};
+                    report[st.id] = {hasData: false, rate: 'rate', claimed: 0, pending: 0, rejected: 0, approved: 0, released: 0, subtotal: 0};
                     angular.forEach($filter('filter')(payments, {programStage: st.id}), function(payment){
                         var obj = report[st.id];
                         report[st.id] = {hasData: true, 
@@ -1988,7 +1952,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                                                                 pending: !payment.currentApprovalStatus ? obj.pending + 1: obj.pending,
                                                                 rejected: payment.currentApprovalStatus === 'Rejected' ? obj.rejected + 1 : obj.rejected,
                                                                 approved: payment.currentApprovalStatus === 'Approved' ? obj.approved + 1 : obj.approved,
-                                                                sanctioned: ''
+                                                                released: payment.paymentReleased === 'true' ? obj.released + 1 : obj.released,
+                                                                subtotal: ''
                                                             };
                     });
                 });
@@ -2001,8 +1966,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 
                         paymentReport.push( r );
 
-                        if( dhis2.validation.isNumber( r.sanctioned ) ){
-                            totalPaymentAmount = totalPaymentAmount + new Number( r.sanctioned );
+                        if( dhis2.validation.isNumber( r.subtotal ) ){
+                            totalPaymentAmount = totalPaymentAmount + new Number( r.subtotal );
                         }                
                     }
                 }
@@ -2025,7 +1990,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             paymentTableHeaders.push({id: 'pending', value: $translate('pending')});
             paymentTableHeaders.push({id: 'rejected', value: $translate('rejected')});
             paymentTableHeaders.push({id: 'approved', value: $translate('approved')});
-            paymentTableHeaders.push({id: 'sanctioned', value: $translate('sanctioned')});
+            paymentTableHeaders.push({id: 'subtotal', value: $translate('subtotal')});
             
             return {paymentHeaders: paymentHeaders, paymentTableHeaders: paymentTableHeaders, paymentReport: paymentReport, totalPaymentAmount: totalPaymentAmount};
         }

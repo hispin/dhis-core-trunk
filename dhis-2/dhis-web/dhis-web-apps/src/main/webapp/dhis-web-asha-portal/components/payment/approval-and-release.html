@@ -30,7 +30,7 @@
                                 {{gridColumn.name}}
                             </th>
                             <th class="active">
-                                {{'program_stage'| translate}}
+                                {{'type'| translate}}
                             </th>
                             <th class="active">
                                 {{'program'| translate}}
@@ -44,13 +44,16 @@
                             <th class="active">
                                 {{'latest_approval_status'| translate}}
                             </th>
-                            
+                            <th class="active">
+                                {{'payment_release' | translate}}
+                            </th>                            
                         </tr>                        
                     </thead>                    
                     <tbody ng-repeat="tei in teiList" ng-init="teiIndex = $index">
                         <tr ng-repeat="payment in teisById[tei].paymentRows | orderBy: ['ownerProgramStageName', 'programName', 'serviceName', 'event']" 
                             ng-init="paymentRowIndex = $index">
                             <td style="vertical-align:middle"
+                                class="bold"
                                 ng-repeat="gridColumn in gridColumns" 
                                 rowspan="{{teisById[tei].paymentRowCount}}" 
                                 ng-if="gridColumn.displayInListNoProgram && paymentRowIndex === 0">
@@ -83,13 +86,20 @@
                                 <select ng-model="payment.latestApprovalStatus"
                                         class="form-control-trimmed"
                                         ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
-                                        ng-change="saveServiceApproval(payment)"
+                                        ng-change="savePayment(payment, 'APPROVAL')"
                                         ng-disabled="approvalAuthorityLevel <= 0 || approvalAuthorityLevel < payment[dataElementForCurrentApprovalLevel.id]">
                                     <option value="">{{'[select]'| translate}}</option>
                                 </select>
                             </td>
+                            <td>
+                                <input type="checkbox"                                       
+                                    class="form-control" 
+                                    ng-model="payment[dataElementForPaymentSanctioned.id]" 
+                                    ng-change="savePayment(payment, 'RELEASE')"
+                                    ng-disabled="payment[dataElementForCurrentApprovalStatus.id] !== 'Approved'">
+                            </td>
                         </tr>
-                    </tbody>
+                    </tbody>                    
                     <!--<tbody ng-repeat="tei in teiList" ng-init="teiIndex = $index">
                         <tr ng-repeat="payment in teisById[tei].paymentRows | orderBy: ['ownerProgramStageName', 'programName', 'serviceName']" 
                             ng-init="paymentRowIndex = $index">
@@ -130,7 +140,7 @@
                                 </select>
                             </td>
                         </tr>
-                    </tbody>-->
+                    </tbody>-->                    
                 </table>
             </div>
             <!-- report ends -->
