@@ -303,8 +303,6 @@ trackerCapture.controller('BankAdviseController',
                         }
                     }                    
                 });
-                
-                console.log('the final report:  ', $scope.teisById);
                 $scope.reportFinished = true;
                 $scope.reportStarted = false;
             });
