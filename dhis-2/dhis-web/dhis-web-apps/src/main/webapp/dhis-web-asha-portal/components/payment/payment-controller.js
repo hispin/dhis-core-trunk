@@ -14,8 +14,12 @@ trackerCapture.controller('PaymentController',
                 ashaEvent,
                 ashaPeriod,
                 slipType,
-                AshaPortalUtils) {
+                AshaPortalUtils,
+                SessionStorageService) {
 
+    var role = SessionStorageService.get('USER_ROLES');    
+    $scope.approvingGroup = role['ApprovalGroup'];
+    
     $scope.payments = payments;
     $scope.paymentRate = paymentRate;
     $scope.programs = programs;
@@ -25,7 +29,7 @@ trackerCapture.controller('PaymentController',
     $scope.ashaDetails = ashaDetails;
     $scope.ashaEvent = ashaEvent;
     
-    var paymentSlip = AshaPortalUtils.getPaymentSlip(slipType, payments, paymentRate, programs, programsById, stages, stagesById, orgUnitName, ashaPeriod.name);
+    var paymentSlip = AshaPortalUtils.getPaymentSlip('VERIFICATION', slipType, payments, paymentRate, programs, programsById, stages, stagesById, orgUnitName, ashaPeriod.name);
     $scope.paymentHeaders = paymentSlip.paymentHeaders;
     $scope.paymentTableHeaders = paymentSlip.paymentTableHeaders;
     $scope.paymentReport = paymentSlip.paymentReport;

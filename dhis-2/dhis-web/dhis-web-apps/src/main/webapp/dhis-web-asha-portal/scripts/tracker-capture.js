@@ -149,7 +149,7 @@ function downloadMetaData()
     promise.done(function() {
         
         //Enable ou selection after meta-data has downloaded
-        $( "#orgUnitTree" ).removeClass( "disable-clicks" );
+        $( "#leftBar" ).removeClass( "disable-clicks" );
         
         console.log( 'Finished loading meta-data' );        
         selection.responseReceived(); 
@@ -173,7 +173,8 @@ function getUserRoles()
         url: '../api/me.json?fields=id,name,attributeValues[value,attribute[id,code]],userCredentials[userRoles[id]]',
         type: 'GET'
     }).done(function(response) {
-        SessionStorageService.set('USER_ROLES', response);
+        
+        SessionStorageService.set('USER_ROLES', processMetaDataAttribute(response));
         def.resolve();
     }).fail(function(){
         def.resolve();
@@ -439,23 +440,23 @@ function getPrograms( programs )
     return mainPromise;
 }
 
-function processProgram( program )
+function processMetaDataAttribute( obj )
 {
-    if(!program){
+    if(!obj){
         return;
     }
     
-    if(program.attributeValues){
-        for(var i=0; i<program.attributeValues.length; i++){
-            if(program.attributeValues[i].value && program.attributeValues[i].attribute && program.attributeValues[i].attribute.code){
-                program[program.attributeValues[i].attribute.code] = program.attributeValues[i].value;
+    if(obj.attributeValues){
+        for(var i=0; i<obj.attributeValues.length; i++){
+            if(obj.attributeValues[i].value && obj.attributeValues[i].attribute && obj.attributeValues[i].attribute.code){
+                obj[obj.attributeValues[i].attribute.code] = obj.attributeValues[i].value;
             }
         }
     }
     
-    delete program.attributeValues;
+    delete obj.attributeValues;
    
-    return program;    
+    return obj;    
 }
 
 function getProgram( id )
@@ -489,7 +490,7 @@ function getProgram( id )
                 program.userRoles = ur;
                 
                 
-                dhis2.tc.store.set( 'programs', processProgram( program ) );
+                dhis2.tc.store.set( 'programs', processMetaDataAttribute( program ) );
             });         
         });
     };

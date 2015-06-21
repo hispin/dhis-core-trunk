@@ -174,6 +174,7 @@ trackerCapture.controller('ActivityController',
                     activityConducted.orgUnit = row.orgUnit;
                     activityConducted.program = row.program;
                     activityConducted.programStage = row.programStage;
+                    
                     angular.forEach(row.dataValues, function(dv){
                         if(dv.dataElement && dv.value){                            
                             if(dv.dataElement === $scope.dataElementForCurrentApprovalLevel.id){
@@ -188,8 +189,13 @@ trackerCapture.controller('ActivityController',
                         }                                            
                     });
                     
-
-                    $scope.activitiesConducted.push(activityConducted);
+                    if(activityConducted.currentApprovalStatus === 'Rejected' && activityConducted[$scope.dataElementForCurrentApprovalLevel.id] < $scope.approvalAuthorityLevel){                        
+                        /*console.log('activityConducted:  ', activityConducted);
+                        console.log('activityConducted:  ', activityConducted[$scope.dataElementForCurrentApprovalLevel.id], ' - ', $scope.approvalAuthorityLevel);*/
+                    }
+                    else{                        
+                        $scope.activitiesConducted.push(activityConducted);
+                    }                    
                 });
 
                 //sort activities by their activity date
@@ -256,7 +262,7 @@ trackerCapture.controller('ActivityController',
             return false;
         }
         
-        dataValues.push({dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent});
+        dataValues.push({dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent}, {dataElement: $scope.dataElementForCurrentApprovalStatus.id, value: 'Pending'});
         var dhis2Event = {
                 program: $scope.selectedActivityProgram.id,
                 programStage: $scope.selectedProgramStage.id,
@@ -282,6 +288,7 @@ trackerCapture.controller('ActivityController',
                 $scope.newActivity.status = 'VISITED';
                 $scope.newActivity.program = $scope.selectedActivityProgram.id;
                 $scope.newActivity.programStage = $scope.selectedProgramStage.id;
+                $scope.newActivity[$scope.dataElementForCurrentApprovalStatus.id] = 'Pending';
                 if( !$scope.activitiesConducted ){
                     $scope.activitiesConducted = [];
                 }                

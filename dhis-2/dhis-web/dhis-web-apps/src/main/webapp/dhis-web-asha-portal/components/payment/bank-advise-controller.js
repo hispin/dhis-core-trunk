@@ -254,6 +254,9 @@ trackerCapture.controller('BankAdviseController',
                                                 service[dv.dataElement] = new Number(dv.value);
                                             }
                                             else{
+                                                if(dv.dataElement === $scope.dataElementForCurrentApprovalStatus.id){
+                                                    service.currentApprovalStatus= dv.value;
+                                                }
                                                 if(dv.dataElement === $scope.dataElementForPaymentSanctioned.id){
                                                     service.paymentReleased = dv.value;
                                                 }
@@ -282,10 +285,10 @@ trackerCapture.controller('BankAdviseController',
                     
                     $scope.teisById[tei].calculatedPayments = [];
                     
-                    var servicePaymentSlip = AshaPortalUtils.getPaymentSlip('SERVICE', s, $scope.paymentRate, $scope.beneficiaryPrograms, $scope.programsById, $scope.programStages, $scope.programStagesById, $scope.selectedOrgUnit.name, $scope.selectedPeriod.name);
-                    var activityPaymentSlip = AshaPortalUtils.getPaymentSlip('ACTIVITY', a, $scope.paymentRate, $scope.activityPrograms, $scope.programsById, $scope.programStages, $scope.programStagesById, $scope.selectedOrgUnit.name, $scope.selectedPeriod.name);
+                    var servicePaymentSlip = AshaPortalUtils.getPaymentSlip('BANK', 'SERVICE', s, $scope.paymentRate, $scope.beneficiaryPrograms, $scope.programsById, $scope.programStages, $scope.programStagesById, $scope.selectedOrgUnit.name, $scope.selectedPeriod.name);
+                    var activityPaymentSlip = AshaPortalUtils.getPaymentSlip('BANK', 'ACTIVITY', a, $scope.paymentRate, $scope.activityPrograms, $scope.programsById, $scope.programStages, $scope.programStagesById, $scope.selectedOrgUnit.name, $scope.selectedPeriod.name);
                     $scope.teisById[tei].totalPaymentAmount = servicePaymentSlip.totalPaymentAmount + activityPaymentSlip.totalPaymentAmount;
-                    
+
                     angular.forEach(servicePaymentSlip.paymentReport, function(p){
                         var pp = p;
                         pp.ownerProgramStage = ownerTypesById[1].id;

@@ -87,7 +87,7 @@
                                         class="form-control-trimmed"
                                         ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
                                         ng-change="savePayment(payment, 'APPROVAL')"
-                                        ng-disabled="approvalAuthorityLevel <= 0 || approvalAuthorityLevel < payment[dataElementForCurrentApprovalLevel.id]">
+                                        ng-disabled="payment[dataElementForPaymentSanctioned.id] || approvalAuthorityLevel <= 0 || approvalAuthorityLevel < payment[dataElementForCurrentApprovalLevel.id]">
                                     <option value="">{{'[select]'| translate}}</option>
                                 </select>
                             </td>

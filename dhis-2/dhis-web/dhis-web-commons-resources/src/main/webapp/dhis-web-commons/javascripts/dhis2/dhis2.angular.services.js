@@ -280,6 +280,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                             var commonInputFieldProperty = this.getAttributesAsString(attributes) +
 	                                                ' d2-validation ' +
 	                                                ' ng-model="currentEvent.' + fieldId + '" ' +
+                                                        ' style="width:100%;" ' +
 	                                                ' input-field-id="' + fieldId + '"' +
 	                                                ' ng-class="getInputNotifcationClass(prStDes.' + fieldId + '.dataElement.id,true)"' +
 	                                                ' ng-disabled="selectedEnrollment.status===\'CANCELLED\' || selectedEnrollment.status===\'COMPLETED\' || currentEvent[uid]==\'uid\' || currentEvent.editingNotAllowed || !prStDes.' + fieldId + '.show"' +
@@ -391,6 +392,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                         	
                         	var commonInputFieldProperty = ' name="' + fieldName + '"' +
 	                                            ' element-id="' + i + '"' +
+                                                    ' style="width:100%;" ' +
 	                                            this.getAttributesAsString(attributes) +
 	                                            ' d2-focus-next-on-enter' + 
 	                                            ' ng-model="selectedTei.' + attId + '" ' +
@@ -415,7 +417,7 @@ var d2Services = angular.module('d2Services', ['ngResource'])
                         	else{
                         		//check attribute type and generate corresponding angular input field
 		                        if(att.valueType === "number"){
-		                            newInputField = '<input type="text" ' +
+		                            newInputField = '<input type="number" ' +
 		                                            ' d2-number-validation ' +
 		                                            ' ng-blur="validationAndSkipLogic(selectedTei,\'' + attId + '\')" ' +
 		                                            commonInputFieldProperty + ' >';

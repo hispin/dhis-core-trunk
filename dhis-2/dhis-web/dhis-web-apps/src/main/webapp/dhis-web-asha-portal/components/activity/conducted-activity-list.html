@@ -1,7 +1,7 @@
 <div class="alert alert-warning align-center" ng-if="approvalAuthorityLevel <= 0">{{'lacking_approval_authority'| translate}}</div>
 <span class="vertical-spacing">
     <span>
-        <button type="button" class="btn btn-success" ng-click="generatePaymentSlip()" ng-if="(activitiesConducted | filter: {currentApprovalStatus: 'Approved'}).length > 0">{{'get_payment_slip'| translate}}</button>
+        <button type="button" class="btn btn-success" ng-click="generatePaymentSlip()" ng-if="activitiesConducted.length > 0">{{'get_verification_slip'| translate}}</button>
     </span>
     <!--<span class="pull-right">
         <button type="button" class="btn btn-warning" ng-click="approveAll()" ng-disabled="approvalAuthorityLevel <= 0" ng-if="approvalAuthorityLevel > 0">{{'approve_all'| translate}}</button>
@@ -48,7 +48,7 @@
                         class="form-control-trimmed"
                         ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
                         ng-change="saveActivityApproval(activity)"
-                        ng-disabled="approvalAuthorityLevel <= 0 || approvalAuthorityLevel < activity[dataElementForCurrentApprovalLevel.id]">
+                        ng-disabled="activity[dataElementForPaymentSanctioned.id] || approvalAuthorityLevel <= 0 || approvalAuthorityLevel < activity[dataElementForCurrentApprovalLevel.id]">
                     <option value="">{{'please_select'| translate}}</option>
                 </select>
             </td>
@@ -58,47 +58,3 @@
         </tr>
     </tbody>
 </table>
-
-<!--<div ng-repeat="program in activityPrograms | orderBy: 'name'" ng-if="(activitiesConducted | filter: {program: program.id}).length > 0">
-    <table class="listTable dhis2-table-striped-border vertical-spacing">
-        <thead>
-            <tr>
-                <th class="active align-center" colspan="{{stagesById[program.programStages[0].id].programStageDataElements.length - 1}}">
-                    <h3 class="align-center bold">{{program.name}}</h3>
-                </th>
-            </tr>
-            <tr>
-                <th class="active">
-                    {{'date'| translate}}
-                </th>
-                <th class="active" ng-repeat="prStDe in stagesById[program.programStages[0].id].programStageDataElements" 
-                    ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id && prStDe.dataElement.id !== dataElementForCurrentApprovalLevel.id">
-                    {{prStDe.dataElement.name}}
-                </th>
-                <th>
-                    {{'latest_approval_status' | translate}}
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr ng-repeat="activity in activitiesConducted| filter: {program: program.id}">
-                <td>
-                    {{activity.eventDate}}
-                </td>
-                <td ng-repeat="prStDe in stagesById[program.programStages[0].id].programStageDataElements" 
-                    ng-if="prStDe.dataElement.id !== dataElementForServiceOwner.id && prStDe.dataElement.id !== dataElementForPaymentSanctioned.id && prStDe.dataElement.id !== dataElementForCurrentApprovalLevel.id">
-                    {{activity[prStDe.dataElement.id]}}
-                </td>
-                <td>
-                    <select ng-model="activity.latestApprovalStatus"
-                            class="form-control-trimmed"
-                            ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
-                            ng-change="saveActivityApproval(activity)"
-                            ng-disabled="approvalAuthorityLevel <= 0 || approvalAuthorityLevel < activity[dataElementForCurrentApprovalLevel.id]">
-                        <option value="">{{'please_select'| translate}}</option>
-                    </select>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</div>-->

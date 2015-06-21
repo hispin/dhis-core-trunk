@@ -61,7 +61,7 @@ var d2Directives = angular.module('d2Directives', [])
                         console.log('Finished loading orgunit tree');
                         
                         //Disable ou selection until meta-data has downloaded
-                        $( "#orgUnitTree" ).addClass( "disable-clicks" );
+                        $( "#leftBar" ).addClass( "disable-clicks" );
                         
                         $timeout(function() {
                             scope.treeLoaded = true;

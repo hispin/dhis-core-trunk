@@ -84,8 +84,8 @@ trackerCapture.controller('BeneficiaryController',
     
     function getOwnerDetails(){
 
-        $scope.selectedTei = {};
-        $scope.tei = {};
+        $scope.newBen = {};
+        $scope.ben = {};
         
         var benOwners = CurrentSelection.getBenOrActOwners();
         $scope.orgUnitName = benOwners.orgUnitName;
@@ -218,35 +218,31 @@ trackerCapture.controller('BeneficiaryController',
             return false;
         }
         
-        //form is valid, continue the registration
-        //get selected entity        
-        if(!$scope.selectedTei.trackedEntityInstance){
-            $scope.selectedTei.trackedEntity = $scope.tei.trackedEntity = $scope.commonBeneficiaryProgram.trackedEntity.id;
-            $scope.selectedTei.orgUnit = $scope.tei.orgUnit = $scope.selectedOrgUnit.id;
-            $scope.selectedTei.attributes = $scope.selectedTei.attributes = [];
-        }
+        //form is valid, continue the registration        
+        $scope.newBen.trackedEntity = $scope.ben.trackedEntity = $scope.commonBeneficiaryProgram.trackedEntity.id;
+        $scope.newBen.orgUnit = $scope.ben.orgUnit = $scope.selectedOrgUnit.id;
+        $scope.newBen.attributes = $scope.ben.attributes = [];
         
         //get tei attributes and their values
         //but there could be a case where attributes are non-mandatory and
         //registration form comes empty, in this case enforce at least one value        
-        
-        var result = RegistrationService.processForm($scope.tei, $scope.selectedTei, $scope.attributesById);
+        var result = RegistrationService.processForm($scope.ben, $scope.newBen, $scope.attributesById);
         $scope.formEmpty = result.formEmpty;
-        $scope.tei = result.tei;
+        $scope.ben = result.tei;
         
         if($scope.formEmpty){//registration form is empty
             return false;
         }
-        
-        RegistrationService.registerOrUpdate($scope.tei, $scope.optionSets, $scope.attributesById).then(function(response){
+
+        RegistrationService.registerOrUpdate($scope.ben, $scope.optionSets, $scope.attributesById).then(function(response){
 
             if(response.status === 'SUCCESS'){
                 
-                $scope.tei.trackedEntityInstance = response.reference;
-                $scope.selectedTei.trackedEntityInstance = $scope.selectedTei.id = response.reference;
+                $scope.ben.trackedEntityInstance = response.reference;
+                $scope.newBen.trackedEntityInstance = $scope.newBen.id = response.reference;
                 
                 var enrollment = {};
-                enrollment.trackedEntityInstance = $scope.tei.trackedEntityInstance;
+                enrollment.trackedEntityInstance = $scope.ben.trackedEntityInstance;
                 enrollment.program = $scope.commonBeneficiaryProgram.id;
                 enrollment.status = 'ACTIVE';
                 enrollment.orgUnit = $scope.selectedOrgUnit.id;
@@ -269,31 +265,31 @@ trackerCapture.controller('BeneficiaryController',
                     $scope.showRegistrationDiv = false;
                     
                     if($scope.trackedEntityList.rows.length){
-                        $scope.trackedEntityList.rows.push($scope.selectedTei);
+                        $scope.trackedEntityList.rows.push($scope.newBen);
                     }
                     else{
                         $scope.trackedEntityList.rows = [];
-                        $scope.trackedEntityList.rows.push($scope.selectedTei);
+                        $scope.trackedEntityList.rows.push($scope.newBen);
                     }                    
                     
                     if(destination === 'SERVICE'){                        
-                        $scope.showAddNewService($scope.selectedTei);
+                        $scope.showAddNewService($scope.newBen);
                     }
                     
                     //reset form
-                    $scope.selectedTei = {};
+                    $scope.newBen = {};
                     $scope.outerForm.submitted = false;
                 });               
             }
             else{//update/registration has failed
                 var dialogOptions = {
-                        headerText: $scope.tei && $scope.tei.trackedEntityInstance ? 'update_error' : 'registration_error',
+                        headerText: $scope.ben && $scope.ben.trackedEntityInstance ? 'update_error' : 'registration_error',
                         bodyText: response.description
                     };
                 DialogService.showDialog({}, dialogOptions);
                 return;
             }
-        });        
+        });
     };
     
     $scope.getServicesProvided = function(){        
@@ -349,12 +345,17 @@ trackerCapture.controller('BeneficiaryController',
                                 serviceProvided[dv.dataElement] = dv.value;
                             }
                         }                                            
-                    });                
-
-                    $scope.servicesProvided.push(serviceProvided);
-
+                    }); 
+                    
+                    if(serviceProvided.currentApprovalStatus === 'Rejected' && serviceProvided[$scope.dataElementForCurrentApprovalLevel.id] < $scope.approvalAuthorityLevel){                        
+                        /*console.log('serviceProvided:  ', serviceProvided);
+                        console.log('levels:  ', serviceProvided[$scope.dataElementForCurrentApprovalLevel.id], ' - ', $scope.approvalAuthorityLevel);*/
+                    }
+                    else{
+                        $scope.servicesProvided.push(serviceProvided);
+                    }
                 });
-
+                
                 //sort services provided by their provision dates - this is default
                 $scope.servicesProvided = orderByFilter($scope.servicesProvided, '-provisionDate');
 
@@ -391,7 +392,7 @@ trackerCapture.controller('BeneficiaryController',
             dhis2Event.orgUnit = $scope.selectedOrgUnit.id;
             dhis2Event.status = 'VISITED';
             dhis2Event.dueDate = dhis2Event.eventDate = DateUtils.formatFromUserToApi($scope.selectedService.dueDate);
-            dhis2Event.dataValues = [{dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent}];
+            dhis2Event.dataValues = [{dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent}, {dataElement: $scope.dataElementForCurrentApprovalStatus.id, value: 'Pending'}];
             $scope.selectedServiceStage = $scope.stagesById[$scope.selectedService.service.id];
             
             $scope.selectedEnrollment = $scope.beneficiaryEnrollmentsByProgram[$scope.selectedService.program.id];
@@ -497,6 +498,7 @@ trackerCapture.controller('BeneficiaryController',
             newService.serviceName = $scope.selectedService.service.name;
             newService.programName = $scope.selectedService.program.name;
             newService.trackedEntityInstance = $scope.selectedBeneficiary.id;
+            newService[$scope.dataElementForCurrentApprovalStatus.id] = 'Pending';
             
             if( !$scope.servicesProvided ){
                 $scope.servicesProvided = [];

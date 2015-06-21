@@ -1024,6 +1024,16 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             }
             else{
                 if(val){
+                    if( type === 'number' ){
+                        if(dhis2.validation.isNumber(val)){                            
+                            //val = new Number(val);
+                            val = parseInt(val);                            
+                        }
+                        else{
+                            //val = new Number('0');
+                            val = parseInt('0');      
+                        }
+                    }
                     if(type === 'date'){
                         if(destination === 'USER'){
                             val = DateUtils.formatFromApiToUser(val);
@@ -1817,31 +1827,33 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         return null;
     };
     
-    function calculatePayment( obj ){
+    function calculatePayment( obj, destination ){
         
-        var amount = new Number(obj.released);
+        var amount = new Number(destination === 'BANK' ? obj.released : obj.approved);
         var rate = obj.rate;
-                 
-        if( dhis2.validation.isNumber( rate ) ){
+        
+        if( dhis2.validation.isNumber( rate ) ){            
             rate = new Number(rate);
             obj.subtotal = rate*amount;
         }
         else{
             obj.subtotal = 0;
         }
-        
         return obj;
     };
     
     var approvalLevel = function(){
-        var roles = SessionStorageService.get('USER_ROLES');
-        if( roles && roles.attributeValues ){                
+        var userRole = SessionStorageService.get('USER_ROLES');
+        if( userRole['ApprovalAuthorityLevel'] && dhis2.validation.isNumber(userRole['ApprovalAuthorityLevel'])){
+            return userRole['ApprovalAuthorityLevel'];
+        }
+        /*if( roles && roles.attributeValues ){                
             for(var i=0; i<roles.attributeValues.length; i++){
                 if(dhis2.validation.isNumber(roles.attributeValues[i].value) && roles.attributeValues[i].attribute && roles.attributeValues[i].attribute.code === 'ApprovalAuthorityLevel'){
                     return roles.attributeValues[i].value;
                 }
             }
-        }            
+        }*/            
         return 0;
     };
     return {
@@ -1877,22 +1889,14 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         },
         saveApproval: function(_event, programStage, optionSets, approvalLevelDe, approvalStatusDe){
             
-            var event = angular.copy(_event);
-            
-            if(event.latestApprovalStatus === 'Pending'){
-                delete event[approvalLevelDe];
-                delete event[approvalStatusDe];
-            }
-            else{
-                event[approvalLevelDe] = approvalLevel();
-                event[approvalStatusDe] = event.latestApprovalStatus;
-            }            
-            
+            var event = angular.copy(_event);            
+            event[approvalLevelDe] = approvalLevel();
+            event[approvalStatusDe] = event.latestApprovalStatus;
             var e = EventUtils.reconstruct(event, programStage, optionSets);
                         
             return {model: e, display: event};
         },
-        getPaymentSlip: function(slipType, payments, paymentRate, programs, programsById, stages, stagesById, orgUnitName, periodName){
+        getPaymentSlip: function(destination, slipType, payments, paymentRate, programs, programsById, stages, stagesById, orgUnitName, periodName){
             var paymentHeaders = [];
             paymentHeaders.push({name: $translate('org_unit'), value: orgUnitName});
             paymentHeaders.push({name: $translate('period'), value: periodName});
@@ -1924,9 +1928,9 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                     });
                 });
 
-                for(var key in paymentReport){            
-                    if(paymentReport[key] && paymentReport[key].hasData){                
-                        paymentReport[key] = calculatePayment( paymentReport[key] );
+                for(var key in paymentReport){
+                    if(paymentReport[key] && paymentReport[key].hasData){
+                        paymentReport[key] = calculatePayment( paymentReport[key], destination );
 
                         if( dhis2.validation.isNumber( paymentReport[key].subtotal ) ){
                             totalPaymentAmount = totalPaymentAmount + new Number( paymentReport[key].subtotal );
@@ -1962,7 +1966,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
 
                     if(report[key] && report[key].hasData){
 
-                        var r = calculatePayment( report[key] );
+                        var r = calculatePayment( report[key], destination );
 
                         paymentReport.push( r );
 
