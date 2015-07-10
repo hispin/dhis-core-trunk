@@ -278,6 +278,7 @@ trackerCapture.controller('BeneficiaryController',
                     
                     //reset form
                     $scope.newBen = {};
+                    $scope.ben= {};
                     $scope.outerForm.submitted = false;
                 });               
             }
