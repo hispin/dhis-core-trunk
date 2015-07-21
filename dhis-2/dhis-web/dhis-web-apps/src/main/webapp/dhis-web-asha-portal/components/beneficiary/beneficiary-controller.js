@@ -165,7 +165,7 @@ trackerCapture.controller('BeneficiaryController',
                             
                             $scope.serviceGridColumns.push({name: $translate('service'), id: 'serviceName', type: 'string', displayInListNoProgram: false, showFilter: false, show: true});
                             $scope.serviceGridColumns.push({name: $translate('service_date'), id: 'eventDate', type: 'date', displayInListNoProgram: false, showFilter: false, show: true});
-                            $scope.serviceGridColumns.push({name: $translate('current_approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});                            
+                            //$scope.serviceGridColumns.push({name: $translate('current_approval_status'), id: $scope.dataElementForCurrentApprovalStatus.id, type: 'string', displayInListNoProgram: false, showFilter: false, show: true});                            
                             
                             if(!$scope.dataElementForServiceOwner || 
                                     !$scope.dataElementForPaymentSanctioned ||
@@ -343,7 +343,10 @@ trackerCapture.controller('BeneficiaryController',
                                 if(dv.dataElement === $scope.dataElementForCurrentApprovalStatus.id){
                                     serviceProvided.currentApprovalStatus = dv.value;
                                 }
-                                serviceProvided[dv.dataElement] = dv.value;
+                                else{
+                                    serviceProvided[dv.dataElement] = dv.value;
+                                }
+                                
                             }
                         }                                            
                     }); 

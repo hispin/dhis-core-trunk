@@ -33,7 +33,7 @@
                 </span>
             </td>
             <td>
-                <select ng-model="service.latestApprovalStatus"
+                <select ng-model="service.currentApprovalStatus"
                         class="form-control-trimmed"
                         ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
                         ng-change="saveServiceApproval(service)"

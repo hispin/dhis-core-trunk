@@ -97,8 +97,6 @@ trackerCapture.controller('UpcomingEventsController',
         
         $scope.upcomingEvents = [];
         
-        console.log('the program is:  ', $scope.selectedProgram);
-        
         EventReportService.getEventReport($scope.selectedOrgUnit.id, 
                                         $scope.selectedOuMode, 
                                         $scope.selectedProgram.id, 

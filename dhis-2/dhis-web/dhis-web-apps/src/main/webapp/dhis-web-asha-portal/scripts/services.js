@@ -108,7 +108,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             //generate availablePeriods
             var pt = new PeriodType();
             var d2Periods = pt.get(stage.periodType).generatePeriods({offset: periodOffset, filterFuturePeriods: false, reversePeriods: false});
-            angular.forEach(d2Periods, function(p){
+            angular.forEach(d2Periods, function(p){                
                 p.endDate = DateUtils.formatFromApiToUser(p.endDate);
                 p.startDate = DateUtils.formatFromApiToUser(p.startDate);
                 
@@ -121,11 +121,12 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             angular.forEach(events, function(event){
                 var p = availablePeriods[event.sortingDate];
                 if(p){
-                    occupiedPeriods.push({event: event.event, name: p.name, stage: stage.id, eventDate: event.sortingDate});
+                    occupiedPeriods.push({event: event.event, name: p.name, stage: stage.id, eventDate: event.sortingDate, iso: p.iso});
                     delete availablePeriods[event.sortingDate];
                 }                    
             });     
         }
+        
         return {occupiedPeriods: occupiedPeriods, availablePeriods: availablePeriods};
     };
     

@@ -157,8 +157,8 @@ trackerCapture.controller('PaymentApprovalController',
             var grid = TEIGridService.generateGridColumns(atts, $scope.selectedOuMode.name);   
             $scope.gridColumns = grid.columns;
         });
-                
-        AshaPortalUtils.getPaymentRate(moment($scope.selectedPeriod.startDate).year(), $scope.selectedOrgUnit.id).then(function(paymentRate){
+                        
+        AshaPortalUtils.getPaymentRate($scope.selectedPeriod.iso, $scope.selectedOrgUnit.id).then(function(paymentRate){
                 
             $scope.paymentRate = paymentRate;
         
