@@ -18,6 +18,9 @@
                 {{gridColumn.name}}
             </th>
             <th class="active">
+                {{dataElementForCurrentApprovalStatus.name}}
+            </th>
+            <th class="active">
                 {{'latest_approval_status'| translate}}
             </th>
         </tr>                        
@@ -33,11 +36,14 @@
                 </span>
             </td>
             <td>
-                <select ng-model="service.currentApprovalStatus"
+                {{service.currentApprovalStatus}}
+            </td>
+            <td>
+                <select ng-model="service.latestApprovalStatus"
                         class="form-control-trimmed"
                         ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
                         ng-change="saveServiceApproval(service)"
-                        ng-disabled="service[dataElementForPaymentSanctioned.id] || showAddNewServiceDiv || (approvalAuthorityLevel <= 0 || approvalAuthorityLevel < service[dataElementForCurrentApprovalLevel.id])">
+                        ng-disabled="service[dataElementForPaymentSanctioned.id] || (approvalAuthorityLevel <= 0 || approvalAuthorityLevel < service[dataElementForCurrentApprovalLevel.id])">
                     <option value="">{{'[select]'| translate}}</option>
                 </select>
             </td>

@@ -1,0 +1,29 @@
+<div class="modal-header page">
+    <h3>{{event.latestApprovalStatus}}</h3>
+</div>
+<div class="modal-body page">    
+    <form name="approvalForm" class="form-horizontal" role="form" novalidate>
+        <h4>{{'are_you_sure_approve' | translate}} {{event.latestApprovalStatus}}</h4>
+        <div ng-if="event.latestApprovalStatus !== 'Approved'">            
+            <div class="form-group">
+                <label class="col-sm-2 control-label">{{'comment'| translate}}</label>
+                <div class="col-sm-10">
+                    <textarea rows="3"
+                        ng-model="event.comment"                                        
+                        ng-required='true'
+                        min="3"
+                        ng-class="{'input-filed-required': !event.comment}"                        
+                        class="form-control">
+                    </textarea>
+                </div>
+            </div>
+            <span class="required" ng-if="!event.comment">
+                
+            </span>
+        </div>
+    </form>  
+</div>
+<div class="modal-footer page">        
+    <button class="btn btn-primary" data-ng-click="save()">{{'proceed'| translate}}</button>
+    <button class="btn btn-default" data-ng-click="cancel()">{{'cancel'| translate}}</button>
+</div>

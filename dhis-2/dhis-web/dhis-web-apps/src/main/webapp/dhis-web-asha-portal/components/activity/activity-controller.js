@@ -184,7 +184,9 @@ trackerCapture.controller('ActivityController',
                                 if(dv.dataElement === $scope.dataElementForCurrentApprovalStatus.id){
                                     activityConducted.currentApprovalStatus = dv.value;
                                 }
-                                activityConducted[dv.dataElement] = dv.value;
+                                else{
+                                    activityConducted[dv.dataElement] = dv.value;
+                                }                                
                             }
                         }                                            
                     });
@@ -231,6 +233,11 @@ trackerCapture.controller('ActivityController',
         //but there could be a case where all dataelements are non-mandatory and
         //the event form comes empty, in this case enforce at least one value
         $scope.valueExists = false;
+        
+        $scope.newActivity[$scope.dataElementForServiceOwner.id] = $scope.ashaEvent;
+        $scope.newActivity[$scope.dataElementForCurrentApprovalStatus.id] = 'Pending';
+        $scope.newActivity[$scope.dataElementForCurrentApprovalLevel.id] = $scope.approvalAuthorityLevel;
+        
         var dataValues = [];
         angular.forEach($scope.selectedProgramStage.programStageDataElements, function(prStDe){
             if( prStDe.dataElement && prStDe.dataElement.id ){
@@ -262,7 +269,9 @@ trackerCapture.controller('ActivityController',
             return false;
         }
         
-        dataValues.push({dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent}, {dataElement: $scope.dataElementForCurrentApprovalStatus.id, value: 'Pending'});
+        /*dataValues.push({dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent}, 
+                        {dataElement: $scope.dataElementForCurrentApprovalStatus.id, value: 'Pending'},
+                        {dataElement: $scope.dataElementForCurrentApprovalLevel.id, value: $scope.approvalAuthorityLevel});*/
         var dhis2Event = {
                 program: $scope.selectedActivityProgram.id,
                 programStage: $scope.selectedProgramStage.id,
@@ -288,7 +297,7 @@ trackerCapture.controller('ActivityController',
                 $scope.newActivity.status = 'VISITED';
                 $scope.newActivity.program = $scope.selectedActivityProgram.id;
                 $scope.newActivity.programStage = $scope.selectedProgramStage.id;
-                $scope.newActivity[$scope.dataElementForCurrentApprovalStatus.id] = 'Pending';
+                $scope.newActivity.currentApprovalStatus = 'Pending';
                 if( !$scope.activitiesConducted ){
                     $scope.activitiesConducted = [];
                 }                
@@ -305,7 +314,7 @@ trackerCapture.controller('ActivityController',
         
         if( stage && stage.id ){
             
-            var modalOptions = {
+            /*var modalOptions = {
                 closeButtonText: 'cancel',
                 actionButtonText: 'yes',
                 headerText: activity.latestApprovalStatus,
@@ -325,8 +334,40 @@ trackerCapture.controller('ActivityController',
                 });                           
             }, function(){
                 activity.latestApprovalStatus = null;
-            });            
-        }        
+            });*/            
+            
+            var modalInstance = $modal.open({
+                templateUrl: 'components/approval/approval.html',
+                controller: 'ApprovalController',
+                resolve: {
+                    optionSets: function () {
+                        return $scope.optionSets;
+                    },
+                    dataElementForCurrentApprovalLevelId: function () {
+                        return $scope.dataElementForCurrentApprovalLevel.id;
+                    },
+                    dataElementForCurrentApprovalStatusId: function () {
+                        return $scope.dataElementForCurrentApprovalStatus.id;
+                    },                
+                    stage: function () {
+                        return stage;
+                    },
+                    event: function () {
+                        return activity;
+                    }
+                }
+            });
+
+            modalInstance.result.then(function (ev) {
+                if (angular.isObject(ev)) {
+                    activity = ev;
+                }
+            }, function (ev) {
+                if (angular.isObject(ev)) {
+                    activity = ev;
+                }
+            });
+        }
     };
     
     $scope.generatePaymentSlip = function(){

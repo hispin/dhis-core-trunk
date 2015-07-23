@@ -41,14 +41,14 @@
                 {{activity[header.id]}}
             </td>
             <td>
-                {{activity[dataElementForCurrentApprovalStatus.id]}}
+                {{activity.currentApprovalStatus}}
             </td>
             <td>
                 <select ng-model="activity.latestApprovalStatus"
                         class="form-control-trimmed"
                         ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
                         ng-change="saveActivityApproval(activity)"
-                        ng-disabled="activity[dataElementForPaymentSanctioned.id] || approvalAuthorityLevel <= 0 || approvalAuthorityLevel < activity[dataElementForCurrentApprovalLevel.id]">
+                        ng-disabled="activity[dataElementForPaymentSanctioned.id] || (approvalAuthorityLevel <= 0 || approvalAuthorityLevel < activity[dataElementForCurrentApprovalLevel.id])">
                     <option value="">{{'please_select'| translate}}</option>
                 </select>
             </td>

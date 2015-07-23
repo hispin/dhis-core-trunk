@@ -1046,3 +1046,8 @@ ul.tree ul li:last-child:before {
     display: table-cell;
     vertical-align: middle;
 }
+
+.input-filed-required {
+    border-color: red;
+    outline-color: red;
+}

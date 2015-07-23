@@ -11,7 +11,7 @@
 </div>
 
 <div id="mainPage" class="bordered-div">
-    <h2>{{'payment_approval_and_release'| translate}}</h2>
+    <h2>{{'payment_release'| translate}}</h2>
     <form name="outerForm" novalidate>               
         <div ng-include="'components/report/periodicReportForm.html'"></div>
     </form>    
@@ -41,9 +41,9 @@
                             <th class="active" ng-repeat="col in serviceGridColumns| filter: {statusCol: true}">
                                 {{col.name| translate}}
                             </th>
-                            <th class="active">
+                            <!--<th class="active">
                                 {{'latest_approval_status'| translate}}
-                            </th>
+                            </th>-->
                             <th class="active">
                                 {{'payment_release' | translate}}
                             </th>                            
@@ -80,9 +80,9 @@
                             <td style="vertical-align:middle"
                                 class="align-center" 
                                 ng-repeat="col in serviceGridColumns| filter: {statusCol: true}">
-                                {{payment[col.id]}} 
+                                {{payment[col.id]}}
                             </td>
-                            <td>
+                            <!--<td>
                                 <select ng-model="payment.latestApprovalStatus"
                                         class="form-control-trimmed"
                                         ng-options="option.name as option.name for option in optionSets[dataElementForCurrentApprovalStatus.optionSet.id].options" 
@@ -90,7 +90,7 @@
                                         ng-disabled="payment[dataElementForPaymentSanctioned.id] || approvalAuthorityLevel <= 0 || approvalAuthorityLevel < payment[dataElementForCurrentApprovalLevel.id]">
                                     <option value="">{{'[select]'| translate}}</option>
                                 </select>
-                            </td>
+                            </td>-->
                             <td>
                                 <input type="checkbox"                                       
                                     class="form-control" 

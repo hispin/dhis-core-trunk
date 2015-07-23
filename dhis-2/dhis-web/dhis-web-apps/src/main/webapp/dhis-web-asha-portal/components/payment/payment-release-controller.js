@@ -1,6 +1,6 @@
 /* global trackerCapture, angular */
 
-trackerCapture.controller('PaymentApprovalController',
+trackerCapture.controller('PaymentReleaseController',
         function($scope,
                 $filter,
                 $translate,
@@ -187,6 +187,7 @@ trackerCapture.controller('PaymentApprovalController',
                 
                 $scope.serviceGridColumns.push({name: 'service_date', id: 'eventDate', statusCol: true});
                 $scope.serviceGridColumns.push({name: 'current_approval_status', id: $scope.dataElementForCurrentApprovalStatus.id,  statusCol: true});
+                $scope.serviceGridColumns.push({name: 'current_approval_level', id: $scope.dataElementForCurrentApprovalLevel.id,  statusCol: true});
 
                 angular.forEach(data.eventEventRows, function(row){
 

@@ -1921,7 +1921,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                                                                 programStageId: payment.programStage,
                                                                 claimed: obj.claimed + 1, 
                                                                 //pending: !payment.currentApprovalStatus ? obj.pending + 1: obj.pending,
-                                                                pending:  payment.currentApprovalStatus ==='Pending' ? obj.pending + 1: obj.pending,
+                                                                pending:  payment.currentApprovalStatus === 'Pending' ? obj.pending + 1 : obj.pending,
                                                                 rejected: payment.currentApprovalStatus === 'Rejected' ? obj.rejected + 1 : obj.rejected,
                                                                 approved: payment.currentApprovalStatus === 'Approved' ? obj.approved + 1 : obj.approved,
                                                                 released: payment.paymentReleased === 'true' ? obj.released + 1 : obj.released,
@@ -1947,6 +1947,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                     report[st.id] = {hasData: false, rate: 'rate', claimed: 0, pending: 0, rejected: 0, approved: 0, released: 0, subtotal: 0};
                     angular.forEach($filter('filter')(payments, {programStage: st.id}), function(payment){
                         var obj = report[st.id];
+                        console.log('the payment:  ', payment);
                         report[st.id] = {hasData: true, 
                                                                 programName: programsById[payment.program].name,
                                                                 service: stagesById[payment.programStage].name,
@@ -1956,7 +1957,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                                                                 rate: getStageRate(payment.programStage, stagesById, paymentRate) ? getStageRate(payment.programStage, stagesById, paymentRate) : 'NO_RATE',
                                                                 claimed: obj.claimed + 1, 
                                                                 //pending: !payment.currentApprovalStatus ? obj.pending + 1: obj.pending,
-                                                                pending:  payment.currentApprovalStatus ==='Pending' ? obj.pending + 1: obj.pending,
+                                                                pending:  payment.currentApprovalStatus === 'Pending' ? obj.pending + 1 : obj.pending,
                                                                 rejected: payment.currentApprovalStatus === 'Rejected' ? obj.rejected + 1 : obj.rejected,
                                                                 approved: payment.currentApprovalStatus === 'Approved' ? obj.approved + 1 : obj.approved,
                                                                 released: payment.paymentReleased === 'true' ? obj.released + 1 : obj.released,

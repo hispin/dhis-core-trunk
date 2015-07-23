@@ -345,8 +345,7 @@ trackerCapture.controller('BeneficiaryController',
                                 }
                                 else{
                                     serviceProvided[dv.dataElement] = dv.value;
-                                }
-                                
+                                }                                
                             }
                         }                                            
                     }); 
@@ -396,7 +395,11 @@ trackerCapture.controller('BeneficiaryController',
             dhis2Event.orgUnit = $scope.selectedOrgUnit.id;
             dhis2Event.status = 'VISITED';
             dhis2Event.dueDate = dhis2Event.eventDate = DateUtils.formatFromUserToApi($scope.selectedService.dueDate);
-            dhis2Event.dataValues = [{dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent}, {dataElement: $scope.dataElementForCurrentApprovalStatus.id, value: 'Pending'}];
+            dhis2Event.dataValues = [
+                                        {dataElement: $scope.dataElementForServiceOwner.id, value: $scope.ashaEvent},
+                                        {dataElement: $scope.dataElementForCurrentApprovalStatus.id, value: 'Pending'},
+                                        {dataElement: $scope.dataElementForCurrentApprovalLevel.id, value: $scope.approvalAuthorityLevel}
+                                    ];
             $scope.selectedServiceStage = $scope.stagesById[$scope.selectedService.service.id];
             
             $scope.selectedEnrollment = $scope.beneficiaryEnrollmentsByProgram[$scope.selectedService.program.id];
@@ -468,12 +471,12 @@ trackerCapture.controller('BeneficiaryController',
                                           stage, 
                                           $scope.optionSets, 
                                           $scope.dataElementForCurrentApprovalLevel.id, 
-                                          $scope.dataElementForCurrentApprovalStatus.id);                
+                                          $scope.dataElementForCurrentApprovalStatus.id);
                 DHIS2EventFactory.update( obj.model ).then(function(){
                     service.currentApprovalLevel =  service[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
                     service[$scope.dataElementForCurrentApprovalStatus.id] = service.latestApprovalStatus;
                     service.currentApprovalStatus = service.latestApprovalStatus;
-                });                           
+                });
             }, function(){
                 service.latestApprovalStatus = null;
             });
@@ -490,7 +493,7 @@ trackerCapture.controller('BeneficiaryController',
 
             DialogService.showDialog({}, dialogOptions);
         }
-        else{
+        else{            
             var newService = angular.copy($scope.selectedBeneficiary);
             newService.eventDate = $scope.selectedService.dueDate;
             newService.dueDate = $scope.selectedService.dueDate;
@@ -502,7 +505,10 @@ trackerCapture.controller('BeneficiaryController',
             newService.serviceName = $scope.selectedService.service.name;
             newService.programName = $scope.selectedService.program.name;
             newService.trackedEntityInstance = $scope.selectedBeneficiary.id;
+            newService.currentApprovalStatus = 'Pending';
+            newService[$scope.dataElementForCurrentApprovalLevel.id] = $scope.currentApprovalLevel;
             newService[$scope.dataElementForCurrentApprovalStatus.id] = 'Pending';
+            newService[$scope.dataElementForServiceOwner.id] = $scope.ashaEvent;
             
             if( !$scope.servicesProvided ){
                 $scope.servicesProvided = [];

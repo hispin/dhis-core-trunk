@@ -6,8 +6,8 @@ trackerCapture.controller('LeftBarMenuController',
         $location.path('/').search();
     }; 
     
-    $scope.showApprovals = function(){
-        $location.path('/approval-and-release').search();
+    $scope.showPaymentRelease = function(){
+        $location.path('/payment-release').search();
     };
     
     $scope.showReportTypes = function(){
