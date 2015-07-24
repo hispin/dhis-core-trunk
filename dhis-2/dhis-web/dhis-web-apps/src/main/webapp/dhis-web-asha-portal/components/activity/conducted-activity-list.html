@@ -42,6 +42,11 @@
             </td>
             <td>
                 {{activity.currentApprovalStatus}}
+                <!-- visible when comment exisits -->
+                <span class="pull-right" ng-if="activity.notes.length > 0" >                                
+                    <a href ng-click="showNotes(activity)" title="{{'approval_comments'| translate}}"><i class="fa fa-info-circle"></i></a>
+                </span>    
+                <!-- visible when comment exisits -->
             </td>
             <td>
                 <select ng-model="activity.latestApprovalStatus"

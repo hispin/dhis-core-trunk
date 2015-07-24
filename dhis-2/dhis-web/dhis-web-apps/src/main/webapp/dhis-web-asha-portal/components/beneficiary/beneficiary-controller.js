@@ -333,6 +333,7 @@ trackerCapture.controller('BeneficiaryController',
                     serviceProvided.program = row.program;
                     serviceProvided.programStage = row.programStage;
                     serviceProvided.trackedEntityInstance = row.trackedEntityInstance;
+                    serviceProvided.notes = row.notes ? row.notes : [];
 
                     angular.forEach(row.dataValues, function(dv){
                         if(dv.dataElement && dv.value){                            
@@ -457,30 +458,40 @@ trackerCapture.controller('BeneficiaryController',
         
         var stage = $scope.stagesById[service.programStage];
         
-        if( stage && stage.id ){
+        if( stage && stage.id ){                 
             
-            var modalOptions = {
-                closeButtonText: 'cancel',
-                actionButtonText: 'yes',
-                headerText: service.latestApprovalStatus,
-                bodyText: $translate('proceed_?')
-            };
-
-            ModalService.showModal({}, modalOptions).then(function(result){                
-                var obj = AshaPortalUtils.saveApproval( service, 
-                                          stage, 
-                                          $scope.optionSets, 
-                                          $scope.dataElementForCurrentApprovalLevel.id, 
-                                          $scope.dataElementForCurrentApprovalStatus.id);
-                DHIS2EventFactory.update( obj.model ).then(function(){
-                    service.currentApprovalLevel =  service[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
-                    service[$scope.dataElementForCurrentApprovalStatus.id] = service.latestApprovalStatus;
-                    service.currentApprovalStatus = service.latestApprovalStatus;
-                });
-            }, function(){
-                service.latestApprovalStatus = null;
+            var modalInstance = $modal.open({
+                templateUrl: 'components/approval/approval.html',
+                controller: 'ApprovalController',
+                resolve: {
+                    optionSets: function () {
+                        return $scope.optionSets;
+                    },
+                    dataElementForCurrentApprovalLevelId: function () {
+                        return $scope.dataElementForCurrentApprovalLevel.id;
+                    },
+                    dataElementForCurrentApprovalStatusId: function () {
+                        return $scope.dataElementForCurrentApprovalStatus.id;
+                    },                
+                    stage: function () {
+                        return stage;
+                    },
+                    event: function () {
+                        return service;
+                    }
+                }
             });
-        }        
+
+            modalInstance.result.then(function (ev) {
+                if (angular.isObject(ev)) {
+                    service = ev;
+                }
+            }, function (ev) {
+                if (angular.isObject(ev)) {
+                    service = ev;
+                }
+            });
+        }
     };
     
     function appendNewService(obj){
@@ -757,5 +768,20 @@ trackerCapture.controller('BeneficiaryController',
                 }                
             });
         });        
+    };
+    
+    $scope.showNotes = function(dhis2Event){        
+        var modalInstance = $modal.open({
+            templateUrl: 'components/approval/comment.html',
+            controller: 'CommentController',
+            resolve: {
+                dhis2Event: function () {
+                    return dhis2Event;
+                }
+            }
+        });
+
+        modalInstance.result.then(function (){
+        });
     };
 });

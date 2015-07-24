@@ -1804,6 +1804,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                 e.enrollment = dhis2Event.enrollment;
             }
             
+            e.notes = dhis2Event.notes ? dhis2Event.notes : [];
+            
             return e;
         }
     };
@@ -1947,7 +1949,6 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                     report[st.id] = {hasData: false, rate: 'rate', claimed: 0, pending: 0, rejected: 0, approved: 0, released: 0, subtotal: 0};
                     angular.forEach($filter('filter')(payments, {programStage: st.id}), function(payment){
                         var obj = report[st.id];
-                        console.log('the payment:  ', payment);
                         report[st.id] = {hasData: true, 
                                                                 programName: programsById[payment.program].name,
                                                                 service: stagesById[payment.programStage].name,

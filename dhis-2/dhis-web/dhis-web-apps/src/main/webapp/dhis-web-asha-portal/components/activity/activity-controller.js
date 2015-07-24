@@ -166,7 +166,7 @@ trackerCapture.controller('ActivityController',
                                           false,
                                           null).then(function(data){
 
-                angular.forEach(data.eventRows, function(row){
+                angular.forEach(data.eventRows, function(row){                    
                     var activityConducted = {};
                     activityConducted.eventDate = DateUtils.formatFromApiToUser(row.eventDate);
                     activityConducted.event = row.event;
@@ -174,6 +174,7 @@ trackerCapture.controller('ActivityController',
                     activityConducted.orgUnit = row.orgUnit;
                     activityConducted.program = row.program;
                     activityConducted.programStage = row.programStage;
+                    activityConducted.notes = row.notes ? row.notes : [];
                     
                     angular.forEach(row.dataValues, function(dv){
                         if(dv.dataElement && dv.value){                            
@@ -312,29 +313,7 @@ trackerCapture.controller('ActivityController',
         
         var stage = $scope.stagesById[activity.programStage];
         
-        if( stage && stage.id ){
-            
-            /*var modalOptions = {
-                closeButtonText: 'cancel',
-                actionButtonText: 'yes',
-                headerText: activity.latestApprovalStatus,
-                bodyText: $translate('proceed_?')
-            };
-
-            ModalService.showModal({}, modalOptions).then(function(result){
-                var obj = AshaPortalUtils.saveApproval( activity, 
-                                          stage, 
-                                          $scope.optionSets, 
-                                          $scope.dataElementForCurrentApprovalLevel.id, 
-                                          $scope.dataElementForCurrentApprovalStatus.id);                
-                DHIS2EventFactory.update( obj.model ).then(function(){
-                    activity.currentApprovalLevel = activity[$scope.dataElementForCurrentApprovalLevel.id] = obj.display[$scope.dataElementForCurrentApprovalLevel.id];
-                    activity[$scope.dataElementForCurrentApprovalStatus.id] = activity.latestApprovalStatus;   
-                    activity.currentApprovalStatus = activity.latestApprovalStatus;
-                });                           
-            }, function(){
-                activity.latestApprovalStatus = null;
-            });*/            
+        if( stage && stage.id ){                 
             
             var modalInstance = $modal.open({
                 templateUrl: 'components/approval/approval.html',
@@ -442,5 +421,20 @@ trackerCapture.controller('ActivityController',
                 }                
             });
         });        
+    };
+    
+    $scope.showNotes = function(dhis2Event){        
+        var modalInstance = $modal.open({
+            templateUrl: 'components/approval/comment.html',
+            controller: 'CommentController',
+            resolve: {
+                dhis2Event: function () {
+                    return dhis2Event;
+                }
+            }
+        });
+
+        modalInstance.result.then(function (){
+        });
     };
 });
