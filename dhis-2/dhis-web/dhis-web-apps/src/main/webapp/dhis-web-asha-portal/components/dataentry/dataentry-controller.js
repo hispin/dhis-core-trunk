@@ -267,7 +267,7 @@ trackerCapture.controller('DataEntryController',
         else{
             var dialogOptions = {
                 headerText: 'invalid_db_configuration',
-                bodyText: 'invalid_period_for_event' + period
+                bodyText: 'invalid_period_for_event'
             };
 
             DialogService.showDialog({}, dialogOptions);

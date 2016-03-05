@@ -53,8 +53,8 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             return promise;            
         },
         get: function(){            
-            var promise = $http.get(  '../api/userSettings/dhis2-tracker-dashboard' ).then(function(response){                
-                return response.data === "" ? defaultLayout : response.data;
+            var promise = $http.get(  '../api/userSettings/dhis2-tracker-dashboard' ).then(function(response){
+                return angular.isObject(response.data) ? response.data : defaultLayout;
             }, function(){
                 return defaultLayout;
             });
@@ -101,7 +101,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         else{
 
             var startDate = DateUtils.format( moment(referenceDate, calendarSetting.momentFormat).add(offset, 'days') );
-            var periodOffset = splitDate(DateUtils.getToday()).year - splitDate(startDate).year;
+            var periodOffset = splitDate(startDate).year - splitDate(DateUtils.getToday()).year;
             var eventDateOffSet = moment(referenceDate, calendarSetting.momentFormat).add('d', offset)._d;
             eventDateOffSet = $filter('date')(eventDateOffSet, calendarSetting.keyDateFormat);        
             
@@ -1849,14 +1849,7 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         var userRole = SessionStorageService.get('USER_ROLES');
         if( userRole['ApprovalAuthorityLevel'] && dhis2.validation.isNumber(userRole['ApprovalAuthorityLevel'])){
             return userRole['ApprovalAuthorityLevel'];
-        }
-        /*if( roles && roles.attributeValues ){                
-            for(var i=0; i<roles.attributeValues.length; i++){
-                if(dhis2.validation.isNumber(roles.attributeValues[i].value) && roles.attributeValues[i].attribute && roles.attributeValues[i].attribute.code === 'ApprovalAuthorityLevel'){
-                    return roles.attributeValues[i].value;
-                }
-            }
-        }*/            
+        }        
         return 0;
     };
     return {
