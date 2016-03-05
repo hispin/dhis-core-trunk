@@ -488,7 +488,6 @@ input[type=date]::-webkit-inner-spin-button, input[type=date]::-webkit-outer-spi
 div#searchOuTree accordion>.panel-group>.panel-default>.panel-heading{
     background-color: #ffffff;
     padding: 10px 5px 10px 5px;
-    //padding: 5px 9px 5px 5px;
 }
 
 div#searchOuTree h4{
@@ -883,15 +882,14 @@ a:active {
 }
 
 .ui-datepicker-group .ui-datepicker-header {
-    //height: 1.5em; 
-    height: inherit;  //this is to make it play nice with bootstrap
+    height: inherit;  /*this is to make it play nice with bootstrap */
 }
 
 #ui-datepicker-div, .calendars-popup {
-    z-index: 2000; //has to be greater than bootsrap's modal z-index
+    z-index: 2000; /*has to be greater than bootsrap's modal z-index */
 }
 
-//Necessary to override the .panel-group .panel { overflow: hidden; } in bootstrap.
+/* Necessary to override the .panel-group .panel { overflow: hidden; } in bootstrap. */
 .panel-group .panel {
     overflow: visible;
 }

@@ -20,6 +20,8 @@ trackerCapture.controller('BankAdviseController',
     $scope.ouModes = [{name: 'SELECTED'}, {name: 'CHILDREN'}, {name: 'DESCENDANTS'}, {name: 'ACCESSIBLE'}];         
     $scope.selectedOuMode = $scope.ouModes[0];
     $scope.report = {};
+    $scope.periodType = null;
+    $scope.periodOffset = 0;
     
     $scope.optionSets = CurrentSelection.getOptionSets();
     if(!$scope.optionSets){
@@ -42,8 +44,9 @@ trackerCapture.controller('BankAdviseController',
         $scope.dataElementForPaymentSanctioned = null;
         $scope.dataElementForCurrentApprovalLevel = null;
         $scope.dataElementForCurrentApprovalStatus = null;
+        $scope.periodType = null;
+        $scope.periodOffset = 0;
         
-        var periodType;
         angular.forEach(stages, function(stage){
             
             $scope.programStagesById[stage.id] = stage;
@@ -51,7 +54,7 @@ trackerCapture.controller('BankAdviseController',
             if(stage.BeneficiaryRegistration || stage.ActivityRegistration){
                 $scope.paymentStagesById[stage.id] = stage;
                 $scope.paymentStages.push(stage);
-                periodType = stage.periodType;
+                $scope.periodType = stage.periodType;
             }
 
             for( var i=0; 
@@ -92,9 +95,32 @@ trackerCapture.controller('BankAdviseController',
             $scope.enrollmentSuccess = false;
             return;    
         }        
-        $scope.periods = PeriodService.getPeriodsByType(periodType);
+        if( !$scope.periodType ){
+            //invalid db configuration
+            var dialogOptions = {
+                headerText: 'invalid_db_configuration',
+                bodyText: $translate('stage_missing_period_type')
+            };
+            DialogService.showDialog({}, dialogOptions);
+            $scope.enrollmentSuccess = false;
+            return;
+        }
+        $scope.periods = PeriodService.getPeriodsByType($scope.periodType, $scope.periodOffset);
     });
-                        
+    
+    $scope.getPeriods = function(mode){
+        
+        if( mode === 'NXT'){
+            $scope.periodOffset = $scope.periodOffset + 1;
+            $scope.selectedPeriod = null;
+            $scope.periods = PeriodService.getPeriodsByType($scope.periodType, $scope.periodOffset);
+        }
+        else{
+            $scope.periodOffset = $scope.periodOffset - 1;
+            $scope.selectedPeriod = null;
+            $scope.periods = PeriodService.getPeriodsByType($scope.periodType, $scope.periodOffset);
+        }
+    };        
                         
     //watch for selection of org unit from tree
     $scope.$watch('selectedOrgUnit', function() {      

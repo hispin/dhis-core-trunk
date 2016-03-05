@@ -77,12 +77,13 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         return {year: moment(dateValue, calendarSetting.momentFormat).year(), month: moment(dateValue, calendarSetting.momentFormat).month(), week: moment(dateValue, calendarSetting.momentFormat).week(), day: moment(dateValue, calendarSetting.momentFormat).day()};
     };
     
-    this.getPeriods = function(events, stage, enrollment){
+    this.getPeriods = function(events, stage, enrollment, userOffset){
      
         if(!stage){
             return;
         }
         
+        userOffset = angular.isUndefined(userOffset) ? 0 : userOffset;
         var referenceDate = enrollment.dateOfIncident ? enrollment.dateOfIncident : enrollment.dateOfEnrollment;
         var offset = stage.minDaysFromStart ? stage.minDaysFromStart : 0;
         
@@ -103,11 +104,11 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             var startDate = DateUtils.format( moment(referenceDate, calendarSetting.momentFormat).add(offset, 'days') );
             var periodOffset = splitDate(startDate).year - splitDate(DateUtils.getToday()).year;
             var eventDateOffSet = moment(referenceDate, calendarSetting.momentFormat).add('d', offset)._d;
-            eventDateOffSet = $filter('date')(eventDateOffSet, calendarSetting.keyDateFormat);        
+            eventDateOffSet = $filter('date')(eventDateOffSet, calendarSetting.keyDateFormat);
             
             //generate availablePeriods
             var pt = new PeriodType();
-            var d2Periods = pt.get(stage.periodType).generatePeriods({offset: periodOffset, filterFuturePeriods: false, reversePeriods: false});
+            var d2Periods = pt.get(stage.periodType).generatePeriods({offset: periodOffset - userOffset, filterFuturePeriods: false, reversePeriods: false});
             angular.forEach(d2Periods, function(p){                
                 p.endDate = DateUtils.formatFromApiToUser(p.endDate);
                 p.startDate = DateUtils.formatFromApiToUser(p.startDate);
@@ -127,14 +128,14 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             });     
         }
         
-        return {occupiedPeriods: occupiedPeriods, availablePeriods: availablePeriods};
+        return {occupiedPeriods: occupiedPeriods, availablePeriods: availablePeriods, offset: periodOffset - userOffset};
     };
     
-    this.getPeriodsByType = function(periodType){
+    this.getPeriodsByType = function(periodType, offset){
         //generate availablePeriods
         var periods = [];
         var pt = new PeriodType();
-        var prds = pt.get(periodType).generatePeriods({offset: 0, filterFuturePeriods: true, reversePeriods: false});
+        var prds = pt.get(periodType).generatePeriods({offset: offset, filterFuturePeriods: true, reversePeriods: false});
         angular.forEach(prds, function(p){
             p.endDate = DateUtils.formatFromApiToUser(p.endDate);
             p.startDate = DateUtils.formatFromApiToUser(p.startDate);            
@@ -1633,14 +1634,16 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
             evs = orderByFilter(evs, '-eventDate');
         }
         
-        var availabelPeriods = PeriodService.getPeriods(evs,programStage, enrollment).availablePeriods;
+        var ps = PeriodService.getPeriods(evs,programStage, enrollment);
+        //console.log('the ps:  ', ps.availabelPeriods);
+        var availabelPeriods = ps.availablePeriods;//PeriodService.getPeriods(evs,programStage, enrollment).availablePeriods;
         var periods = [];
         for(var k in availabelPeriods){
             if(availabelPeriods.hasOwnProperty(k)){
                 periods.push( availabelPeriods[k] );
             }
         }        
-        return periods;
+        return {periods: periods, offset: ps.offset};
     };
     
     return {
@@ -1658,12 +1661,13 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
                               status: 'SCHEDULED'};
                           
             if(programStage.periodType){                
-                var periods = getEventDuePeriod(eventsPerStage, programStage, enrollment);
-                dummyEvent.dueDate = periods[0].endDate;
-                dummyEvent.periodName = periods[0].name;
+                var ps = getEventDuePeriod(eventsPerStage, programStage, enrollment);
+                dummyEvent.dueDate = ps.periods[0].endDate;
+                dummyEvent.periodName = ps.periods[0].name;
                 dummyEvent.eventDate = dummyEvent.dueDate;
-                dummyEvent.periods = periods;
+                dummyEvent.periods = ps.periods;
                 dummyEvent.status = 'VISITED';
+                dummyEvent.offset = ps.offset;
             }
             else{
                 dummyEvent.dueDate = getEventDueDate(eventsPerStage, programStage, enrollment);

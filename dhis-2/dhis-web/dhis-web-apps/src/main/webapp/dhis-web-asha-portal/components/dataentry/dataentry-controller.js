@@ -941,6 +941,7 @@ trackerCapture.controller('DataEntryController',
             DateUtils,
             DHIS2EventFactory,
             DialogService,
+            PeriodService,
             stagesById,
             dummyEvent,
             eventPeriods){
@@ -948,14 +949,16 @@ trackerCapture.controller('DataEntryController',
     $scope.programStageId = dummyEvent.programStage;
     $scope.eventPeriods = eventPeriods;
     $scope.selectedStage =  $scope.stagesById[dummyEvent.programStage];
+    $scope.newEventModel = {};
     
     $scope.dhis2Event = {eventDate: '', dueDate: dummyEvent.dueDate, reportDateDescription: dummyEvent.reportDateDescription, name: dummyEvent.name, invalid: true};
     
     if($scope.selectedStage.periodType){
         $scope.dhis2Event.eventDate = dummyEvent.dueDate;
         $scope.dhis2Event.periodName = dummyEvent.periodName;
-        $scope.dhis2Event.periods = dummyEvent.periods;
-        $scope.dhis2Event.selectedPeriod = dummyEvent.periods[0];
+        $scope.periods = dummyEvent.periods;
+        $scope.selectedPeriod = dummyEvent.periods[0];
+        $scope.periodOffset = dummyEvent.offset;
     }
     
     $scope.dueDateInvalid = false;
@@ -983,6 +986,24 @@ trackerCapture.controller('DataEntryController',
         }
     });
     
+    $scope.applyPeriod = function(p){
+        $scope.selectedPeriod = p;
+    };
+    
+    $scope.getPeriods = function(mode){
+        
+        if( mode === 'NXT'){
+            $scope.periodOffset = $scope.periodOffset + 1;
+            $scope.selectedPeriod = null;
+            $scope.periods = PeriodService.getPeriodsByType($scope.selectedStage.periodType, $scope.periodOffset);
+        }
+        else{
+            $scope.periodOffset = $scope.periodOffset - 1;
+            $scope.selectedPeriod = null;
+            $scope.periods = PeriodService.getPeriodsByType($scope.selectedStage.periodType, $scope.periodOffset);
+        }
+    }; 
+    
     $scope.save = function () {
         //check for form validity
         if($scope.dueDateInvalid || $scope.eventDateInvalid){
@@ -990,8 +1011,8 @@ trackerCapture.controller('DataEntryController',
         }
         
         if($scope.selectedStage.periodType){
-            $scope.dhis2Event.eventDate = $scope.dhis2Event.selectedPeriod.endDate;
-            $scope.dhis2Event.dueDate = $scope.dhis2Event.selectedPeriod.endDate;
+            $scope.dhis2Event.eventDate = $scope.selectedPeriod.endDate;
+            $scope.dhis2Event.dueDate = $scope.selectedPeriod.endDate;
         }        
         
         var eventDate = DateUtils.formatFromUserToApi($scope.dhis2Event.eventDate);

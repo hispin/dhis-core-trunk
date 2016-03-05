@@ -40,6 +40,12 @@
                     ng-disabled="periods.length < 1">
                 <option value="">{{periods.length > 0 ? 'please_select' : 'no_period_exists'| translate}}</option>
             </select>
+            <span class="pull-left">
+                <button type="button" class="btn btn-default" ng-click="getPeriods('PRV')" title="{{'previous_periods'| translate}}"><i class="fa fa-caret-left"></i></button>
+            </span>
+            <span class="pull-right">
+                <button type="button" class="btn btn-default" ng-disabled="periodOffset > -1" ng-click="getPeriods('NXT')" title="{{'next_periods'| translate}}"><i class="fa fa-caret-right"></i></button>
+            </span>
         </td>
         <td class="hideInPrint">
             <button type="button" class="btn btn-primary trim" ng-click="generateReport(selectedProgram, selectedPeriod, selectedOuMode)" ng-disabled="!selectedProgram || !selectedPeriod">{{'go'| translate}}</button>
