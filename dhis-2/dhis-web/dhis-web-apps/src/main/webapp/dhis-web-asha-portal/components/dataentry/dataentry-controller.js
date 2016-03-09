@@ -959,6 +959,8 @@ trackerCapture.controller('DataEntryController',
         $scope.periods = dummyEvent.periods;
         $scope.selectedPeriod = dummyEvent.periods[0];
         $scope.periodOffset = dummyEvent.offset;
+        $scope.referenceDate = dummyEvent.referenceDate;
+        $scope.lowestOffset = DateUtils.splitDate( $scope.referenceDate ).year - DateUtils.splitDate( DateUtils.getToday() ).year;
     }
     
     $scope.dueDateInvalid = false;
@@ -995,12 +997,12 @@ trackerCapture.controller('DataEntryController',
         if( mode === 'NXT'){
             $scope.periodOffset = $scope.periodOffset + 1;
             $scope.selectedPeriod = null;
-            $scope.periods = PeriodService.getPeriodsByType($scope.selectedStage.periodType, $scope.periodOffset);
+            $scope.periods = PeriodService.getPeriodsByType($scope.selectedStage.periodType, $scope.periodOffset, $scope.referenceDate);
         }
         else{
             $scope.periodOffset = $scope.periodOffset - 1;
             $scope.selectedPeriod = null;
-            $scope.periods = PeriodService.getPeriodsByType($scope.selectedStage.periodType, $scope.periodOffset);
+            $scope.periods = PeriodService.getPeriodsByType($scope.selectedStage.periodType, $scope.periodOffset, $scope.referenceDate);
         }
     }; 
     
