@@ -130,9 +130,14 @@ var trackerCaptureServices = angular.module('trackerCaptureServices', ['ngResour
         angular.forEach(prds, function(p){
             p.endDate = DateUtils.formatFromApiToUser(p.endDate);
             p.startDate = DateUtils.formatFromApiToUser(p.startDate); 
-            if(moment(p.endDate).isAfter(referenceDate)){
-                periods.push( p );
+            if(referenceDate){
+                if(moment(p.endDate).isAfter(referenceDate)){
+                    periods.push( p );
+                }
             }
+            else{
+                periods.push( p );
+            } 
         });  
         
         return periods;
