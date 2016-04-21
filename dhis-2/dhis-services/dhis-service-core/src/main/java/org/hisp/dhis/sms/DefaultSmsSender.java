@@ -30,7 +30,9 @@ package org.hisp.dhis.sms;
 
 import java.lang.Character.UnicodeBlock;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
@@ -73,6 +75,26 @@ public class DefaultSmsSender
     // SmsSender implementation
     // -------------------------------------------------------------------------
 
+    @Override
+    public boolean isServiceReady()
+    {
+        Map<String, SmsGatewayConfig> gatewayMap = new HashMap<>();
+
+        if ( transportService == null || gatewayAdminService == null )
+        {
+            return false;
+        }
+
+        gatewayMap = gatewayAdminService.getGatewayConfigurationMap();
+
+        if ( gatewayMap.isEmpty() )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     @Transactional
     @Override
     public String sendMessage( OutboundSms sms, String gatewayId )
@@ -98,14 +120,13 @@ public class DefaultSmsSender
         throws SmsServiceException
     {
         SmsGatewayConfig gateway = gatewayAdminService.getDefaultGateway();
-        
+
         if ( transportService == null || gateway == null )
         {
             throw new SmsServiceNotEnabledException();
         }
-                
-        return transportService.sendMessage( sms, gateway.getName() )
-            .getResponseMessage();
+
+        return transportService.sendMessage( sms, gateway.getName() ).getResponseMessage();
     }
 
     @Transactional
@@ -113,12 +134,12 @@ public class DefaultSmsSender
     public String sendMessage( List<OutboundSms> smsBatch )
     {
         SmsGatewayConfig gateway = gatewayAdminService.getDefaultGateway();
-        
+
         if ( gateway == null )
         {
             throw new SmsServiceNotEnabledException();
         }
-        
+
         return sendMessage( smsBatch, gateway.getName() );
     }
 
@@ -151,12 +172,12 @@ public class DefaultSmsSender
         String message = null;
 
         SmsGatewayConfig gateway = gatewayAdminService.getDefaultGateway();
-        
+
         if ( transportService == null || gateway == null )
         {
             throw new SmsServiceNotEnabledException();
         }
-        
+
         List<User> toSendList = new ArrayList<>();
 
         String gatewayId = gateway.getName();
